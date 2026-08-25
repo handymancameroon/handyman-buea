@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post a Job - Handy Man</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <a href="index.html" class="logo">🔧 Handy Man</a>
+            <nav class="nav" id="nav">
+                <a href="index.html">Home</a>
+                <a href="workers.html">Find Workers</a>
+                <a href="jobs.html">Find Jobs</a>
+                <a href="login.html" class="btn-secondary">Join as Worker</a>
+                <a href="post-job.html" class="btn-secondary">Post a Job</a>
+                <a href="login.html" class="btn-primary" id="authBtn">Login</a>
+            </nav>
+            <button class="menu-toggle" id="menuToggle">☰</button>
+        </div>
+    </header>
+
+    <main class="auth-page">
+        <div class="container">
+            <div class="auth-box" id="postJobBox">
+                <h2>Post a Job</h2>
+                <p>Describe what you need and skilled workers will contact you.</p>
+                
+                <form id="jobForm" onsubmit="handlePostJob(event)">
+                    <div class="form-group">
+                        <label>Job Title *</label>
+                        <input type="text" id="jTitle" required placeholder="e.g. Fix leaking kitchen pipe">
+                    </div>
+                    <div class="form-group">
+                        <label>Service Category *</label>
+                        <select id="jCategory" required>
+                            <option value="">Select category</option>
+                            <option value="Plumbing">Plumbing</option>
+                            <option value="Electrical">Electrical</option>
+                            <option value="Carpentry">Carpentry</option>
+                            <option value="Cleaning">Cleaning</option>
+                            <option value="Painting">Painting</option>
+                            <option value="Masonry">Masonry</option>
+                            <option value="Auto Mechanics">Auto Mechanics</option>
+                            <option value="Phone/Laptop Repair">Phone/Laptop Repair</option>
+                            <option value="Hairdressing">Hairdressing</option>
+                            <option value="Catering">Catering</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Description *</label>
+                        <textarea id="jDescription" required rows="4" placeholder="Describe the job in detail..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Location *</label>
+                        <input type="text" id="jLocation" required placeholder="e.g. Molyko, Buea" value="Buea">
+                    </div>
+                    <div class="form-group">
+                        <label>Budget (optional)</label>
+                        <input type="text" id="jBudget" placeholder="e.g. 10,000 FCFA or Negotiable">
+                    </div>
+                    <button type="submit" class="btn-primary full">Post Job</button>
+                </form>
+                
+                <p id="jobMessage" class="message"></p>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkAuth();
+            
+            if (!currentUser) {
+                document.getElementById('postJobBox').innerHTML = `
+                    <h2>Login Required</h2>
+                    <p>You need to be logged in to post a job.</p>
+                    <a href="login.html" class="btn-primary full" style="margin-top: 20px; display: inline-block;">Go to Login</a>
+                `;
+            }
+        });
+        
+        async function handlePostJob(e) {
+            e.preventDefault();
+            
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (!user) {
+                showJobMessage('Please login first.', 'error');
+                return;
+            }
+            
+            const jobData = {
+                client_id: user.id,
+                title: document.getElementById('jTitle').value,
+                category: document.getElementById('jCategory').value,
+                description: document.getElementById('jDescription').value,
+                location: document.getElementById('jLocation').value,
+                budget: document.getElementById('jBudget').value,
+                status: 'Open'
+            };
+            
+            const { error } = await supabaseClient.from('job_posts').insert([jobData]);
+            
+            if (error) {
+                showJobMessage('Error: ' + error.message, 'error');
+            } else {
+                showJobMessage('Job posted successfully! Redirecting...', 'success');
+                setTimeout(() => window.location.href = 'jobs.html', 1500);
+            }
+        }
+        
+        function showJobMessage(msg, type) {
+            const el = document.getElementById('jobMessage');
+            el.textContent = msg;
+            el.className = 'message ' + type;
+        }
+    </script>
+</body>
+</html>
