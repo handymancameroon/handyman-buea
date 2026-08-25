@@ -1,11 +1,18 @@
 // ============================================
-// Handy Man - Fixed App Script (All Pages)
+// Handy Man - App Script (Timing Fixed)
 // ============================================
 
 const SUPABASE_URL = 'https://zuhkhpdrxwfjcqnolmpu.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_foPRwQRlPGlWBKYqeBHg4A_WcajeKKI';
 
+// Create Supabase client IMMEDIATELY (before page finishes loading)
+// This ensures it's ready before any dropdown scripts run
 let supabaseClient = null;
+if (typeof window.supabase !== 'undefined' && typeof window.supabase.createClient === 'function') {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    window.supabase = supabaseClient;
+}
+
 let currentUser = null;
 
 // Fallback categories that show even if database fails
@@ -22,22 +29,10 @@ const FALLBACK_CATEGORIES = [
     {name: 'Catering', icon: '🍲', description: 'Event cooking and food services'}
 ];
 
-// Initialize everything when page loads
+// Initialize UI when page loads
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        // Step 1: Try to connect to Supabase
-        const supabaseGlobal = window.supabase;
-        
-        if (supabaseGlobal && typeof supabaseGlobal.createClient === 'function') {
-            supabaseClient = supabaseGlobal.createClient(SUPABASE_URL, SUPABASE_KEY);
-            // Make it available globally so other pages can use it
-            window.supabase = supabaseClient;
-        } else {
-            console.log('Supabase library not loaded - using fallback mode');
-            supabaseClient = null;
-        }
-        
-        // Step 2: Check auth if Supabase is available
+        // Check auth if Supabase is available
         if (supabaseClient) {
             try {
                 const { data: { user } } = await supabaseClient.auth.getUser();
@@ -49,7 +44,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         updateAuthUI();
         
-        // Step 3: Load page content
+        // Load page content
         if (document.getElementById('categoryGrid')) {
             await loadCategories();
         }
@@ -57,7 +52,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             await loadFeaturedWorkers();
         }
         
-        // Step 4: Mobile menu toggle
+        // Mobile menu toggle
         const menuToggle = document.getElementById('menuToggle');
         if (menuToggle) {
             menuToggle.addEventListener('click', () => {
