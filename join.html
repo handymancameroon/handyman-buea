@@ -24,6 +24,16 @@
                         <label>Service Category *</label>
                         <select id="wCategory" required>
                             <option value="">Select your main skill</option>
+                            <option value="Plumbing">Plumbing</option>
+                            <option value="Electrical">Electrical</option>
+                            <option value="Carpentry">Carpentry</option>
+                            <option value="Cleaning">Cleaning</option>
+                            <option value="Painting">Painting</option>
+                            <option value="Masonry">Masonry</option>
+                            <option value="Auto Mechanics">Auto Mechanics</option>
+                            <option value="Phone/Laptop Repair">Phone/Laptop Repair</option>
+                            <option value="Hairdressing">Hairdressing</option>
+                            <option value="Catering">Catering</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -59,26 +69,12 @@
                 window.location.href = 'login.html';
                 return;
             }
-            await loadCategoryOptions();
         });
-        
-        async function loadCategoryOptions() {
-            const { data: categories } = await supabase.from('categories').select('name');
-            const select = document.getElementById('wCategory');
-            if (categories) {
-                categories.forEach(c => {
-                    const opt = document.createElement('option');
-                    opt.value = c.name;
-                    opt.textContent = c.name;
-                    select.appendChild(opt);
-                });
-            }
-        }
         
         async function handleWorkerJoin(e) {
             e.preventDefault();
             
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { user } } = await supabaseClient.auth.getUser();
             if (!user) {
                 showJoinMessage('Please login first.', 'error');
                 return;
@@ -94,7 +90,7 @@
                 availability: 'Available'
             };
             
-            const { error } = await supabase.from('worker_details').insert([details]);
+            const { error } = await supabaseClient.from('worker_details').insert([details]);
             
             if (error) {
                 showJoinMessage('Error: ' + error.message, 'error');
