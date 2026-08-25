@@ -1,11 +1,11 @@
 // ============================================
-// Handy Man - Bulletproof App Script
+// Handy Man - Fixed App Script
 // ============================================
 
 const SUPABASE_URL = 'https://zuhkhpdrxwfjcqnolmpu.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_foPRwQRlPGlWBKYqeBHg4A_WcajeKKI';
 
-let supabase = null;
+let supabaseClient = null;
 let currentUser = null;
 
 // Fallback categories that show even if database fails
@@ -22,47 +22,23 @@ const FALLBACK_CATEGORIES = [
     {name: 'Catering', icon: '🍲', description: 'Event cooking and food services'}
 ];
 
-// Wait for Supabase library to load
-function waitForSupabase(maxAttempts = 20) {
-    return new Promise((resolve) => {
-        let attempts = 0;
-        const check = setInterval(() => {
-            attempts++;
-            
-            // Try different possible global names
-            if (typeof window.supabase !== 'undefined') {
-                clearInterval(check);
-                resolve('window.supabase');
-            } else if (typeof supabase !== 'undefined' && typeof supabase.createClient === 'function') {
-                clearInterval(check);
-                resolve('global.supabase');
-            } else if (attempts >= maxAttempts) {
-                clearInterval(check);
-                resolve(null);
-            }
-        }, 100); // Check every 100ms, up to 2 seconds
-    });
-}
-
 // Initialize everything when page loads
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         // Step 1: Try to connect to Supabase
-        const supabaseGlobal = await waitForSupabase();
+        const supabaseGlobal = window.supabase;
         
-        if (supabaseGlobal === 'window.supabase') {
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        } else if (supabaseGlobal === 'global.supabase') {
-            supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        if (supabaseGlobal && typeof supabaseGlobal.createClient === 'function') {
+            supabaseClient = supabaseGlobal.createClient(SUPABASE_URL, SUPABASE_KEY);
         } else {
             console.log('Supabase library not loaded - using fallback mode');
-            supabase = null;
+            supabaseClient = null;
         }
         
         // Step 2: Check auth if Supabase is available
-        if (supabase) {
+        if (supabaseClient) {
             try {
-                const { data: { user } } = await supabase.auth.getUser();
+                const { data: { user } } = await supabaseClient.auth.getUser();
                 currentUser = user;
             } catch (e) {
                 console.log('Auth check failed:', e.message);
@@ -89,7 +65,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         
     } catch (err) {
         console.error('App initialization error:', err);
-        // Show fallback categories no matter what
         renderCategories(FALLBACK_CATEGORIES);
     }
 });
@@ -99,13 +74,13 @@ function updateAuthUI() {
     const authBtn = document.getElementById('authBtn');
     if (!authBtn) return;
     
-    if (currentUser && supabase) {
+    if (currentUser && supabaseClient) {
         authBtn.textContent = 'Logout';
         authBtn.href = '#';
         authBtn.onclick = async (e) => {
             e.preventDefault();
             try {
-                await supabase.auth.signOut();
+                await supabaseClient.auth.signOut();
             } catch (e) {}
             window.location.reload();
         };
@@ -122,13 +97,13 @@ async function loadCategories() {
     if (!grid) return;
     
     // If Supabase is not available, show fallback immediately
-    if (!supabase) {
+    if (!supabaseClient) {
         renderCategories(FALLBACK_CATEGORIES);
         return;
     }
     
     try {
-        const { data: categories, error } = await supabase
+        const { data: categories, error } = await supabaseClient
             .from('categories')
             .select('*')
             .limit(10);
@@ -169,13 +144,13 @@ async function loadFeaturedWorkers() {
     const grid = document.getElementById('workerGrid');
     if (!grid) return;
     
-    if (!supabase) {
+    if (!supabaseClient) {
         grid.innerHTML = '<p class="empty">No workers yet. Be the first to join!</p>';
         return;
     }
     
     try {
-        const { data: workers, error } = await supabase
+        const { data: workers, error } = await supabaseClient
             .from('worker_details')
             .select('*, profiles(full_name, avatar_url, location)')
             .eq('availability', 'Available')
