@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find Workers - Handy Man</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <a href="index.html" class="logo">🔧 Handy Man</a>
+            <nav class="nav" id="nav">
+                <a href="index.html">Home</a>
+                <a href="workers.html">Find Workers</a>
+                <a href="login.html" class="btn-primary" id="authBtn">Login</a>
+            </nav>
+            <button class="menu-toggle" id="menuToggle">☰</button>
+        </div>
+    </header>
+
+    <main class="search-page">
+        <div class="container">
+            <h1>Find Workers in Buea</h1>
+            <div class="search-filters">
+                <input type="text" id="searchQuery" placeholder="Search by name or skill...">
+                <select id="categoryFilter">
+                    <option value="">All Categories</option>
+                </select>
+                <button onclick="performSearch()" class="btn-primary">Search</button>
+            </div>
+            <div class="worker-grid" id="searchResults">
+                <p class="loading">Loading workers...</p>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkAuth();
+            await loadCategoryOptions();
+            
+            const params = new URLSearchParams(window.location.search);
+            const q = params.get('q');
+            const cat = params.get('category');
+            if (q) document.getElementById('searchQuery').value = q;
+            if (cat) document.getElementById('categoryFilter').value = cat;
+            
+            performSearch();
+        });
+        
+        async function loadCategoryOptions() {
+            const { data: categories } = await supabase.from('categories').select('name');
+            const select = document.getElementById('categoryFilter');
+            if (categories) {
+                categories.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.name;
+                    opt.textContent = c.name;
+                    select.appendChild(opt);
+                });
+            }
+        }
+        
+        async function performSearch() {
+            const query = document.getElementById('searchQuery').value;
+            const category = document.getElementById('categoryFilter').value;
+            const container = document.getElementById('searchResults');
+            
+            container.innerHTML = '<p class="loading">Searching...</p>';
+            
+            let dbQuery = supabase
+                .from('worker_details')
+                .select('*, profiles(full_name, avatar_url, location, phone)')
+                .eq('availability', 'Available');
+            
+            if (category) {
+                dbQuery = dbQuery.eq('category', category);
+            }
+            
+            const { data: workers, error } = await dbQuery;
+            
+            if (error) {
+                container.innerHTML = '<p class="error">Error loading workers.</p>';
+                return;
+            }
+            
+            let filtered = workers || [];
+            if (query) {
+                const q = query.toLowerCase();
+                filtered = filtered.filter(w => 
+                    (w.profiles?.full_name || '').toLowerCase().includes(q) ||
+                    (w.category || '').toLowerCase().includes(q) ||
+                    (w.description || '').toLowerCase().includes(q)
+                );
+            }
+            
+            if (filtered.length === 0) {
+                container.innerHTML = '<p class="empty">No workers found. Try a different search.</p>';
+                return;
+            }
+            
+            renderWorkers(filtered, container);
+        }
+    </script>
+</body>
+</html>
