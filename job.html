@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Details - Handy Man</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <a href="index.html" class="logo">🔧 Handy Man</a>
+            <nav class="nav" id="nav">
+                <a href="index.html">Home</a>
+                <a href="workers.html">Find Workers</a>
+                <a href="jobs.html">Find Jobs</a>
+                <a href="login.html" class="btn-secondary">Join as Worker</a>
+                <a href="post-job.html" class="btn-secondary">Post a Job</a>
+                <a href="login.html" class="btn-primary" id="authBtn">Login</a>
+            </nav>
+            <button class="menu-toggle" id="menuToggle">☰</button>
+        </div>
+    </header>
+
+    <main class="job-detail-page">
+        <div class="container" id="jobContainer">
+            <p class="loading">Loading job...</p>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            setTimeout(async () => {
+                await loadJobDetail();
+            }, 100);
+        });
+        
+        async function loadJobDetail() {
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get('id');
+            const container = document.getElementById('jobContainer');
+            
+            if (!id) {
+                container.innerHTML = '<p class="error">Job not found.</p>';
+                return;
+            }
+            
+            if (!supabaseClient) {
+                container.innerHTML = '<p class="error">Cannot connect to database.</p>';
+                return;
+            }
+            
+            try {
+                const { data: job, error } = await supabaseClient
+                    .from('job_posts')
+                    .select('*, profiles(full_name, phone)')
+                    .eq('id', id)
+                    .single();
+                
+                if (error || !job) {
+                    container.innerHTML = '<p class="error">Job not found.</p>';
+                    return;
+                }
+                
+                const p = job.profiles || {};
+                const phoneNum = (p.phone || '').replace(/\D/g, '');
+                const whatsappLink = phoneNum ? `https://wa.me/237${phoneNum}` : '#';
+                const callLink = p.phone ? `tel:${p.phone}` : '#';
+                const postedDate = new Date(job.created_at).toLocaleDateString('en-GB');
+                
+                container.innerHTML = `
+                    <div class="job-detail-header">
+                        <div>
+                            <span class="badge">${job.status}</span>
+                            <h1>${job.title}</h1>
+                            <p class="job-detail-category">${job.category || 'General'}</p>
+                            <div class="job-meta">
+                                <span>📍 ${job.location || 'Buea'}</span>
+                                <span>💰 ${job.budget || 'Not specified'}</span>
+                                <span>📅 Posted ${postedDate}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="job-description">
+                        <h3>Job Description</h3>
+                        <p>${job.description}</p>
+                    </div>
+                    
+                    <div class="client-info">
+                        <h3>Client</h3>
+                        <p><strong>${p.full_name || 'Anonymous'}</strong></p>
+                    </div>
+                    
+                    <div class="apply-section">
+                        <h3>Interested? Contact the Client</h3>
+                        <p>Reach out via WhatsApp or call to discuss the job details.</p>
+                        <a href="${whatsappLink}" target="_blank" class="btn-whatsapp">💬 WhatsApp</a>
+                        ${p.phone ? `<a href="${callLink}" class="btn-primary">📞 Call Now</a>` : ''}
+                    </div>
+                `;
+                
+            } catch (err) {
+                console.error('Job load error:', err);
+                container.innerHTML = '<p class="error">Error loading job. Please try again.</p>';
+            }
+        }
+    </script>
+</body>
+</html>
