@@ -13,6 +13,9 @@
             <nav class="nav" id="nav">
                 <a href="index.html">Home</a>
                 <a href="workers.html">Find Workers</a>
+                <a href="jobs.html">Find Jobs</a>
+                <a href="login.html" class="btn-secondary">Join as Worker</a>
+                <a href="post-job.html" class="btn-secondary">Post a Job</a>
                 <a href="login.html" class="btn-primary" id="authBtn">Login</a>
             </nav>
             <button class="menu-toggle" id="menuToggle">☰</button>
@@ -68,7 +71,7 @@
             container.innerHTML = '<p class="loading">Searching...</p>';
             
             if (!supabaseClient) {
-                container.innerHTML = '<p class="empty">No workers found. Try a different search.</p>';
+                container.innerHTML = '<p class="empty">Cannot load workers. Please refresh.</p>';
                 return;
             }
             
