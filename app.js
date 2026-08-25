@@ -1,15 +1,13 @@
 // ============================================
-// Handy Man - App Script (Cross-page fix)
+// Handy Man - App Script (Non-blocking)
 // ============================================
 
 const SUPABASE_URL = 'https://zuhkhpdrxwfjcqnolmpu.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_foPRwQRlPGlWBKYqeBHg4A_WcajeKKI';
 
-// Use var so all pages can see these variables
 var supabaseClient = null;
 var currentUser = null;
 
-// Fallback categories that show even if database fails
 const FALLBACK_CATEGORIES = [
     {name: 'Plumbing', icon: '🔧', description: 'Leak repairs, installations, toilets, water heaters'},
     {name: 'Electrical', icon: '⚡', description: 'Wiring, sockets, lighting, electrical repairs'},
@@ -23,28 +21,23 @@ const FALLBACK_CATEGORIES = [
     {name: 'Catering', icon: '🍲', description: 'Event cooking and food services'}
 ];
 
-// Create Supabase client immediately
+// Create Supabase client immediately when script loads
 if (typeof window.supabase !== 'undefined' && typeof window.supabase.createClient === 'function') {
-    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    window.supabase = supabaseClient;
+    try {
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        window.supabase = supabaseClient;
+    } catch (e) {
+        console.error('Supabase init failed:', e);
+    }
 }
 
 // Initialize UI when page loads
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        // Check auth if Supabase is available
-        if (supabaseClient) {
-            try {
-                const { data: { user } } = await supabaseClient.auth.getUser();
-                currentUser = user;
-            } catch (e) {
-                console.log('Auth check failed:', e.message);
-            }
-        }
+        // Check auth in background (don't await it if it might hang)
+        checkAuth().catch(() => {});
         
-        updateAuthUI();
-        
-        // Load page content
+        // Load page content immediately
         if (document.getElementById('categoryGrid')) {
             await loadCategories();
         }
@@ -59,12 +52,25 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.getElementById('nav').classList.toggle('active');
             });
         }
-        
     } catch (err) {
-        console.error('App initialization error:', err);
-        renderCategories(FALLBACK_CATEGORIES);
+        console.error('App init error:', err);
+        if (document.getElementById('categoryGrid')) {
+            renderCategories(FALLBACK_CATEGORIES);
+        }
     }
 });
+
+// Check auth — wrapped in try-catch so it never crashes the page
+async function checkAuth() {
+    try {
+        if (!supabaseClient) return;
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        currentUser = user;
+        updateAuthUI();
+    } catch (e) {
+        console.log('Auth check failed:', e.message);
+    }
+}
 
 // Update login/logout button
 function updateAuthUI() {
@@ -88,7 +94,7 @@ function updateAuthUI() {
     }
 }
 
-// Load categories from Supabase or use fallback
+// Load categories
 async function loadCategories() {
     const grid = document.getElementById('categoryGrid');
     if (!grid) return;
@@ -104,24 +110,17 @@ async function loadCategories() {
             .select('*')
             .limit(10);
         
-        if (error) {
-            console.log('Database error:', error.message);
+        if (error || !categories || categories.length === 0) {
             renderCategories(FALLBACK_CATEGORIES);
             return;
         }
         
-        if (categories && categories.length > 0) {
-            renderCategories(categories);
-        } else {
-            renderCategories(FALLBACK_CATEGORIES);
-        }
+        renderCategories(categories);
     } catch (err) {
-        console.log('Failed to load categories:', err.message);
         renderCategories(FALLBACK_CATEGORIES);
     }
 }
 
-// Render category cards
 function renderCategories(categories) {
     const grid = document.getElementById('categoryGrid');
     if (!grid) return;
@@ -164,7 +163,6 @@ async function loadFeaturedWorkers() {
     }
 }
 
-// Render worker cards
 function renderWorkers(workers, container) {
     container.innerHTML = workers.map(w => `
         <div class="worker-card" onclick="viewWorker('${w.id}')">
@@ -182,7 +180,6 @@ function renderWorkers(workers, container) {
     `).join('');
 }
 
-// Search functions
 function searchWorkers() {
     const query = document.getElementById('searchInput')?.value;
     if (query) {
