@@ -1,19 +1,13 @@
 // ============================================
-// Handy Man - App Script (Timing Fixed)
+// Handy Man - App Script (Cross-page fix)
 // ============================================
 
 const SUPABASE_URL = 'https://zuhkhpdrxwfjcqnolmpu.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_foPRwQRlPGlWBKYqeBHg4A_WcajeKKI';
 
-// Create Supabase client IMMEDIATELY (before page finishes loading)
-// This ensures it's ready before any dropdown scripts run
-let supabaseClient = null;
-if (typeof window.supabase !== 'undefined' && typeof window.supabase.createClient === 'function') {
-    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    window.supabase = supabaseClient;
-}
-
-let currentUser = null;
+// Use var so all pages can see these variables
+var supabaseClient = null;
+var currentUser = null;
 
 // Fallback categories that show even if database fails
 const FALLBACK_CATEGORIES = [
@@ -28,6 +22,12 @@ const FALLBACK_CATEGORIES = [
     {name: 'Hairdressing', icon: '💇', description: 'Hair styling, barbing, braiding'},
     {name: 'Catering', icon: '🍲', description: 'Event cooking and food services'}
 ];
+
+// Create Supabase client immediately
+if (typeof window.supabase !== 'undefined' && typeof window.supabase.createClient === 'function') {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    window.supabase = supabaseClient;
+}
 
 // Initialize UI when page loads
 document.addEventListener('DOMContentLoaded', async () => {
