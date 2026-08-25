@@ -23,6 +23,15 @@
     <header class="header">
         <div class="container">
             <a href="index.html" class="logo">🔧 Handy Man</a>
+            <nav class="nav" id="nav">
+                <a href="index.html">Home</a>
+                <a href="workers.html">Find Workers</a>
+                <a href="jobs.html">Find Jobs</a>
+                <a href="login.html" class="btn-secondary">Join as Worker</a>
+                <a href="post-job.html" class="btn-secondary">Post a Job</a>
+                <a href="login.html" class="btn-primary" id="authBtn">Login</a>
+            </nav>
+            <button class="menu-toggle" id="menuToggle">☰</button>
         </div>
     </header>
 
@@ -77,7 +86,6 @@
                             </select>
                         </div>
                         
-                        <!-- Worker-only fields (hidden by default) -->
                         <div id="workerFields" class="worker-fields">
                             <div class="form-group">
                                 <label>Service Category *</label>
@@ -167,7 +175,6 @@
             const isWorker = document.getElementById('regType').value === 'worker';
             const photoUrl = document.getElementById('wPhoto')?.value || null;
             
-            // Step 1: Create auth account
             const { data, error } = await supabaseClient.auth.signUp({
                 email,
                 password,
@@ -187,7 +194,6 @@
             
             const userId = data.user.id;
             
-            // Step 2: Upsert profile
             const { error: profileError } = await supabaseClient
                 .from('profiles')
                 .upsert([{
@@ -204,7 +210,6 @@
                 return;
             }
             
-            // Step 3: If worker, create worker profile
             if (isWorker) {
                 const workerDetails = {
                     id: userId,
