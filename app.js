@@ -1,5 +1,5 @@
 // ============================================
-// Handy Man - App Script (Non-blocking)
+// Handy Man - App Script
 // ============================================
 
 const SUPABASE_URL = 'https://zuhkhpdrxwfjcqnolmpu.supabase.co';
@@ -21,7 +21,6 @@ const FALLBACK_CATEGORIES = [
     {name: 'Catering', icon: '🍲', description: 'Event cooking and food services'}
 ];
 
-// Create Supabase client immediately when script loads
 if (typeof window.supabase !== 'undefined' && typeof window.supabase.createClient === 'function') {
     try {
         supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -31,21 +30,20 @@ if (typeof window.supabase !== 'undefined' && typeof window.supabase.createClien
     }
 }
 
-// Initialize UI when page loads
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        // Check auth in background (don't await it if it might hang)
         checkAuth().catch(() => {});
         
-        // Load page content immediately
         if (document.getElementById('categoryGrid')) {
             await loadCategories();
         }
         if (document.getElementById('workerGrid')) {
             await loadFeaturedWorkers();
         }
+        if (document.getElementById('carouselDots')) {
+            initCarousel();
+        }
         
-        // Mobile menu toggle
         const menuToggle = document.getElementById('menuToggle');
         if (menuToggle) {
             menuToggle.addEventListener('click', () => {
@@ -60,7 +58,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-// Check auth — wrapped in try-catch so it never crashes the page
 async function checkAuth() {
     try {
         if (!supabaseClient) return;
@@ -72,7 +69,6 @@ async function checkAuth() {
     }
 }
 
-// Update login/logout button
 function updateAuthUI() {
     const authBtn = document.getElementById('authBtn');
     if (!authBtn) return;
@@ -94,7 +90,6 @@ function updateAuthUI() {
     }
 }
 
-// Load categories
 async function loadCategories() {
     const grid = document.getElementById('categoryGrid');
     if (!grid) return;
@@ -134,7 +129,6 @@ function renderCategories(categories) {
     `).join('');
 }
 
-// Load featured workers
 async function loadFeaturedWorkers() {
     const grid = document.getElementById('workerGrid');
     if (!grid) return;
@@ -180,6 +174,32 @@ function renderWorkers(workers, container) {
     `).join('');
 }
 
+function initCarousel() {
+    const slides = document.querySelectorAll('.carousel-slide');
+    const dotsContainer = document.getElementById('carouselDots');
+    if (!slides.length || !dotsContainer) return;
+    
+    dotsContainer.innerHTML = '';
+    slides.forEach((_, i) => {
+        const dot = document.createElement('div');
+        dot.className = 'carousel-dot' + (i === 0 ? ' active' : '');
+        dot.onclick = () => goToSlide(i);
+        dotsContainer.appendChild(dot);
+    });
+    
+    let current = 0;
+    setInterval(() => {
+        goToSlide((current + 1) % slides.length);
+    }, 5000);
+    
+    function goToSlide(index) {
+        slides.forEach((s, i) => s.classList.toggle('active', i === index));
+        const dots = dotsContainer.querySelectorAll('.carousel-dot');
+        dots.forEach((d, i) => d.classList.toggle('active', i === index));
+        current = index;
+    }
+}
+
 function searchWorkers() {
     const query = document.getElementById('searchInput')?.value;
     if (query) {
@@ -193,4 +213,8 @@ function searchByCategory(category) {
 
 function viewWorker(id) {
     window.location.href = `worker.html?id=${id}`;
+}
+
+function viewJob(id) {
+    window.location.href = `job.html?id=${id}`;
 }
