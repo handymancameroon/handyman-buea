@@ -28,16 +28,12 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="app.js"></script>
     <script>
+        // Load profile immediately — don't wait for auth
         document.addEventListener('DOMContentLoaded', async () => {
-            // Wait up to 3 seconds for supabaseClient to be ready
-            let attempts = 0;
-            while (!supabaseClient && attempts < 30) {
-                await new Promise(r => setTimeout(r, 100));
-                attempts++;
-            }
-            
-            await checkAuth();
-            await loadWorkerProfile();
+            // Give app.js a moment to init, then load profile
+            setTimeout(async () => {
+                await loadWorkerProfile();
+            }, 100);
         });
         
         async function loadWorkerProfile() {
@@ -69,14 +65,14 @@
                 }
                 
                 // Get profile info separately
-                const { data: profile, error: profileError } = await supabaseClient
+                const { data: profile } = await supabaseClient
                     .from('profiles')
                     .select('full_name, avatar_url, location, phone')
                     .eq('id', id)
                     .single();
                 
                 // Get reviews separately
-                const { data: reviews, error: reviewsError } = await supabaseClient
+                const { data: reviews } = await supabaseClient
                     .from('reviews')
                     .select('*')
                     .eq('worker_id', id);
