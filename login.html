@@ -110,6 +110,11 @@
                                 <label>WhatsApp Number</label>
                                 <input type="tel" id="wWhatsapp" placeholder="6XX XXX XXX">
                             </div>
+                            <div class="form-group">
+                                <label>Profile Photo URL (optional)</label>
+                                <input type="url" id="wPhoto" placeholder="https://example.com/your-photo.jpg">
+                                <small style="color: var(--text-light);">Paste a link to your photo. Leave blank for default.</small>
+                            </div>
                         </div>
                         
                         <button type="submit" class="btn-primary full">Create Account</button>
@@ -167,6 +172,7 @@
             const fullName = document.getElementById('regName').value;
             const phone = document.getElementById('regPhone').value;
             const isWorker = document.getElementById('regType').value === 'worker';
+            const photoUrl = document.getElementById('wPhoto')?.value || null;
             
             // Step 1: Create auth account
             const { data, error } = await supabaseClient.auth.signUp({
@@ -196,7 +202,8 @@
                     full_name: fullName,
                     phone: phone,
                     is_worker: isWorker,
-                    location: 'Buea'
+                    location: 'Buea',
+                    avatar_url: photoUrl
                 }]);
             
             if (profileError) {
