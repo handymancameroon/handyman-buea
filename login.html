@@ -188,7 +188,7 @@
             
             const userId = data.user.id;
             
-            // Step 2: Create profile
+            // Step 2: Create profile (RLS now allows this)
             const { error: profileError } = await supabaseClient
                 .from('profiles')
                 .insert([{
