@@ -194,17 +194,17 @@
             
             const userId = data.user.id;
             
-            // Step 2: Create profile (RLS now allows this)
+            // Step 2: Upsert profile (insert if new, update if exists)
             const { error: profileError } = await supabaseClient
                 .from('profiles')
-                .insert([{
+                .upsert([{
                     id: userId,
                     full_name: fullName,
                     phone: phone,
                     is_worker: isWorker,
                     location: 'Buea',
                     avatar_url: photoUrl
-                }]);
+                }], { onConflict: 'id' });
             
             if (profileError) {
                 showMessage('Account created but profile error: ' + profileError.message, 'warning');
