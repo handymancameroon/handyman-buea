@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Handy Man - Find Trusted Local Help in Buea</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <a href="index.html" class="logo">🔧 Handy Man</a>
+            <nav class="nav" id="nav">
+                <a href="index.html">Home</a>
+                <a href="workers.html">Find Workers</a>
+                <a href="join.html" class="btn-secondary">Join as Worker</a>
+                <a href="login.html" class="btn-primary" id="authBtn">Login</a>
+            </nav>
+            <button class="menu-toggle" id="menuToggle">☰</button>
+        </div>
+    </header>
+
+    <section class="hero">
+        <div class="container">
+            <h1>Find Trusted Local Help in Buea</h1>
+            <p>Connect with skilled plumbers, electricians, cleaners, and more — fast and reliable.</p>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="What do you need? (e.g. plumber, electrician)">
+                <button onclick="searchWorkers()" class="btn-primary">Search</button>
+            </div>
+        </div>
+    </section>
+
+    <section class="categories">
+        <div class="container">
+            <h2>Popular Services</h2>
+            <div class="category-grid" id="categoryGrid">
+                <p class="loading">Loading categories...</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="featured">
+        <div class="container">
+            <h2>Featured Workers in Buea</h2>
+            <div class="worker-grid" id="workerGrid">
+                <p class="loading">Loading workers...</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="how-it-works">
+        <div class="container">
+            <h2>How It Works</h2>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-icon">🔍</div>
+                    <h3>Search</h3>
+                    <p>Find the right worker for your needs</p>
+                </div>
+                <div class="step">
+                    <div class="step-icon">📞</div>
+                    <h3>Contact</h3>
+                    <p>Call or WhatsApp them directly</p>
+                </div>
+                <div class="step">
+                    <div class="step-icon">✅</div>
+                    <h3>Get It Done</h3>
+                    <p>Rate and review after service</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <p>© 2026 Handy Man Buea. Connecting people with skilled workers.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+</body>
+</html>
