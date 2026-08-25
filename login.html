@@ -5,6 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Handy Man</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .worker-fields {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        .worker-fields.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
 </head>
 <body>
     <header class="header">
@@ -40,28 +53,65 @@
                     <h2>Create Account</h2>
                     <form id="registerForm" onsubmit="handleRegister(event)">
                         <div class="form-group">
-                            <label>Full Name</label>
+                            <label>Full Name *</label>
                             <input type="text" id="regName" required placeholder="John Doe">
                         </div>
                         <div class="form-group">
-                            <label>Email</label>
+                            <label>Email *</label>
                             <input type="email" id="regEmail" required placeholder="your@email.com">
                         </div>
                         <div class="form-group">
-                            <label>Phone Number</label>
+                            <label>Phone Number *</label>
                             <input type="tel" id="regPhone" required placeholder="6XX XXX XXX">
                         </div>
                         <div class="form-group">
-                            <label>Password</label>
+                            <label>Password *</label>
                             <input type="password" id="regPassword" required placeholder="Min 6 characters" minlength="6">
                         </div>
                         <div class="form-group">
-                            <label>I am a:</label>
-                            <select id="regType">
+                            <label>I am a: *</label>
+                            <select id="regType" onchange="toggleWorkerFields()">
                                 <option value="client">Looking for services (Client)</option>
                                 <option value="worker">Offering services (Worker)</option>
                             </select>
                         </div>
+                        
+                        <!-- Worker-only fields (hidden by default) -->
+                        <div id="workerFields" class="worker-fields">
+                            <div class="form-group">
+                                <label>Service Category *</label>
+                                <select id="wCategory" required>
+                                    <option value="">Select your main skill</option>
+                                    <option value="Plumbing">Plumbing</option>
+                                    <option value="Electrical">Electrical</option>
+                                    <option value="Carpentry">Carpentry</option>
+                                    <option value="Cleaning">Cleaning</option>
+                                    <option value="Painting">Painting</option>
+                                    <option value="Masonry">Masonry</option>
+                                    <option value="Auto Mechanics">Auto Mechanics</option>
+                                    <option value="Phone/Laptop Repair">Phone/Laptop Repair</option>
+                                    <option value="Hairdressing">Hairdressing</option>
+                                    <option value="Catering">Catering</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Description of Services *</label>
+                                <textarea id="wDescription" required rows="3" placeholder="Describe what you do, your skills, and experience..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Years of Experience</label>
+                                <input type="number" id="wExperience" min="0" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label>Phone for Calls</label>
+                                <input type="tel" id="wPhone" placeholder="6XX XXX XXX">
+                            </div>
+                            <div class="form-group">
+                                <label>WhatsApp Number</label>
+                                <input type="tel" id="wWhatsapp" placeholder="6XX XXX XXX">
+                            </div>
+                        </div>
+                        
                         <button type="submit" class="btn-primary full">Create Account</button>
                     </form>
                 </div>
@@ -81,12 +131,26 @@
             event.target.classList.add('active');
         }
         
+        function toggleWorkerFields() {
+            const type = document.getElementById('regType').value;
+            const fields = document.getElementById('workerFields');
+            const workerInputs = fields.querySelectorAll('input, select, textarea');
+            
+            if (type === 'worker') {
+                fields.classList.add('active');
+                workerInputs.forEach(input => input.required = true);
+            } else {
+                fields.classList.remove('active');
+                workerInputs.forEach(input => input.required = false);
+            }
+        }
+        
         async function handleLogin(e) {
             e.preventDefault();
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
             
-            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
             
             if (error) {
                 showMessage(error.message, 'error');
@@ -104,7 +168,8 @@
             const phone = document.getElementById('regPhone').value;
             const isWorker = document.getElementById('regType').value === 'worker';
             
-            const { data, error } = await supabase.auth.signUp({
+            // Step 1: Create auth account
+            const { data, error } = await supabaseClient.auth.signUp({
                 email,
                 password,
                 options: {
@@ -118,27 +183,51 @@
             
             if (error) {
                 showMessage(error.message, 'error');
-            } else {
-                const { error: profileError } = await supabase
-                    .from('profiles')
-                    .insert([{
-                        id: data.user.id,
-                        full_name: fullName,
-                        phone: phone,
-                        is_worker: isWorker
-                    }]);
+                return;
+            }
+            
+            const userId = data.user.id;
+            
+            // Step 2: Create profile
+            const { error: profileError } = await supabaseClient
+                .from('profiles')
+                .insert([{
+                    id: userId,
+                    full_name: fullName,
+                    phone: phone,
+                    is_worker: isWorker,
+                    location: 'Buea'
+                }]);
+            
+            if (profileError) {
+                showMessage('Account created but profile error: ' + profileError.message, 'warning');
+                return;
+            }
+            
+            // Step 3: If worker, create worker profile too
+            if (isWorker) {
+                const workerDetails = {
+                    id: userId,
+                    category: document.getElementById('wCategory').value,
+                    description: document.getElementById('wDescription').value,
+                    experience_years: parseInt(document.getElementById('wExperience').value) || 0,
+                    contact_phone: document.getElementById('wPhone').value || phone,
+                    whatsapp_number: document.getElementById('wWhatsapp').value || phone,
+                    availability: 'Available'
+                };
                 
-                if (profileError) {
-                    showMessage('Account created but profile error: ' + profileError.message, 'warning');
-                } else {
-                    showMessage('Account created! Please check your email to verify.', 'success');
-                    if (isWorker) {
-                        setTimeout(() => window.location.href = 'join.html', 1500);
-                    } else {
-                        setTimeout(() => window.location.href = 'index.html', 1500);
-                    }
+                const { error: workerError } = await supabaseClient
+                    .from('worker_details')
+                    .insert([workerDetails]);
+                
+                if (workerError) {
+                    showMessage('Account created but worker profile error: ' + workerError.message, 'warning');
+                    return;
                 }
             }
+            
+            showMessage('Account created successfully! Redirecting...', 'success');
+            setTimeout(() => window.location.href = 'index.html', 1500);
         }
         
         function showMessage(msg, type) {
