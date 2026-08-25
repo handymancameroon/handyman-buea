@@ -1,5 +1,5 @@
 // ============================================
-// Handy Man - Fixed App Script
+// Handy Man - Fixed App Script (All Pages)
 // ============================================
 
 const SUPABASE_URL = 'https://zuhkhpdrxwfjcqnolmpu.supabase.co';
@@ -30,6 +30,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         if (supabaseGlobal && typeof supabaseGlobal.createClient === 'function') {
             supabaseClient = supabaseGlobal.createClient(SUPABASE_URL, SUPABASE_KEY);
+            // Make it available globally so other pages can use it
+            window.supabase = supabaseClient;
         } else {
             console.log('Supabase library not loaded - using fallback mode');
             supabaseClient = null;
@@ -96,7 +98,6 @@ async function loadCategories() {
     const grid = document.getElementById('categoryGrid');
     if (!grid) return;
     
-    // If Supabase is not available, show fallback immediately
     if (!supabaseClient) {
         renderCategories(FALLBACK_CATEGORIES);
         return;
