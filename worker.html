@@ -13,6 +13,9 @@
             <nav class="nav" id="nav">
                 <a href="index.html">Home</a>
                 <a href="workers.html">Find Workers</a>
+                <a href="jobs.html">Find Jobs</a>
+                <a href="login.html" class="btn-secondary">Join as Worker</a>
+                <a href="post-job.html" class="btn-secondary">Post a Job</a>
                 <a href="login.html" class="btn-primary" id="authBtn">Login</a>
             </nav>
             <button class="menu-toggle" id="menuToggle">☰</button>
@@ -28,9 +31,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="app.js"></script>
     <script>
-        // Load profile immediately — don't wait for auth
         document.addEventListener('DOMContentLoaded', async () => {
-            // Give app.js a moment to init, then load profile
             setTimeout(async () => {
                 await loadWorkerProfile();
             }, 100);
@@ -52,7 +53,6 @@
             }
             
             try {
-                // Get worker details
                 const { data: worker, error: workerError } = await supabaseClient
                     .from('worker_details')
                     .select('*')
@@ -64,14 +64,12 @@
                     return;
                 }
                 
-                // Get profile info separately
                 const { data: profile } = await supabaseClient
                     .from('profiles')
                     .select('full_name, avatar_url, location, phone')
                     .eq('id', id)
                     .single();
                 
-                // Get reviews separately
                 const { data: reviews } = await supabaseClient
                     .from('reviews')
                     .select('*')
