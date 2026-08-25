@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Handy Man</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <a href="index.html" class="logo">🔧 Handy Man</a>
+        </div>
+    </header>
+
+    <main class="auth-page">
+        <div class="container">
+            <div class="auth-box">
+                <div class="auth-tabs">
+                    <button class="tab-btn active" onclick="showTab('login')">Login</button>
+                    <button class="tab-btn" onclick="showTab('register')">Register</button>
+                </div>
+                
+                <div id="loginTab" class="tab-content active">
+                    <h2>Welcome Back</h2>
+                    <form id="loginForm" onsubmit="handleLogin(event)">
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="loginEmail" required placeholder="your@email.com">
+                        </div>
+                        <div class="form-group">
+                            <label>Password</label>
+                            <input type="password" id="loginPassword" required placeholder="••••••••">
+                        </div>
+                        <button type="submit" class="btn-primary full">Login</button>
+                    </form>
+                </div>
+                
+                <div id="registerTab" class="tab-content">
+                    <h2>Create Account</h2>
+                    <form id="registerForm" onsubmit="handleRegister(event)">
+                        <div class="form-group">
+                            <label>Full Name</label>
+                            <input type="text" id="regName" required placeholder="John Doe">
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="regEmail" required placeholder="your@email.com">
+                        </div>
+                        <div class="form-group">
+                            <label>Phone Number</label>
+                            <input type="tel" id="regPhone" required placeholder="6XX XXX XXX">
+                        </div>
+                        <div class="form-group">
+                            <label>Password</label>
+                            <input type="password" id="regPassword" required placeholder="Min 6 characters" minlength="6">
+                        </div>
+                        <div class="form-group">
+                            <label>I am a:</label>
+                            <select id="regType">
+                                <option value="client">Looking for services (Client)</option>
+                                <option value="worker">Offering services (Worker)</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-primary full">Create Account</button>
+                    </form>
+                </div>
+                
+                <p id="authMessage" class="message"></p>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+    <script>
+        function showTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tab + 'Tab').classList.add('active');
+            event.target.classList.add('active');
+        }
+        
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            
+            if (error) {
+                showMessage(error.message, 'error');
+            } else {
+                showMessage('Login successful! Redirecting...', 'success');
+                setTimeout(() => window.location.href = 'index.html', 1000);
+            }
+        }
+        
+        async function handleRegister(e) {
+            e.preventDefault();
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            const fullName = document.getElementById('regName').value;
+            const phone = document.getElementById('regPhone').value;
+            const isWorker = document.getElementById('regType').value === 'worker';
+            
+            const { data, error } = await supabase.auth.signUp({
+                email,
+                password,
+                options: {
+                    data: {
+                        full_name: fullName,
+                        phone: phone,
+                        is_worker: isWorker
+                    }
+                }
+            });
+            
+            if (error) {
+                showMessage(error.message, 'error');
+            } else {
+                const { error: profileError } = await supabase
+                    .from('profiles')
+                    .insert([{
+                        id: data.user.id,
+                        full_name: fullName,
+                        phone: phone,
+                        is_worker: isWorker
+                    }]);
+                
+                if (profileError) {
+                    showMessage('Account created but profile error: ' + profileError.message, 'warning');
+                } else {
+                    showMessage('Account created! Please check your email to verify.', 'success');
+                    if (isWorker) {
+                        setTimeout(() => window.location.href = 'join.html', 1500);
+                    } else {
+                        setTimeout(() => window.location.href = 'index.html', 1500);
+                    }
+                }
+            }
+        }
+        
+        function showMessage(msg, type) {
+            const el = document.getElementById('authMessage');
+            el.textContent = msg;
+            el.className = 'message ' + type;
+        }
+    </script>
+</body>
+</html>
