@@ -6,11 +6,11 @@
     <title>Login - Handy Man</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        .worker-fields {
+        .worker-fields, .client-fields {
             display: none;
             animation: fadeIn 0.3s ease;
         }
-        .worker-fields.active {
+        .worker-fields.active, .client-fields.active {
             display: block;
         }
         @keyframes fadeIn {
@@ -79,30 +79,33 @@
                             <input type="password" id="regPassword" required placeholder="Min 6 characters" minlength="6">
                         </div>
                         <div class="form-group">
-                            <label>I am </label>
-                            <select id="regType" onchange="toggleWorkerFields()">
-                                <option value="client">Looking for services</option>
+                            <label>I am a: *</label>
+                            <select id="regType" onchange="toggleFields()">
+                                <option value="client">Looking for services (Client)</option>
                                 <option value="worker">Offering services (Worker)</option>
                             </select>
                         </div>
                         
+                        <!-- Service Category - shown for BOTH client and worker -->
+                        <div class="form-group">
+                            <label>Service Category *</label>
+                            <select id="serviceCategory" required>
+                                <option value="">Select category</option>
+                                <option value="Plumbing">Plumbing</option>
+                                <option value="Electrical">Electrical</option>
+                                <option value="Carpentry">Carpentry</option>
+                                <option value="Cleaning">Cleaning</option>
+                                <option value="Painting">Painting</option>
+                                <option value="Masonry">Masonry</option>
+                                <option value="Auto Mechanics">Auto Mechanics</option>
+                                <option value="Phone/Laptop Repair">Phone/Laptop Repair</option>
+                                <option value="Hairdressing">Hairdressing</option>
+                                <option value="Catering">Catering</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Worker-only fields -->
                         <div id="workerFields" class="worker-fields">
-                            <div class="form-group">
-                                <label>Service Category *</label>
-                                <select id="wCategory" required>
-                                    <option value="">Select your main skill</option>
-                                    <option value="Plumbing">Plumbing</option>
-                                    <option value="Electrical">Electrical</option>
-                                    <option value="Carpentry">Carpentry</option>
-                                    <option value="Cleaning">Cleaning</option>
-                                    <option value="Painting">Painting</option>
-                                    <option value="Masonry">Masonry</option>
-                                    <option value="Auto Mechanics">Auto Mechanics</option>
-                                    <option value="Phone/Laptop Repair">Phone/Laptop Repair</option>
-                                    <option value="Hairdressing">Hairdressing</option>
-                                    <option value="Catering">Catering</option>
-                                </select>
-                            </div>
                             <div class="form-group">
                                 <label>Description of Services *</label>
                                 <textarea id="wDescription" required rows="3" placeholder="Describe what you do, your skills, and experience..."></textarea>
@@ -118,6 +121,26 @@
                             </div>
                         </div>
                         
+                        <!-- Client-only fields -->
+                        <div id="clientFields" class="client-fields">
+                            <div class="form-group">
+                                <label>Job Title *</label>
+                                <input type="text" id="cJobTitle" required placeholder="e.g. Fix leaking kitchen pipe">
+                            </div>
+                            <div class="form-group">
+                                <label>Job Description *</label>
+                                <textarea id="cJobDesc" required rows="3" placeholder="Describe what you need done..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Location *</label>
+                                <input type="text" id="cLocation" required placeholder="e.g. Molyko, Buea" value="Buea">
+                            </div>
+                            <div class="form-group">
+                                <label>Budget (optional)</label>
+                                <input type="text" id="cBudget" placeholder="e.g. 10,000 FCFA or Negotiable">
+                            </div>
+                        </div>
+                        
                         <button type="submit" class="btn-primary full">Create Account</button>
                     </form>
                 </div>
@@ -130,9 +153,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="app.js"></script>
     <script>
-        // FIX: Initialize worker fields on page load so required attributes are correct
+        // Initialize fields on page load
         document.addEventListener('DOMContentLoaded', function() {
-            toggleWorkerFields();
+            toggleFields();
         });
         
         function showTab(tab) {
@@ -142,17 +165,29 @@
             event.target.classList.add('active');
         }
         
-        function toggleWorkerFields() {
+        function toggleFields() {
             const type = document.getElementById('regType').value;
-            const fields = document.getElementById('workerFields');
-            const workerInputs = fields.querySelectorAll('input, select, textarea');
+            const workerFields = document.getElementById('workerFields');
+            const clientFields = document.getElementById('clientFields');
             
             if (type === 'worker') {
-                fields.classList.add('active');
-                workerInputs.forEach(input => input.required = true);
+                workerFields.classList.add('active');
+                clientFields.classList.remove('active');
+                document.querySelectorAll('#workerFields input, #workerFields select, #workerFields textarea').forEach(el => {
+                    if (el.id !== 'wPhoto') el.required = true;
+                });
+                document.querySelectorAll('#clientFields input, #clientFields select, #clientFields textarea').forEach(el => {
+                    el.required = false;
+                });
             } else {
-                fields.classList.remove('active');
-                workerInputs.forEach(input => input.required = false);
+                workerFields.classList.remove('active');
+                clientFields.classList.add('active');
+                document.querySelectorAll('#workerFields input, #workerFields select, #workerFields textarea').forEach(el => {
+                    el.required = false;
+                });
+                document.querySelectorAll('#clientFields input, #clientFields select, #clientFields textarea').forEach(el => {
+                    el.required = true;
+                });
             }
         }
         
@@ -178,8 +213,10 @@
             const fullName = document.getElementById('regName').value;
             const phone = document.getElementById('regPhone').value;
             const isWorker = document.getElementById('regType').value === 'worker';
+            const category = document.getElementById('serviceCategory').value;
             const photoUrl = document.getElementById('wPhoto')?.value || null;
             
+            // Step 1: Create auth account
             const { data, error } = await supabaseClient.auth.signUp({
                 email,
                 password,
@@ -199,6 +236,7 @@
             
             const userId = data.user.id;
             
+            // Step 2: Create profile
             const { error: profileError } = await supabaseClient
                 .from('profiles')
                 .upsert([{
@@ -215,10 +253,11 @@
                 return;
             }
             
+            // Step 3: Create worker profile OR job post
             if (isWorker) {
                 const workerDetails = {
                     id: userId,
-                    category: document.getElementById('wCategory').value,
+                    category: category,
                     description: document.getElementById('wDescription').value,
                     experience_years: parseInt(document.getElementById('wExperience').value) || 0,
                     contact_phone: phone,
@@ -232,6 +271,26 @@
                 
                 if (workerError) {
                     showMessage('Account created but worker profile error: ' + workerError.message, 'warning');
+                    return;
+                }
+            } else {
+                // CLIENT: Auto-create job post
+                const jobData = {
+                    client_id: userId,
+                    title: document.getElementById('cJobTitle').value,
+                    description: document.getElementById('cJobDesc').value,
+                    category: category,
+                    location: document.getElementById('cLocation').value || 'Buea',
+                    budget: document.getElementById('cBudget').value || 'Not specified',
+                    status: 'Open'
+                };
+                
+                const { error: jobError } = await supabaseClient
+                    .from('job_posts')
+                    .insert([jobData]);
+                
+                if (jobError) {
+                    showMessage('Account created but job post error: ' + jobError.message, 'warning');
                     return;
                 }
             }
