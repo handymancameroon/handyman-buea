@@ -13,22 +13,46 @@
             <nav class="nav" id="nav">
                 <a href="index.html">Home</a>
                 <a href="workers.html">Find Workers</a>
-                <a href="join.html" class="btn-secondary">Join as Worker</a>
+                <a href="jobs.html">Find Jobs</a>
+                <a href="login.html" class="btn-secondary">Join as Worker</a>
+                <a href="post-job.html" class="btn-secondary">Post a Job</a>
                 <a href="login.html" class="btn-primary" id="authBtn">Login</a>
             </nav>
             <button class="menu-toggle" id="menuToggle">☰</button>
         </div>
     </header>
 
-    <section class="hero">
-        <div class="container">
-            <h1>Find Trusted Local Help in Buea</h1>
-            <p>Connect with skilled plumbers, electricians, cleaners, and more — fast and reliable.</p>
-            <div class="search-box">
-                <input type="text" id="searchInput" placeholder="What do you need? (e.g. plumber, electrician)">
-                <button onclick="searchWorkers()" class="btn-primary">Search</button>
+    <section class="hero-carousel" id="heroCarousel">
+        <div class="carousel-slide active" style="background-image: url('https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=1200&q=80')">
+            <div class="carousel-content">
+                <h1>Find Trusted Local Help in Buea</h1>
+                <p>Connect with skilled plumbers, electricians, cleaners, and more — fast and reliable.</p>
+                <a href="workers.html" class="btn-primary">Find a Worker</a>
+                <a href="post-job.html" class="btn-secondary">Post a Job</a>
             </div>
         </div>
+        <div class="carousel-slide" style="background-image: url('https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=1200&q=80')">
+            <div class="carousel-content">
+                <h1>Skilled Construction Workers</h1>
+                <p>Find masons, carpenters, and builders for your projects.</p>
+                <a href="workers.html?category=Masonry" class="btn-primary">Find Builders</a>
+            </div>
+        </div>
+        <div class="carousel-slide" style="background-image: url('https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=1200&q=80')">
+            <div class="carousel-content">
+                <h1>Professional Cleaning Services</h1>
+                <p>Get your home or office sparkling clean.</p>
+                <a href="workers.html?category=Cleaning" class="btn-primary">Find Cleaners</a>
+            </div>
+        </div>
+        <div class="carousel-slide" style="background-image: url('https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=1200&q=80')">
+            <div class="carousel-content">
+                <h1>Expert Electrical Repairs</h1>
+                <p>Safe and reliable electrical work for your property.</p>
+                <a href="workers.html?category=Electrical" class="btn-primary">Find Electricians</a>
+            </div>
+        </div>
+        <div class="carousel-dots" id="carouselDots"></div>
     </section>
 
     <section class="categories">
