@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Worker Profile - Handy Man</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <a href="index.html" class="logo">🔧 Handy Man</a>
+            <nav class="nav" id="nav">
+                <a href="index.html">Home</a>
+                <a href="workers.html">Find Workers</a>
+                <a href="login.html" class="btn-primary" id="authBtn">Login</a>
+            </nav>
+            <button class="menu-toggle" id="menuToggle">☰</button>
+        </div>
+    </header>
+
+    <main class="profile-page">
+        <div class="container" id="profileContainer">
+            <p class="loading">Loading profile...</p>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkAuth();
+            await loadWorkerProfile();
+        });
+        
+        async function loadWorkerProfile() {
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get('id');
+            const container = document.getElementById('profileContainer');
+            
+            if (!id) {
+                container.innerHTML = '<p class="error">Worker not found.</p>';
+                return;
+            }
+            
+            const { data: worker, error } = await supabase
+                .from('worker_details')
+                .select('*, profiles(full_name, avatar_url, location, phone), reviews(*, profiles(full_name))')
+                .eq('id', id)
+                .single();
+            
+            if (error || !worker) {
+                container.innerHTML = '<p class="error">Worker not found.</p>';
+                return;
+            }
+            
+            const p = worker.profiles;
+            const phoneNum = (worker.whatsapp_number || p.phone || '').replace(/\D/g, '');
+            const whatsappLink = phoneNum ? `https://wa.me/237${phoneNum}` : '#';
+            
+            container.innerHTML = `
+                <div class="profile-header">
+                    <img src="${p.avatar_url || 'https://via.placeholder.com/120'}" class="profile-avatar" alt="${p.full_name}">
+                    <div class="profile-info">
+                        <h1>${p.full_name}</h1>
+                        <span class="badge">${worker.verified ? '✓ Verified' : 'New'}</span>
+                        <p class="profile-category">${worker.category}</p>
+                        <p class="profile-location">📍 ${p.location || 'Buea'}</p>
+                        <div class="profile-rating">
+                            ${'⭐'.repeat(Math.round(worker.rating || 0))} 
+                            <span>${worker.rating || 0}/5 (${worker.review_count || 0} reviews)</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="profile-body">
+                    <div class="profile-section">
+                        <h3>About</h3>
+                        <p>${worker.description || 'No description yet.'}</p>
+                        <p><strong>Experience:</strong> ${worker.experience_years || 0} years</p>
+                        <p><strong>Availability:</strong> ${worker.availability || 'Available'}</p>
+                    </div>
+                    
+                    <div class="profile-section">
+                        <h3>Contact</h3>
+                        ${p.phone ? `<p>📞 ${p.phone}</p>` : ''}
+                        <a href="${whatsappLink}" target="_blank" class="btn-whatsapp">💬 WhatsApp</a>
+                        ${p.phone ? `<a href="tel:${p.phone}" class="btn-primary">📞 Call Now</a>` : ''}
+                    </div>
+                    
+                    <div class="profile-section">
+                        <h3>Reviews</h3>
+                        <div id="reviewsList">
+                            ${worker.reviews && worker.reviews.length > 0 
+                                ? worker.reviews.map(r => `
+                                    <div class="review">
+                                        <div class="review-header">
+                                            <strong>${r.profiles?.full_name || 'Anonymous'}</strong>
+                                            <span>${'⭐'.repeat(r.rating)}</span>
+                                        </div>
+                                        <p>${r.comment || ''}</p>
+                                    </div>
+                                `).join('') 
+                                : '<p>No reviews yet.</p>'}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
