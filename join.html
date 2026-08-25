@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Join as Worker - Handy Man</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <a href="index.html" class="logo">🔧 Handy Man</a>
+        </div>
+    </header>
+
+    <main class="auth-page">
+        <div class="container">
+            <div class="auth-box">
+                <h2>Join as a Service Provider</h2>
+                <p>Create your worker profile to start receiving job requests.</p>
+                
+                <form id="workerForm" onsubmit="handleWorkerJoin(event)">
+                    <div class="form-group">
+                        <label>Service Category *</label>
+                        <select id="wCategory" required>
+                            <option value="">Select your main skill</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Description of Services *</label>
+                        <textarea id="wDescription" required rows="4" placeholder="Describe what you do, your skills, and experience..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Years of Experience</label>
+                        <input type="number" id="wExperience" min="0" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Phone for Calls</label>
+                        <input type="tel" id="wPhone" placeholder="6XX XXX XXX">
+                    </div>
+                    <div class="form-group">
+                        <label>WhatsApp Number</label>
+                        <input type="tel" id="wWhatsapp" placeholder="6XX XXX XXX">
+                    </div>
+                    <button type="submit" class="btn-primary full">Create Profile</button>
+                </form>
+                
+                <p id="joinMessage" class="message"></p>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkAuth();
+            if (!currentUser) {
+                window.location.href = 'login.html';
+                return;
+            }
+            await loadCategoryOptions();
+        });
+        
+        async function loadCategoryOptions() {
+            const { data: categories } = await supabase.from('categories').select('name');
+            const select = document.getElementById('wCategory');
+            if (categories) {
+                categories.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.name;
+                    opt.textContent = c.name;
+                    select.appendChild(opt);
+                });
+            }
+        }
+        
+        async function handleWorkerJoin(e) {
+            e.preventDefault();
+            
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                showJoinMessage('Please login first.', 'error');
+                return;
+            }
+            
+            const details = {
+                id: user.id,
+                category: document.getElementById('wCategory').value,
+                description: document.getElementById('wDescription').value,
+                experience_years: parseInt(document.getElementById('wExperience').value) || 0,
+                contact_phone: document.getElementById('wPhone').value,
+                whatsapp_number: document.getElementById('wWhatsapp').value,
+                availability: 'Available'
+            };
+            
+            const { error } = await supabase.from('worker_details').insert([details]);
+            
+            if (error) {
+                showJoinMessage('Error: ' + error.message, 'error');
+            } else {
+                showJoinMessage('Profile created successfully! Redirecting...', 'success');
+                setTimeout(() => window.location.href = 'index.html', 1500);
+            }
+        }
+        
+        function showJoinMessage(msg, type) {
+            const el = document.getElementById('joinMessage');
+            el.textContent = msg;
+            el.className = 'message ' + type;
+        }
+    </script>
+</body>
+</html>
