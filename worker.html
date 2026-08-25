@@ -29,6 +29,13 @@
     <script src="app.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
+            // Wait up to 3 seconds for supabaseClient to be ready
+            let attempts = 0;
+            while (!supabaseClient && attempts < 30) {
+                await new Promise(r => setTimeout(r, 100));
+                attempts++;
+            }
+            
             await checkAuth();
             await loadWorkerProfile();
         });
@@ -44,7 +51,7 @@
             }
             
             if (!supabaseClient) {
-                container.innerHTML = '<p class="error">Cannot connect to database.</p>';
+                container.innerHTML = '<p class="error">Cannot connect to database. Please refresh.</p>';
                 return;
             }
             
