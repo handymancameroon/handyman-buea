@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find Jobs - Handy Man</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <a href="index.html" class="logo">🔧 Handy Man</a>
+            <nav class="nav" id="nav">
+                <a href="index.html">Home</a>
+                <a href="workers.html">Find Workers</a>
+                <a href="jobs.html">Find Jobs</a>
+                <a href="login.html" class="btn-secondary">Join as Worker</a>
+                <a href="post-job.html" class="btn-secondary">Post a Job</a>
+                <a href="login.html" class="btn-primary" id="authBtn">Login</a>
+            </nav>
+            <button class="menu-toggle" id="menuToggle">☰</button>
+        </div>
+    </header>
+
+    <main class="jobs-page">
+        <div class="container">
+            <h1>Find Jobs in Buea</h1>
+            <div class="jobs-filters">
+                <input type="text" id="searchQuery" placeholder="Search jobs...">
+                <select id="categoryFilter">
+                    <option value="">All Categories</option>
+                    <option value="Plumbing">Plumbing</option>
+                    <option value="Electrical">Electrical</option>
+                    <option value="Carpentry">Carpentry</option>
+                    <option value="Cleaning">Cleaning</option>
+                    <option value="Painting">Painting</option>
+                    <option value="Masonry">Masonry</option>
+                    <option value="Auto Mechanics">Auto Mechanics</option>
+                    <option value="Phone/Laptop Repair">Phone/Laptop Repair</option>
+                    <option value="Hairdressing">Hairdressing</option>
+                    <option value="Catering">Catering</option>
+                </select>
+                <button onclick="performSearch()" class="btn-primary">Search</button>
+            </div>
+            <div class="job-grid" id="jobsResults">
+                <p class="loading">Loading jobs...</p>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkAuth();
+            
+            const params = new URLSearchParams(window.location.search);
+            const cat = params.get('category');
+            if (cat) document.getElementById('categoryFilter').value = cat;
+            
+            performSearch();
+        });
+        
+        async function performSearch() {
+            const query = document.getElementById('searchQuery').value;
+            const category = document.getElementById('categoryFilter').value;
+            const container = document.getElementById('jobsResults');
+            
+            container.innerHTML = '<p class="loading">Searching...</p>';
+            
+            if (!supabaseClient) {
+                container.innerHTML = '<p class="empty">Cannot load jobs. Please refresh.</p>';
+                return;
+            }
+            
+            let dbQuery = supabaseClient
+                .from('job_posts')
+                .select('*, profiles(full_name)')
+                .eq('status', 'Open')
+                .order('created_at', { ascending: false });
+            
+            if (category) {
+                dbQuery = dbQuery.eq('category', category);
+            }
+            
+            const { data: jobs, error } = await dbQuery;
+            
+            if (error) {
+                container.innerHTML = '<p class="error">Error loading jobs.</p>';
+                return;
+            }
+            
+            let filtered = jobs || [];
+            if (query) {
+                const q = query.toLowerCase();
+                filtered = filtered.filter(j => 
+                    (j.title || '').toLowerCase().includes(q) ||
+                    (j.description || '').toLowerCase().includes(q) ||
+                    (j.category || '').toLowerCase().includes(q)
+                );
+            }
+            
+            if (filtered.length === 0) {
+                container.innerHTML = '<p class="empty">No jobs found. Be the first to <a href="post-job.html">post a job</a>!</p>';
+                return;
+            }
+            
+            renderJobs(filtered, container);
+        }
+        
+        function renderJobs(jobs, container) {
+            container.innerHTML = jobs.map(j => `
+                <div class="job-card" onclick="viewJob('${j.id}')">
+                    <span class="job-status">${j.status}</span>
+                    <h3>${j.title}</h3>
+                    <p class="job-category">${j.category || 'General'}</p>
+                    <p class="job-location">📍 ${j.location || 'Buea'}</p>
+                    <p class="job-budget">${j.budget || 'Budget not specified'}</p>
+                    <p style="color: var(--text-light); font-size: 0.875rem;">Posted by ${j.profiles?.full_name || 'Anonymous'}</p>
+                    <button class="btn-small" style="margin-top: 12px;">View Job</button>
+                </div>
+            `).join('');
+        }
+    </script>
+</body>
+</html>
