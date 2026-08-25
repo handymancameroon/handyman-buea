@@ -31,6 +31,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="app.js"></script>
     <script>
+        let currentJob = null;
+        let currentJobId = null;
+        
         document.addEventListener('DOMContentLoaded', async () => {
             setTimeout(async () => {
                 await loadJobDetail();
@@ -41,6 +44,7 @@
             const params = new URLSearchParams(window.location.search);
             const id = params.get('id');
             const container = document.getElementById('jobContainer');
+            currentJobId = id;
             
             if (!id) {
                 container.innerHTML = '<p class="error">Job not found.</p>';
@@ -64,16 +68,43 @@
                     return;
                 }
                 
+                currentJob = job;
                 const p = job.profiles || {};
                 const phoneNum = (p.phone || '').replace(/\D/g, '');
                 const whatsappLink = phoneNum ? `https://wa.me/237${phoneNum}` : '#';
                 const callLink = p.phone ? `tel:${p.phone}` : '#';
                 const postedDate = new Date(job.created_at).toLocaleDateString('en-GB');
                 
+                // Check if current user is the job owner
+                const { data: { user } } = await supabaseClient.auth.getUser();
+                const isOwner = user && user.id === job.client_id;
+                
+                // Status color
+                let statusColor = 'var(--success)';
+                if (job.status === 'Taken') statusColor = 'var(--warning)';
+                if (job.status === 'Completed') statusColor = 'var(--primary)';
+                
+                // Status action buttons
+                let statusButtons = '';
+                if (job.status === 'Open') {
+                    if (isOwner) {
+                        statusButtons = `<button onclick="updateStatus('Taken')" class="btn-primary">✅ Mark as Taken</button>`;
+                    } else {
+                        statusButtons = `<button onclick="updateStatus('Taken')" class="btn-primary">👋 I've Taken This Job</button>`;
+                    }
+                } else if (job.status === 'Taken') {
+                    if (isOwner) {
+                        statusButtons = `<button onclick="updateStatus('Completed')" class="btn-primary">✅ Mark as Completed</button>`;
+                    }
+                    statusButtons += ` <span style="color: var(--warning); font-weight: 600;">This job has been taken</span>`;
+                } else if (job.status === 'Completed') {
+                    statusButtons = `<span style="color: var(--success); font-weight: 600; font-size: 1.1rem;">✓ This job is completed</span>`;
+                }
+                
                 container.innerHTML = `
                     <div class="job-detail-header">
                         <div>
-                            <span class="badge">${job.status}</span>
+                            <span class="badge" style="background: ${statusColor};">${job.status}</span>
                             <h1>${job.title}</h1>
                             <p class="job-detail-category">${job.category || 'General'}</p>
                             <div class="job-meta">
@@ -95,10 +126,22 @@
                     </div>
                     
                     <div class="apply-section">
-                        <h3>Interested? Contact the Client</h3>
-                        <p>Reach out via WhatsApp or call to discuss the job details.</p>
-                        <a href="${whatsappLink}" target="_blank" class="btn-whatsapp">💬 WhatsApp</a>
-                        ${p.phone ? `<a href="${callLink}" class="btn-primary">📞 Call Now</a>` : ''}
+                        <h3>Status & Contact</h3>
+                        <div style="margin-bottom: 16px;">
+                            ${statusButtons}
+                        </div>
+                        ${job.status === 'Open' ? `
+                            <p>Reach out via WhatsApp or call to discuss the job details.</p>
+                            <a href="${whatsappLink}" target="_blank" class="btn-whatsapp">💬 WhatsApp</a>
+                            ${p.phone ? `<a href="${callLink}" class="btn-primary">📞 Call Now</a>` : ''}
+                        ` : ''}
+                        ${job.status === 'Taken' ? `
+                            <p>This job is currently in progress. The client will mark it as completed when done.</p>
+                            <a href="${whatsappLink}" target="_blank" class="btn-whatsapp">💬 WhatsApp Client</a>
+                        ` : ''}
+                        ${job.status === 'Completed' ? `
+                            <p>This job has been successfully completed.</p>
+                        ` : ''}
                     </div>
                 `;
                 
@@ -106,6 +149,39 @@
                 console.error('Job load error:', err);
                 container.innerHTML = '<p class="error">Error loading job. Please try again.</p>';
             }
+        }
+        
+        async function updateStatus(newStatus) {
+            if (!supabaseClient || !currentJobId) return;
+            
+            const { error } = await supabaseClient
+                .from('job_posts')
+                .update({ status: newStatus })
+                .eq('id', currentJobId);
+            
+            if (error) {
+                alert('Error updating status: ' + error.message);
+                return;
+            }
+            
+            // Create notification for the client
+            try {
+                const { data: { user } } = await supabaseClient.auth.getUser();
+                if (user && currentJob && user.id !== currentJob.client_id) {
+                    // Worker took the job - notify client
+                    await supabaseClient.from('notifications').insert([{
+                        user_id: currentJob.client_id,
+                        title: 'Job Update',
+                        message: `Your job "${currentJob.title}" has been marked as ${newStatus.toLowerCase()}.`,
+                        type: 'job_update'
+                    }]);
+                }
+            } catch (e) {
+                console.log('Notification error:', e);
+            }
+            
+            // Reload the page to show updated status
+            window.location.reload();
         }
     </script>
 </body>
