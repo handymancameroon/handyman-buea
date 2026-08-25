@@ -43,69 +43,95 @@
                 return;
             }
             
-            const { data: worker, error } = await supabase
-                .from('worker_details')
-                .select('*, profiles(full_name, avatar_url, location, phone), reviews(*, profiles(full_name))')
-                .eq('id', id)
-                .single();
-            
-            if (error || !worker) {
-                container.innerHTML = '<p class="error">Worker not found.</p>';
+            if (!supabaseClient) {
+                container.innerHTML = '<p class="error">Cannot connect to database.</p>';
                 return;
             }
             
-            const p = worker.profiles;
-            const phoneNum = (worker.whatsapp_number || p.phone || '').replace(/\D/g, '');
-            const whatsappLink = phoneNum ? `https://wa.me/237${phoneNum}` : '#';
-            
-            container.innerHTML = `
-                <div class="profile-header">
-                    <img src="${p.avatar_url || 'https://via.placeholder.com/120'}" class="profile-avatar" alt="${p.full_name}">
-                    <div class="profile-info">
-                        <h1>${p.full_name}</h1>
-                        <span class="badge">${worker.verified ? '✓ Verified' : 'New'}</span>
-                        <p class="profile-category">${worker.category}</p>
-                        <p class="profile-location">📍 ${p.location || 'Buea'}</p>
-                        <div class="profile-rating">
-                            ${'⭐'.repeat(Math.round(worker.rating || 0))} 
-                            <span>${worker.rating || 0}/5 (${worker.review_count || 0} reviews)</span>
-                        </div>
-                    </div>
-                </div>
+            try {
+                // Get worker details
+                const { data: worker, error: workerError } = await supabaseClient
+                    .from('worker_details')
+                    .select('*')
+                    .eq('id', id)
+                    .single();
                 
-                <div class="profile-body">
-                    <div class="profile-section">
-                        <h3>About</h3>
-                        <p>${worker.description || 'No description yet.'}</p>
-                        <p><strong>Experience:</strong> ${worker.experience_years || 0} years</p>
-                        <p><strong>Availability:</strong> ${worker.availability || 'Available'}</p>
-                    </div>
-                    
-                    <div class="profile-section">
-                        <h3>Contact</h3>
-                        ${p.phone ? `<p>📞 ${p.phone}</p>` : ''}
-                        <a href="${whatsappLink}" target="_blank" class="btn-whatsapp">💬 WhatsApp</a>
-                        ${p.phone ? `<a href="tel:${p.phone}" class="btn-primary">📞 Call Now</a>` : ''}
-                    </div>
-                    
-                    <div class="profile-section">
-                        <h3>Reviews</h3>
-                        <div id="reviewsList">
-                            ${worker.reviews && worker.reviews.length > 0 
-                                ? worker.reviews.map(r => `
-                                    <div class="review">
-                                        <div class="review-header">
-                                            <strong>${r.profiles?.full_name || 'Anonymous'}</strong>
-                                            <span>${'⭐'.repeat(r.rating)}</span>
-                                        </div>
-                                        <p>${r.comment || ''}</p>
-                                    </div>
-                                `).join('') 
-                                : '<p>No reviews yet.</p>'}
+                if (workerError || !worker) {
+                    container.innerHTML = '<p class="error">Worker not found.</p>';
+                    return;
+                }
+                
+                // Get profile info separately
+                const { data: profile, error: profileError } = await supabaseClient
+                    .from('profiles')
+                    .select('full_name, avatar_url, location, phone')
+                    .eq('id', id)
+                    .single();
+                
+                // Get reviews separately
+                const { data: reviews, error: reviewsError } = await supabaseClient
+                    .from('reviews')
+                    .select('*')
+                    .eq('worker_id', id);
+                
+                const p = profile || {};
+                const phoneNum = (worker.whatsapp_number || p.phone || '').replace(/\D/g, '');
+                const whatsappLink = phoneNum ? `https://wa.me/237${phoneNum}` : '#';
+                const callLink = p.phone ? `tel:${p.phone}` : '#';
+                
+                container.innerHTML = `
+                    <div class="profile-header">
+                        <img src="${p.avatar_url || 'https://via.placeholder.com/120'}" class="profile-avatar" alt="${p.full_name || 'Worker'}">
+                        <div class="profile-info">
+                            <h1>${p.full_name || 'Unknown'}</h1>
+                            <span class="badge">${worker.verified ? '✓ Verified' : 'New'}</span>
+                            <p class="profile-category">${worker.category || 'General'}</p>
+                            <p class="profile-location">📍 ${p.location || 'Buea'}</p>
+                            <div class="profile-rating">
+                                ${'⭐'.repeat(Math.round(worker.rating || 0))} 
+                                <span>${worker.rating || 0}/5 (${worker.review_count || 0} reviews)</span>
+                            </div>
                         </div>
                     </div>
-                </div>
-            `;
+                    
+                    <div class="profile-body">
+                        <div class="profile-section">
+                            <h3>About</h3>
+                            <p>${worker.description || 'No description yet.'}</p>
+                            <p><strong>Experience:</strong> ${worker.experience_years || 0} years</p>
+                            <p><strong>Availability:</strong> ${worker.availability || 'Available'}</p>
+                        </div>
+                        
+                        <div class="profile-section">
+                            <h3>Contact</h3>
+                            ${p.phone ? `<p>📞 ${p.phone}</p>` : ''}
+                            <a href="${whatsappLink}" target="_blank" class="btn-whatsapp">💬 WhatsApp</a>
+                            ${p.phone ? `<a href="${callLink}" class="btn-primary">📞 Call Now</a>` : ''}
+                        </div>
+                        
+                        <div class="profile-section">
+                            <h3>Reviews</h3>
+                            <div id="reviewsList">
+                                ${reviews && reviews.length > 0 
+                                    ? reviews.map(r => `
+                                        <div class="review">
+                                            <div class="review-header">
+                                                <strong>Client</strong>
+                                                <span>${'⭐'.repeat(r.rating || 0)}</span>
+                                            </div>
+                                            <p>${r.comment || ''}</p>
+                                        </div>
+                                    `).join('') 
+                                    : '<p>No reviews yet.</p>'}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+            } catch (err) {
+                console.error('Profile load error:', err);
+                container.innerHTML = '<p class="error">Error loading profile. Please try again.</p>';
+            }
         }
     </script>
 </body>
