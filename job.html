@@ -6,6 +6,26 @@
     <title>Job Details - Handy Man</title>
     <link rel="stylesheet" href="style.css">
     <style>
+        .status-banner {
+            padding: 16px 24px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 24px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .status-open {
+            background: #dcfce7;
+            color: #166534;
+            border: 2px solid #86efac;
+        }
+        .status-closed {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 2px solid #fca5a5;
+        }
         .client-contact-box {
             background: #f0fdf4;
             border: 1px solid #bbf7d0;
@@ -28,25 +48,43 @@
         }
         .contact-buttons { display: flex; gap: 12px; flex-wrap: wrap; }
         .contact-buttons a { flex: 1; min-width: 140px; text-align: center; }
-        
-        .status-badge-large {
-            display: inline-block;
-            padding: 8px 20px;
-            border-radius: 24px;
+        .tips-box {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 16px;
+        }
+        .tips-box h4 {
+            color: #1e40af;
+            margin-bottom: 12px;
+            font-size: 1rem;
+        }
+        .tips-box ul {
+            margin: 0;
+            padding-left: 20px;
+            color: var(--text-light);
             font-size: 0.9rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            line-height: 1.7;
         }
-        .status-available-large {
-            background: #dcfce7;
-            color: #166534;
-            border: 2px solid #86efac;
+        .tips-box li {
+            margin-bottom: 6px;
         }
-        .status-closed-large {
-            background: #fee2e2;
-            color: #991b1b;
-            border: 2px solid #fca5a5;
+        .owner-notice {
+            background: #fffbeb;
+            border: 1px solid #fcd34d;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+        }
+        .owner-notice p {
+            margin: 0;
+            color: #92400e;
+            font-size: 0.95rem;
+        }
+        .owner-notice a {
+            color: var(--primary);
+            font-weight: 600;
         }
     </style>
 </head>
@@ -124,25 +162,42 @@
                 const isOwner = user && user.id === job.client_id;
                 
                 // Determine status display
-                const isAvailable = job.status === 'Open';
-                const statusBadgeClass = isAvailable ? 'status-available-large' : 'status-closed-large';
-                const statusText = isAvailable ? '✅ Available' : '🔒 Closed';
+                const isOpen = job.status === 'Open';
+                const statusBannerClass = isOpen ? 'status-open' : 'status-closed';
+                const statusText = isOpen ? '🟢 OPEN — Workers Can Apply' : '🔴 CLOSED — No Longer Accepting Applications';
                 
-                // Owner notice
-                let ownerNotice = '';
-                if (isOwner && isAvailable) {
-                    ownerNotice = `
-                        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px;">
-                            <p style="color: #1e40af; font-size: 0.9rem; margin: 0;">
-                                💡 <strong>This is your job.</strong> You can close it from your <a href="dashboard.html" style="color: var(--primary); font-weight: 600;">Dashboard</a>.
-                            </p>
-                        </div>
-                    `;
+                // Owner notice + tips for job posters
+                let ownerSection = '';
+                if (isOwner) {
+                    if (isOpen) {
+                        ownerSection = `
+                            <div class="owner-notice">
+                                <p>💡 <strong>This is your job posting.</strong> You can close it anytime from your <a href="dashboard.html">Dashboard</a> when you have found a worker.</p>
+                            </div>
+                            <div class="tips-box">
+                                <h4>💡 Tips for Job Posters</h4>
+                                <ul>
+                                    <li>Respond to worker inquiries quickly — good workers get booked fast.</li>
+                                    <li>Be clear about your budget and timeline to avoid misunderstandings.</li>
+                                    <li>Ask for references or past work photos before hiring.</li>
+                                    <li>Agree on payment terms (Mobile Money, cash) before work starts.</li>
+                                    <li>Close the job on your Dashboard once you have found someone.</li>
+                                    <li>Leave a review after the job is completed to help other clients.</li>
+                                </ul>
+                            </div>
+                        `;
+                    } else {
+                        ownerSection = `
+                            <div class="owner-notice">
+                                <p>✅ <strong>This job is closed.</strong> You marked it as taken. If you need more help, <a href="post-job.html">post a new job</a>.</p>
+                            </div>
+                        `;
+                    }
                 }
                 
-                // Contact section
+                // Contact section for workers
                 let contactSection = '';
-                if (isAvailable) {
+                if (isOpen) {
                     if (p.phone) {
                         contactSection = `
                             <div class="client-contact-box">
@@ -158,26 +213,45 @@
                         contactSection = `<p style="color: var(--text-light);">This client has not provided a phone number.</p>`;
                     }
                 } else {
-                    contactSection = `<p style="color: var(--text-light);">This job is closed and no longer accepting applications.</p>`;
+                    contactSection = `<p style="color: var(--text-light); font-weight: 600;">This job is closed and no longer accepting applications.</p>`;
+                }
+                
+                // Tips for workers (only show on open jobs)
+                let workerTips = '';
+                if (isOpen && !isOwner) {
+                    workerTips = `
+                        <div class="tips-box">
+                            <h4>💡 Tips for Workers</h4>
+                            <ul>
+                                <li>Always confirm details, pricing, and timing before starting.</li>
+                                <li>Ask for the client's exact location in Buea.</li>
+                                <li>Discuss payment method (cash, Mobile Money) upfront.</li>
+                                <li>Be professional and arrive on time.</li>
+                                <li>Bring your own tools unless the client says otherwise.</li>
+                                <li>Ask the client to close the job once work is done.</li>
+                            </ul>
+                        </div>
+                    `;
                 }
                 
                 container.innerHTML = `
+                    <div class="status-banner ${statusBannerClass}">
+                        ${statusText}
+                    </div>
+                    
                     <div class="job-detail-header">
                         <div style="width: 100%;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
-                                <span class="status-badge-large ${statusBadgeClass}">${statusText}</span>
-                                <span style="color: var(--text-light); font-size: 0.875rem;">📅 Posted ${postedDate}</span>
-                            </div>
                             <h1>${job.title}</h1>
                             <p class="job-detail-category">${job.category || 'General'}</p>
                             <div class="job-meta">
                                 <span>📍 ${job.location || 'Buea'}</span>
                                 <span>💰 ${job.budget || 'Not specified'}</span>
+                                <span>📅 Posted ${postedDate}</span>
                             </div>
                         </div>
                     </div>
                     
-                    ${ownerNotice}
+                    ${ownerSection}
                     
                     <div class="job-description">
                         <h3>Job Description</h3>
@@ -196,15 +270,7 @@
                         ${contactSection}
                     </div>
                     
-                    <div class="apply-section">
-                        <h3>💡 Tips for Workers</h3>
-                        <p style="color: var(--text-light); font-size: 0.9rem; line-height: 1.6;">
-                            • Always confirm details, pricing, and timing before starting.<br>
-                            • Ask for the client's exact location in Buea.<br>
-                            • Discuss payment method (cash, Mobile Money) upfront.<br>
-                            • Be professional and arrive on time.
-                        </p>
-                    </div>
+                    ${workerTips}
                 `;
                 
             } catch (err) {
