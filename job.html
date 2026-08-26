@@ -6,63 +6,27 @@
     <title>Job Details - Handy Man</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        .status-banner {
-            padding: 16px 24px;
-            border-radius: 12px;
-            text-align: center;
-            margin-bottom: 24px;
-            font-weight: 700;
-            font-size: 1.1rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
+        .status-banner { padding: 16px 24px; border-radius: 12px; text-align: center; margin-bottom: 24px; font-weight: 700; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; }
         .status-open { background: #dcfce7; color: #166534; border: 2px solid #86efac; }
         .status-closed { background: #fee2e2; color: #991b1b; border: 2px solid #fca5a5; }
-        .client-contact-box {
-            background: #f0fdf4;
-            border: 1px solid #bbf7d0;
-            border-radius: 12px;
-            padding: 20px;
-            margin-top: 16px;
-        }
+        .client-contact-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 20px; margin-top: 16px; }
         .client-contact-box p { margin-bottom: 12px; font-size: 1rem; }
-        .client-contact-box .phone-display {
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: var(--primary);
-            margin-bottom: 16px;
-        }
-        .client-avatar-small {
-            width: 60px; height: 60px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-bottom: 12px;
-        }
+        .client-contact-box .phone-display { font-size: 1.25rem; font-weight: 700; color: var(--primary); margin-bottom: 16px; }
+        .client-avatar-small { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; margin-bottom: 12px; }
         .contact-buttons { display: flex; gap: 12px; flex-wrap: wrap; }
         .contact-buttons a { flex: 1; min-width: 140px; text-align: center; }
-        .tips-box {
-            background: #eff6ff;
-            border: 1px solid #bfdbfe;
-            border-radius: 12px;
-            padding: 20px;
-            margin-top: 16px;
-        }
+        .tips-box { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 20px; margin-top: 16px; }
         .tips-box h4 { color: #1e40af; margin-bottom: 12px; font-size: 1rem; }
         .tips-box ul { margin: 0; padding-left: 20px; color: var(--text-light); font-size: 0.9rem; line-height: 1.7; }
         .tips-box li { margin-bottom: 6px; }
-        .owner-notice {
-            background: #fffbeb;
-            border: 1px solid #fcd34d;
-            border-radius: 12px;
-            padding: 16px 20px;
-            margin-bottom: 20px;
-        }
+        .owner-notice { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; }
         .owner-notice p { margin: 0; color: #92400e; font-size: 0.95rem; }
         .owner-notice a { color: var(--primary); font-weight: 600; }
-        .report-section {
-            margin-top: 20px;
-            text-align: center;
-        }
+        .portfolio-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 12px; }
+        .portfolio-img { width: 100%; height: 180px; object-fit: cover; border-radius: 10px; cursor: pointer; transition: transform 0.2s; border: 2px solid var(--border); }
+        .portfolio-img:hover { transform: scale(1.03); border-color: var(--primary); }
+        .img-error { background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: var(--text-light); font-size: 0.85rem; }
+        .report-section { margin-top: 20px; text-align: center; }
     </style>
 </head>
 <body>
@@ -94,9 +58,7 @@
         let currentJobId = null;
         
         document.addEventListener('DOMContentLoaded', async () => {
-            setTimeout(async () => {
-                await loadJobDetail();
-            }, 100);
+            setTimeout(async () => { await loadJobDetail(); }, 100);
         });
         
         async function loadJobDetail() {
@@ -105,27 +67,14 @@
             const container = document.getElementById('jobContainer');
             currentJobId = id;
             
-            if (!id) {
-                container.innerHTML = '<p class="error">Job not found.</p>';
-                return;
-            }
-            
-            if (!supabaseClient) {
-                container.innerHTML = '<p class="error">Cannot connect to database.</p>';
-                return;
-            }
+            if (!id) { container.innerHTML = '<p class="error">Job not found.</p>'; return; }
+            if (!supabaseClient) { container.innerHTML = '<p class="error">Cannot connect to database.</p>'; return; }
             
             try {
                 const { data: job, error } = await supabaseClient
-                    .from('job_posts')
-                    .select('*, profiles(full_name, phone, avatar_url, location, portfolio)')
-                    .eq('id', id)
-                    .single();
+                    .from('job_posts').select('*, profiles(full_name, phone, avatar_url, location, portfolio)').eq('id', id).single();
                 
-                if (error || !job) {
-                    container.innerHTML = '<p class="error">Job not found.</p>';
-                    return;
-                }
+                if (error || !job) { container.innerHTML = '<p class="error">Job not found.</p>'; return; }
                 
                 currentJob = job;
                 const p = job.profiles || {};
@@ -141,16 +90,23 @@
                 const statusBannerClass = isOpen ? 'status-open' : 'status-closed';
                 const statusText = isOpen ? '🟢 OPEN — Workers Can Apply' : '🔴 CLOSED — No Longer Accepting Applications';
                 
-                // Client portfolio
-                const portfolio = p.portfolio || [];
+                // Avatar with fallback
+                const avatarUrl = p.avatar_url || 'https://via.placeholder.com/60?text=No+Photo';
+                
+                // Portfolio from profiles
+                let portfolio = [];
+                if (p.portfolio && Array.isArray(p.portfolio) && p.portfolio.length > 0) {
+                    portfolio = p.portfolio;
+                }
+                
                 let portfolioHtml = '';
-                if (portfolio && portfolio.length > 0) {
+                if (portfolio.length > 0) {
                     portfolioHtml = `
                         <div class="profile-section">
-                            <h3>📸 Reference Photos</h3>
+                            <h3>📸 Reference Photos (${portfolio.length})</h3>
                             <div class="portfolio-grid">
-                                ${portfolio.map(url => `
-                                    <img src="${url}" class="portfolio-img" onclick="window.open('${url}', '_blank')" alt="Reference">
+                                ${portfolio.map((url, i) => `
+                                    <img src="${url}" class="portfolio-img" onerror="this.onerror=null;this.src='https://via.placeholder.com/180?text=Image+Not+Found';this.classList.add('img-error');" onclick="window.open('${url}', '_blank')" alt="Reference ${i+1}">
                                 `).join('')}
                             </div>
                         </div>
@@ -222,9 +178,7 @@
                 }
                 
                 container.innerHTML = `
-                    <div class="status-banner ${statusBannerClass}">
-                        ${statusText}
-                    </div>
+                    <div class="status-banner ${statusBannerClass}">${statusText}</div>
                     
                     <div class="job-detail-header">
                         <div style="width: 100%;">
@@ -250,7 +204,7 @@
                     <div class="client-info">
                         <h3>Client Information</h3>
                         <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
-                            <img src="${p.avatar_url || 'https://via.placeholder.com/60'}" class="client-avatar-small" alt="${p.full_name || 'Client'}">
+                            <img src="${avatarUrl}" class="client-avatar-small" onerror="this.onerror=null;this.src='https://via.placeholder.com/60?text=No+Photo'" alt="${p.full_name || 'Client'}">
                             <div>
                                 <p style="font-size: 1.1rem; font-weight: 600; margin-bottom: 4px;">${p.full_name || 'Anonymous'}</p>
                                 <p style="color: var(--text-light); font-size: 0.9rem;">📍 ${p.location || 'Buea'}</p>
@@ -271,8 +225,8 @@
             }
         }
         
-        function reportJob(jobId, jobTitle) {
-            window.location.href = `report.html?type=job&id=${jobId}&name=${encodeURIComponent(jobTitle)}`;
+        function reportJob(jobId, title) {
+            window.location.href = `report.html?type=job&id=${jobId}&name=${encodeURIComponent(title)}`;
         }
     </script>
 </body>
