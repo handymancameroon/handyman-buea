@@ -259,7 +259,6 @@
                 }
 
                 // Upload portfolio (max 2)
-                showJoinMessage('Uploading portfolio...', 'success');
                 const portfolioFiles = document.getElementById('wPortfolio').files;
                 const portfolioUrls = await uploadMultipleFiles(portfolioFiles, 'portfolio', userId, 2);
 
