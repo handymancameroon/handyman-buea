@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Handy Man</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <a href="index.html" class="logo">🔧 Handy Man</a>
+            <nav class="nav" id="nav">
+                <a href="index.html">Home</a>
+                <a href="workers.html">Find Workers</a>
+                <a href="jobs.html">Find Jobs</a>
+                <a href="dashboard.html" class="btn-secondary">My Jobs</a>
+                <a href="login.html" class="btn-primary" id="authBtn">Login</a>
+            </nav>
+            <button class="menu-toggle" id="menuToggle">☰</button>
+        </div>
+    </header>
+
+    <main class="admin-page">
+        <div class="container">
+            <h1>⚙️ Admin Control Panel</h1>
+            <p style="color: var(--text-light); margin-bottom: 32px;">Welcome back, Administrator. Here is your site overview.</p>
+            
+            <!-- Stats Cards -->
+            <div class="admin-stats-grid" id="statsGrid">
+                <div class="stat-card visitors">
+                    <h3 id="statVisitors">...</h3>
+                    <p>Total Visitors</p>
+                </div>
+                <div class="stat-card workers">
+                    <h3 id="statWorkers">...</h3>
+                    <p>Workers Registered</p>
+                </div>
+                <div class="stat-card clients">
+                    <h3 id="statClients">...</h3>
+                    <p>Employers / Clients</p>
+                </div>
+                <div class="stat-card jobs">
+                    <h3 id="statJobs">...</h3>
+                    <p>Total Job Posts</p>
+                </div>
+                <div class="stat-card disputes">
+                    <h3 id="statDisputes">...</h3>
+                    <p>Open Disputes</p>
+                </div>
+            </div>
+            
+            <!-- Disputes Section -->
+            <div class="admin-section">
+                <h2>🚩 Disputes & Reports</h2>
+                <div id="disputesList">
+                    <p class="loading">Loading disputes...</p>
+                </div>
+            </div>
+            
+            <!-- Recent Activity -->
+            <div class="admin-section">
+                <h2>📋 Recent Jobs</h2>
+                <div id="recentJobsList">
+                    <p class="loading">Loading recent jobs...</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkAuth();
+            
+            // Redirect non-admin users
+            if (!isAdmin()) {
+                document.body.innerHTML = `
+                    <div style="text-align: center; padding: 100px 20px;">
+                        <h1>⛔ Access Denied</h1>
+                        <p style="color: var(--text-light); margin: 16px 0;">You do not have permission to view this page.</p>
+                        <a href="index.html" class="btn-primary">Go Home</a>
+                    </div>
+                `;
+                return;
+            }
+            
+            loadStats();
+            loadDisputes();
+            loadRecentJobs();
+        });
+        
+        // ============================================
+        // LOAD STATISTICS
+        // ============================================
+        async function loadStats() {
+            if (!supabaseClient) return;
+            
+            try {
+                // Visitors
+                const { data: stats } = await supabaseClient
+                    .from('site_stats').select('total_visitors').eq('id', 1).single();
+                document.getElementById('statVisitors').textContent = stats?.total_visitors || 0;
+                
+                // Workers
+                const { count: workerCount } = await supabaseClient
+                    .from('profiles').select('*', { count: 'exact', head: true }).eq('is_worker', true);
+                document.getElementById('statWorkers').textContent = workerCount || 0;
+                
+                // Clients (non-workers)
+                const { count: clientCount } = await supabaseClient
+                    .from('profiles').select('*', { count: 'exact', head: true }).eq('is_worker', false);
+                document.getElementById('statClients').textContent = clientCount || 0;
+                
+                // Jobs
+                const { count: jobCount } = await supabaseClient
+                    .from('job_posts').select('*', { count: 'exact', head: true });
+                document.getElementById('statJobs').textContent = jobCount || 0;
+                
+                // Open disputes
+                const { count: disputeCount } = await supabaseClient
+                    .from('disputes').select('*', { count: 'exact', head: true }).eq('status', 'Open');
+                document.getElementById('statDisputes').textContent = disputeCount || 0;
+                
+            } catch (err) {
+                console.error('Stats error:', err);
+            }
+        }
+        
+        // ============================================
+        // LOAD DISPUTES
+        // ============================================
+        async function loadDisputes() {
+            const container = document.getElementById('disputesList');
+            
+            if (!supabaseClient) {
+                container.innerHTML = '<p class="empty-dashboard">Cannot connect to database.</p>';
+                return;
+            }
+            
+            try {
+                const { data: disputes, error } = await supabaseClient
+                    .from('disputes')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (error) {
+                    container.innerHTML = '<p class="empty-dashboard">Error loading disputes.</p>';
+                    return;
+                }
+                
+                if (!disputes || disputes.length === 0) {
+                    container.innerHTML = '<p class="empty-dashboard">No disputes reported yet. Good news!</p>';
+                    return;
+                }
+                
+                container.innerHTML = disputes.map(d => {
+                    const date = new Date(d.created_at).toLocaleDateString('en-GB');
+                    const statusClass = d.status === 'Open' ? 'status-open-dispute' : 'status-resolved';
+                    
+                    return `
+                        <div class="dispute-row">
+                            <div class="dispute-info">
+                                <h4>${d.reason}</h4>
+                                <p><strong>Target:</strong> ${d.target_name} (${d.target_type})</p>
+                                <p><strong>Reporter:</strong> ${d.reporter_name || 'Anonymous'}</p>
+                                <p><strong>Details:</strong> ${d.details || 'No details'}</p>
+                                <p style="font-size: 0.8rem; color: var(--text-light);">📅 ${date}</p>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-end;">
+                                <span class="dispute-status ${statusClass}">${d.status}</span>
+                                ${d.status === 'Open' ? `<button class="btn-small" onclick="resolveDispute('${d.id}')">✓ Resolve</button>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+            } catch (err) {
+                console.error('Disputes error:', err);
+                container.innerHTML = '<p class="empty-dashboard">Error loading disputes.</p>';
+            }
+        }
+        
+        async function resolveDispute(disputeId) {
+            if (!confirm('Mark this dispute as resolved?')) return;
+            
+            const { error } = await supabaseClient
+                .from('disputes')
+                .update({ status: 'Resolved' })
+                .eq('id', disputeId);
+            
+            if (error) {
+                alert('Error: ' + error.message);
+                return;
+            }
+            
+            alert('Dispute marked as resolved.');
+            loadDisputes();
+            loadStats();
+        }
+        
+        // ============================================
+        // LOAD RECENT JOBS
+        // ============================================
+        async function loadRecentJobs() {
+            const container = document.getElementById('recentJobsList');
+            
+            if (!supabaseClient) {
+                container.innerHTML = '<p class="empty-dashboard">Cannot connect.</p>';
+                return;
+            }
+            
+            try {
+                const { data: jobs, error } = await supabaseClient
+                    .from('job_posts')
+                    .select('*, profiles(full_name)')
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+                
+                if (error || !jobs || jobs.length === 0) {
+                    container.innerHTML = '<p class="empty-dashboard">No jobs yet.</p>';
+                    return;
+                }
+                
+                container.innerHTML = jobs.map(job => {
+                    const date = new Date(job.created_at).toLocaleDateString('en-GB');
+                    const statusClass = job.status === 'Open' ? 'status-available' : 'status-closed';
+                    
+                    return `
+                        <div class="job-row">
+                            <div class="job-row-info">
+                                <h4>${job.title}</h4>
+                                <p>${job.category} • ${job.location} • by ${job.profiles?.full_name || 'Unknown'}</p>
+                                <span class="status-badge ${statusClass}">${job.status}</span>
+                            </div>
+                            <span style="color: var(--text-light); font-size: 0.8rem;">${date}</span>
+                        </div>
+                    `;
+                }).join('');
+                
+            } catch (err) {
+                container.innerHTML = '<p class="empty-dashboard">Error loading jobs.</p>';
+            }
+        }
+    </script>
+</body>
+</html>
