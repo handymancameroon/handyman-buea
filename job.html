@@ -5,6 +5,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Job Details - Handy Man</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .client-contact-box {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 16px;
+        }
+        .client-contact-box p {
+            margin-bottom: 12px;
+            font-size: 1rem;
+        }
+        .client-contact-box .phone-display {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 16px;
+        }
+        .client-avatar-small {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 12px;
+        }
+        .contact-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .contact-buttons a {
+            flex: 1;
+            min-width: 140px;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
     <header class="header">
@@ -59,7 +95,7 @@
             try {
                 const { data: job, error } = await supabaseClient
                     .from('job_posts')
-                    .select('*, profiles(full_name, phone)')
+                    .select('*, profiles(full_name, phone, avatar_url, location)')
                     .eq('id', id)
                     .single();
                 
@@ -112,14 +148,25 @@
                     }
                 }
                 
-                // Contact section - only show if job is Open
+                // Contact section - show client contact info prominently
                 let contactSection = '';
                 if (job.status === 'Open') {
-                    contactSection = `
-                        <p>Reach out via WhatsApp or call to discuss the job details.</p>
-                        <a href="${whatsappLink}" target="_blank" class="btn-whatsapp">💬 WhatsApp</a>
-                        ${p.phone ? `<a href="${callLink}" class="btn-primary">📞 Call Now</a>` : ''}
-                    `;
+                    if (p.phone) {
+                        contactSection = `
+                            <div class="client-contact-box">
+                                <p style="color: var(--text-light); margin-bottom: 8px;">📞 Contact the client about this job:</p>
+                                <p class="phone-display">📱 ${p.phone}</p>
+                                <div class="contact-buttons">
+                                    <a href="${whatsappLink}" target="_blank" class="btn-whatsapp">💬 WhatsApp</a>
+                                    <a href="${callLink}" class="btn-primary">📞 Call Now</a>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        contactSection = `
+                            <p style="color: var(--text-light);">This client has not provided a phone number. You may still contact them through the platform.</p>
+                        `;
+                    }
                 } else {
                     contactSection = `
                         <p>This job is no longer accepting new applications.</p>
@@ -146,14 +193,23 @@
                     </div>
                     
                     <div class="client-info">
-                        <h3>Client</h3>
-                        <p><strong>${p.full_name || 'Anonymous'}</strong></p>
+                        <h3>Client Information</h3>
+                        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
+                            <img src="${p.avatar_url || 'https://via.placeholder.com/60'}" class="client-avatar-small" alt="${p.full_name || 'Client'}">
+                            <div>
+                                <p style="font-size: 1.1rem; font-weight: 600; margin-bottom: 4px;">${p.full_name || 'Anonymous'}</p>
+                                <p style="color: var(--text-light); font-size: 0.9rem;">📍 ${p.location || 'Buea'}</p>
+                            </div>
+                        </div>
+                        ${contactSection}
                     </div>
                     
                     <div class="apply-section">
-                        <h3>Status & Contact</h3>
+                        <h3>Job Status</h3>
                         ${statusSection}
-                        ${contactSection}
+                        <p style="color: var(--text-light); font-size: 0.875rem; margin-top: 12px;">
+                            💡 <strong>Tip:</strong> Always discuss details, pricing, and timing before starting any work.
+                        </p>
                     </div>
                 `;
                 
