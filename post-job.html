@@ -103,14 +103,42 @@
                 status: 'Open'
             };
             
-            const { error } = await supabaseClient.from('job_posts').insert([jobData]);
+            // Insert job and get the created job back
+            const { data: insertedJob, error } = await supabaseClient
+                .from('job_posts')
+                .insert([jobData])
+                .select()
+                .single();
             
             if (error) {
                 showJobMessage('Error: ' + error.message, 'error');
-            } else {
-                showJobMessage('Job posted successfully! Redirecting...', 'success');
-                setTimeout(() => window.location.href = 'jobs.html', 1500);
+                return;
             }
+            
+            // Create notifications for workers in this category
+            try {
+                const { data: workersInCategory } = await supabaseClient
+                    .from('worker_details')
+                    .select('id')
+                    .eq('category', jobData.category)
+                    .eq('availability', 'Available');
+                
+                if (workersInCategory && workersInCategory.length > 0) {
+                    const notifications = workersInCategory.map(w => ({
+                        user_id: w.id,
+                        type: 'new_job',
+                        message: `New ${jobData.category} job posted: "${jobData.title}" in ${jobData.location}`,
+                        job_id: insertedJob.id
+                    }));
+                    
+                    await supabaseClient.from('notifications').insert(notifications);
+                }
+            } catch (notifyErr) {
+                console.log('Notification creation skipped:', notifyErr.message);
+            }
+            
+            showJobMessage('Job posted successfully! Workers have been notified. Redirecting...', 'success');
+            setTimeout(() => window.location.href = 'jobs.html', 1500);
         }
         
         function showJobMessage(msg, type) {
