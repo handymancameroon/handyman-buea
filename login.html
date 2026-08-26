@@ -70,9 +70,9 @@
                             <input type="email" id="regEmail" required placeholder="your@email.com">
                         </div>
                         <div class="form-group">
-                            <label>Phone Number (WhatsApp recommended) *</label>
+                            <label>Phone Number (WhatsApp) *</label>
                             <input type="tel" id="regPhone" required placeholder="6XX XXX XXX">
-                            <small style="color: var(--text-light);">This number will be used for calls and WhatsApp contact.</small>
+                            <small style="color: var(--text-light);">Used for calls and WhatsApp contact.</small>
                         </div>
                         <div class="form-group">
                             <label>Password *</label>
@@ -86,10 +86,20 @@
                             </select>
                         </div>
                         
-                        <!-- Service Category - shown for BOTH client and worker -->
+                        <!-- Profile Photo Upload -->
+                        <div class="form-group">
+                            <label>Profile Photo</label>
+                            <div class="file-upload-group">
+                                <input type="file" id="regPhotoFile" accept="image/jpeg,image/jpg,image/png">
+                                <small style="color: var(--text-light); display: block; margin-top: 4px;">Or paste image URL below:</small>
+                                <input type="url" id="regPhotoUrl" placeholder="https://example.com/photo.jpg" style="margin-top: 6px;">
+                            </div>
+                        </div>
+                        
+                        <!-- Service Category -->
                         <div class="form-group">
                             <label>Service Category *</label>
-                            <select id="serviceCategory" required>
+                            <select id="serviceCategory" required onchange="handleCategoryChange()">
                                 <option value="">Select category</option>
                                 <option value="Plumbing">Plumbing</option>
                                 <option value="Electrical">Electrical</option>
@@ -101,23 +111,31 @@
                                 <option value="Phone/Laptop Repair">Phone/Laptop Repair</option>
                                 <option value="Hairdressing">Hairdressing</option>
                                 <option value="Catering">Catering</option>
+                                <option value="Others">Others (specify below)</option>
                             </select>
+                            <div id="customCategoryField" class="custom-category-field">
+                                <input type="text" id="customCategory" placeholder="Enter your skill or category">
+                            </div>
                         </div>
                         
                         <!-- Worker-only fields -->
                         <div id="workerFields" class="worker-fields">
                             <div class="form-group">
                                 <label>Description of Services *</label>
-                                <textarea id="wDescription" required rows="3" placeholder="Describe what you do, your skills, and experience..."></textarea>
+                                <textarea id="wDescription" required rows="3" placeholder="Describe what you do..."></textarea>
                             </div>
                             <div class="form-group">
                                 <label>Years of Experience</label>
                                 <input type="number" id="wExperience" min="0" value="0">
                             </div>
+                            <!-- Worker Portfolio -->
                             <div class="form-group">
-                                <label>Profile Photo URL (optional)</label>
-                                <input type="url" id="wPhoto" placeholder="https://example.com/your-photo.jpg">
-                                <small style="color: var(--text-light);">Paste a link to your photo. Leave blank for default.</small>
+                                <label>Portfolio Photos (optional, max 2)</label>
+                                <div class="file-upload-group">
+                                    <input type="file" id="wPortfolio" accept="image/jpeg,image/jpg,image/png,application/pdf" multiple>
+                                    <small style="color: var(--text-light);">Show photos of your past work (JPEG, PNG, or PDF)</small>
+                                </div>
+                                <div class="file-preview" id="wPortfolioPreview"></div>
                             </div>
                         </div>
                         
@@ -125,11 +143,11 @@
                         <div id="clientFields" class="client-fields">
                             <div class="form-group">
                                 <label>Job Title *</label>
-                                <input type="text" id="cJobTitle" required placeholder="e.g. Fix leaking kitchen pipe">
+                                <input type="text" id="cJobTitle" required placeholder="e.g. Fix leaking pipe">
                             </div>
                             <div class="form-group">
                                 <label>Job Description *</label>
-                                <textarea id="cJobDesc" required rows="3" placeholder="Describe what you need done..."></textarea>
+                                <textarea id="cJobDesc" required rows="3" placeholder="Describe what you need..."></textarea>
                             </div>
                             <div class="form-group">
                                 <label>Location *</label>
@@ -137,7 +155,16 @@
                             </div>
                             <div class="form-group">
                                 <label>Budget (optional)</label>
-                                <input type="text" id="cBudget" placeholder="e.g. 10,000 FCFA or Negotiable">
+                                <input type="text" id="cBudget" placeholder="e.g. 10,000 FCFA">
+                            </div>
+                            <!-- Client Portfolio -->
+                            <div class="form-group">
+                                <label>Reference Photos (optional, max 2)</label>
+                                <div class="file-upload-group">
+                                    <input type="file" id="cPortfolio" accept="image/jpeg,image/jpg,image/png,application/pdf" multiple>
+                                    <small style="color: var(--text-light);">Upload photos of what needs fixing (JPEG, PNG, or PDF)</small>
+                                </div>
+                                <div class="file-preview" id="cPortfolioPreview"></div>
                             </div>
                         </div>
                         
@@ -153,9 +180,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="app.js"></script>
     <script>
-        // Initialize fields on page load
         document.addEventListener('DOMContentLoaded', function() {
             toggleFields();
+            setupFilePreviews();
         });
         
         function showTab(tab) {
@@ -174,7 +201,7 @@
                 workerFields.classList.add('active');
                 clientFields.classList.remove('active');
                 document.querySelectorAll('#workerFields input, #workerFields select, #workerFields textarea').forEach(el => {
-                    if (el.id !== 'wPhoto') el.required = true;
+                    if (el.id !== 'wPortfolio') el.required = true;
                 });
                 document.querySelectorAll('#clientFields input, #clientFields select, #clientFields textarea').forEach(el => {
                     el.required = false;
@@ -186,9 +213,50 @@
                     el.required = false;
                 });
                 document.querySelectorAll('#clientFields input, #clientFields select, #clientFields textarea').forEach(el => {
-                    el.required = true;
+                    if (el.id !== 'cPortfolio' && el.id !== 'cBudget') el.required = true;
                 });
             }
+        }
+        
+        function handleCategoryChange() {
+            const cat = document.getElementById('serviceCategory').value;
+            const field = document.getElementById('customCategoryField');
+            const input = document.getElementById('customCategory');
+            if (cat === 'Others') {
+                field.classList.add('active');
+                input.required = true;
+            } else {
+                field.classList.remove('active');
+                input.required = false;
+            }
+        }
+        
+        function setupFilePreviews() {
+            ['wPortfolio', 'cPortfolio'].forEach(id => {
+                const input = document.getElementById(id);
+                if (!input) return;
+                input.addEventListener('change', function() {
+                    const previewId = id + 'Preview';
+                    const preview = document.getElementById(previewId);
+                    if (!preview) return;
+                    preview.innerHTML = '';
+                    Array.from(this.files).slice(0, 2).forEach(file => {
+                        if (file.type.startsWith('image/')) {
+                            const img = document.createElement('img');
+                            img.className = 'file-preview-item';
+                            img.src = URL.createObjectURL(file);
+                            preview.appendChild(img);
+                        } else {
+                            const div = document.createElement('div');
+                            div.className = 'file-preview-item';
+                            div.style.display = 'flex'; div.style.alignItems = 'center'; div.style.justifyContent = 'center';
+                            div.style.background = '#f8fafc'; div.style.fontSize = '0.75rem';
+                            div.textContent = '📄 ' + file.name;
+                            preview.appendChild(div);
+                        }
+                    });
+                });
+            });
         }
         
         async function handleLogin(e) {
@@ -213,20 +281,25 @@
             const fullName = document.getElementById('regName').value;
             const phone = document.getElementById('regPhone').value;
             const isWorker = document.getElementById('regType').value === 'worker';
-            const category = document.getElementById('serviceCategory').value;
-            const photoUrl = document.getElementById('wPhoto')?.value || null;
+            
+            // Get category (handle "Others")
+            let category = document.getElementById('serviceCategory').value;
+            if (category === 'Others') {
+                category = document.getElementById('customCategory').value;
+            }
+            
+            // Upload profile photo if selected
+            let photoUrl = document.getElementById('regPhotoUrl').value || null;
+            const photoFile = document.getElementById('regPhotoFile').files[0];
+            if (photoFile && supabaseClient) {
+                const uploaded = await uploadFile(photoFile, 'profiles');
+                if (uploaded) photoUrl = uploaded;
+            }
             
             // Step 1: Create auth account
             const { data, error } = await supabaseClient.auth.signUp({
-                email,
-                password,
-                options: {
-                    data: {
-                        full_name: fullName,
-                        phone: phone,
-                        is_worker: isWorker
-                    }
-                }
+                email, password,
+                options: { data: { full_name: fullName, phone: phone, is_worker: isWorker } }
             });
             
             if (error) {
@@ -237,16 +310,18 @@
             const userId = data.user.id;
             
             // Step 2: Create profile
+            const profileData = {
+                id: userId,
+                full_name: fullName,
+                phone: phone,
+                is_worker: isWorker,
+                location: 'Buea',
+                avatar_url: photoUrl,
+                portfolio: []
+            };
+            
             const { error: profileError } = await supabaseClient
-                .from('profiles')
-                .upsert([{
-                    id: userId,
-                    full_name: fullName,
-                    phone: phone,
-                    is_worker: isWorker,
-                    location: 'Buea',
-                    avatar_url: photoUrl
-                }], { onConflict: 'id' });
+                .from('profiles').upsert([profileData], { onConflict: 'id' });
             
             if (profileError) {
                 showMessage('Account created but profile error: ' + profileError.message, 'warning');
@@ -255,6 +330,14 @@
             
             // Step 3: Create worker profile OR job post
             if (isWorker) {
+                // Upload portfolio
+                const portfolioFiles = document.getElementById('wPortfolio').files;
+                const portfolioUrls = [];
+                for (let f of Array.from(portfolioFiles).slice(0, 2)) {
+                    const url = await uploadFile(f, 'portfolio');
+                    if (url) portfolioUrls.push(url);
+                }
+                
                 const workerDetails = {
                     id: userId,
                     category: category,
@@ -262,19 +345,34 @@
                     experience_years: parseInt(document.getElementById('wExperience').value) || 0,
                     contact_phone: phone,
                     whatsapp_number: phone,
-                    availability: 'Available'
+                    availability: 'Available',
+                    portfolio: portfolioUrls
                 };
                 
                 const { error: workerError } = await supabaseClient
-                    .from('worker_details')
-                    .insert([workerDetails]);
+                    .from('worker_details').insert([workerDetails]);
                 
                 if (workerError) {
                     showMessage('Account created but worker profile error: ' + workerError.message, 'warning');
                     return;
                 }
             } else {
-                // CLIENT: Auto-create job post
+                // Upload client portfolio
+                const portfolioFiles = document.getElementById('cPortfolio').files;
+                const portfolioUrls = [];
+                for (let f of Array.from(portfolioFiles).slice(0, 2)) {
+                    const url = await uploadFile(f, 'portfolio');
+                    if (url) portfolioUrls.push(url);
+                }
+                
+                // Update profile with portfolio
+                if (portfolioUrls.length > 0) {
+                    await supabaseClient.from('profiles')
+                        .update({ portfolio: portfolioUrls })
+                        .eq('id', userId);
+                }
+                
+                // Auto-create job post
                 const jobData = {
                     client_id: userId,
                     title: document.getElementById('cJobTitle').value,
@@ -286,8 +384,7 @@
                 };
                 
                 const { error: jobError } = await supabaseClient
-                    .from('job_posts')
-                    .insert([jobData]);
+                    .from('job_posts').insert([jobData]);
                 
                 if (jobError) {
                     showMessage('Account created but job post error: ' + jobError.message, 'warning');
