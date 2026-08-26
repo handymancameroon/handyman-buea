@@ -1,5 +1,5 @@
 // ============================================
-// Handy Man - App Script (Admin Fix)
+// Handy Man - App Script (Admin Fallback Fix)
 // ============================================
 
 const SUPABASE_URL = 'https://zuhkhpdrxwfjcqnolmpu.supabase.co';
@@ -9,6 +9,8 @@ var supabaseClient = null;
 var currentUser = null;
 var currentProfile = null;
 var notificationPollingInterval = null;
+
+const ADMIN_EMAIL = 'Internationalpimerchant@gmail.com';
 
 const FALLBACK_CATEGORIES = [
     {name: 'Plumbing', icon: '🔧', description: 'Leak repairs, installations, toilets, water heaters'},
@@ -242,7 +244,7 @@ async function trackVisitor() {
 }
 
 // ============================================
-// AUTH (FIXED - fetches is_admin from database)
+// AUTH (FIXED - checks BOTH database AND email)
 // ============================================
 async function checkAuth() {
     try {
@@ -251,7 +253,6 @@ async function checkAuth() {
         currentUser = user;
         
         if (user) {
-            // Fetch profile including is_admin
             const { data: profile } = await supabaseClient
                 .from('profiles')
                 .select('is_admin')
@@ -270,7 +271,10 @@ async function checkAuth() {
 }
 
 function isAdmin() {
-    return currentProfile && currentProfile.is_admin === true;
+    // Check database flag first, then fall back to email
+    if (currentProfile && currentProfile.is_admin === true) return true;
+    if (currentUser && currentUser.email === ADMIN_EMAIL) return true;
+    return false;
 }
 
 function updateAuthUI() {
@@ -295,9 +299,10 @@ function updateAuthUI() {
         if (dashLink) dashLink.style.display = 'inline-block';
         if (bell) bell.style.display = 'inline-flex';
         
-        // Show admin link if admin
+        // Show admin link if admin (database OR email fallback)
         if (adminLink && isAdmin()) {
             adminLink.style.display = 'inline-block';
+            console.log('Admin detected:', currentUser.email);
         }
     } else {
         authBtn.textContent = 'Login';
