@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Dashboard - Handy Man</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <a href="index.html" class="logo">🔧 Handy Man</a>
+            <nav class="nav" id="nav">
+                <a href="index.html">Home</a>
+                <a href="workers.html">Find Workers</a>
+                <a href="jobs.html">Find Jobs</a>
+                <a href="login.html" class="btn-secondary">Join as Worker</a>
+                <a href="post-job.html" class="btn-secondary">Post a Job</a>
+                <a href="login.html" class="btn-primary" id="authBtn">Login</a>
+            </nav>
+            <button class="menu-toggle" id="menuToggle">☰</button>
+        </div>
+    </header>
+
+    <main class="dashboard-page">
+        <div class="container">
+            <h1>My Dashboard</h1>
+            
+            <div class="dashboard-grid">
+                <!-- My Posted Jobs -->
+                <div class="dashboard-section">
+                    <h2>📋 My Posted Jobs</h2>
+                    <div id="myJobsList">
+                        <p class="loading">Loading your jobs...</p>
+                    </div>
+                </div>
+                
+                <!-- My Worker Profile -->
+                <div class="dashboard-section">
+                    <h2>🔧 My Worker Profile</h2>
+                    <div id="myWorkerProfile">
+                        <p class="loading">Loading profile...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkAuth();
+            
+            if (!currentUser) {
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            loadMyJobs();
+            loadMyWorkerProfile();
+        });
+        
+        // ============================================
+        // MY POSTED JOBS
+        // ============================================
+        async function loadMyJobs() {
+            const container = document.getElementById('myJobsList');
+            
+            if (!supabaseClient) {
+                container.innerHTML = '<p class="empty-dashboard">Cannot connect to database.</p>';
+                return;
+            }
+            
+            try {
+                const { data: jobs, error } = await supabaseClient
+                    .from('job_posts')
+                    .select('*')
+                    .eq('client_id', currentUser.id)
+                    .order('created_at', { ascending: false });
+                
+                if (error) {
+                    container.innerHTML = '<p class="empty-dashboard">Error loading jobs.</p>';
+                    return;
+                }
+                
+                if (!jobs || jobs.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-dashboard">
+                            <p>You haven't posted any jobs yet.</p>
+                            <a href="post-job.html" class="btn-primary" style="margin-top: 12px; display: inline-block;">Post Your First Job</a>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                container.innerHTML = jobs.map(job => {
+                    const isOpen = job.status === 'Open';
+                    const statusClass = isOpen ? 'status-available' : 'status-closed';
+                    const statusText = isOpen ? 'Open' : 'Closed';
+                    const postedDate = new Date(job.created_at).toLocaleDateString('en-GB');
+                    
+                    return `
+                        <div class="job-row">
+                            <div class="job-row-info">
+                                <h4>${job.title}</h4>
+                                <p>${job.category} • ${job.location} • ${postedDate}</p>
+                                <span class="status-badge ${statusClass}">${statusText}</span>
+                            </div>
+                            ${isOpen ? `<button class="btn-close-job" onclick="closeJob('${job.id}')">Close Job</button>` : ''}
+                        </div>
+                    `;
+                }).join('');
+                
+            } catch (err) {
+                console.error('Load jobs error:', err);
+                container.innerHTML = '<p class="empty-dashboard">Error loading your jobs.</p>';
+            }
+        }
+        
+        async function closeJob(jobId) {
+            if (!confirm('Are you sure you want to close this job? Workers will no longer be able to contact you about it.')) {
+                return;
+            }
+            
+            if (!supabaseClient) return;
+            
+            const { error } = await supabaseClient
+                .from('job_posts')
+                .update({ status: 'Taken' })
+                .eq('id', jobId)
+                .eq('client_id', currentUser.id);
+            
+            if (error) {
+                alert('Error closing job: ' + error.message);
+                return;
+            }
+            
+            alert('Job closed successfully!');
+            loadMyJobs();
+        }
+        
+        // ============================================
+        // MY WORKER PROFILE
+        // ============================================
+        async function loadMyWorkerProfile() {
+            const container = document.getElementById('myWorkerProfile');
+            
+            if (!supabaseClient) {
+                container.innerHTML = '<p class="empty-dashboard">Cannot connect to database.</p>';
+                return;
+            }
+            
+            try {
+                const { data: worker, error } = await supabaseClient
+                    .from('worker_details')
+                    .select('*, profiles(full_name, avatar_url, location, phone)')
+                    .eq('id', currentUser.id)
+                    .single();
+                
+                if (error || !worker) {
+                    container.innerHTML = `
+                        <div class="empty-dashboard">
+                            <p>You don't have a worker profile yet.</p>
+                            <a href="join.html" class="btn-primary" style="margin-top: 12px; display: inline-block;">Create Worker Profile</a>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                const p = worker.profiles || {};
+                
+                container.innerHTML = `
+                    <div style="text-align: center; margin-bottom: 16px;">
+                        <img src="${p.avatar_url || 'https://via.placeholder.com/80'}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 12px;">
+                        <h3 style="margin-bottom: 4px;">${p.full_name || 'Your Name'}</h3>
+                        <p style="color: var(--primary); font-weight: 600;">${worker.category}</p>
+                    </div>
+                    <div style="margin-bottom: 16px;">
+                        <p style="margin-bottom: 8px;"><strong>📍 Location:</strong> ${p.location || 'Buea'}</p>
+                        <p style="margin-bottom: 8px;"><strong>📞 Phone:</strong> ${p.phone || 'Not set'}</p>
+                        <p style="margin-bottom: 8px;"><strong>⭐ Rating:</strong> ${worker.rating || 0}/5 (${worker.review_count || 0} reviews)</p>
+                        <p style="margin-bottom: 8px;"><strong>🛠️ Experience:</strong> ${worker.experience_years || 0} years</p>
+                        <p style="margin-bottom: 8px;"><strong>✅ Status:</strong> ${worker.availability || 'Available'}</p>
+                    </div>
+                    <p style="color: var(--text-light); font-size: 0.9rem; line-height: 1.5;">${worker.description || 'No description yet.'}</p>
+                `;
+                
+            } catch (err) {
+                console.error('Worker profile error:', err);
+                container.innerHTML = '<p class="empty-dashboard">Error loading profile.</p>';
+            }
+        }
+    </script>
+</body>
+</html>
