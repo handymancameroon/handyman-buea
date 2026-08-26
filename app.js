@@ -1,6 +1,5 @@
 // ============================================
-// Handy Man - App Script (Full Upgrade)
-// Portfolio | Others | Admin | Notifications | Share
+// Handy Man - App Script (Admin Fix)
 // ============================================
 
 const SUPABASE_URL = 'https://zuhkhpdrxwfjcqnolmpu.supabase.co';
@@ -8,6 +7,7 @@ const SUPABASE_KEY = 'sb_publishable_foPRwQRlPGlWBKYqeBHg4A_WcajeKKI';
 
 var supabaseClient = null;
 var currentUser = null;
+var currentProfile = null;
 var notificationPollingInterval = null;
 
 const FALLBACK_CATEGORIES = [
@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         injectNavExtras();
         injectShareButton();
         trackVisitor();
-        checkAuth().catch(() => {});
+        await checkAuth();
         
         if (document.getElementById('categoryGrid')) {
             await loadCategories();
@@ -91,14 +91,13 @@ async function uploadFile(file, folder) {
 }
 
 // ============================================
-// NAV EXTRAS: Dashboard + Notification Bell + Admin
+// NAV EXTRAS
 // ============================================
 function injectNavExtras() {
     const nav = document.getElementById('nav');
     if (!nav) return;
     if (nav.querySelector('.nav-bell')) return;
     
-    // Dashboard link
     const dashLink = document.createElement('a');
     dashLink.href = 'dashboard.html';
     dashLink.className = 'btn-secondary';
@@ -107,7 +106,6 @@ function injectNavExtras() {
     dashLink.style.display = 'none';
     nav.insertBefore(dashLink, nav.querySelector('#authBtn'));
     
-    // Admin link (hidden by default)
     const adminLink = document.createElement('a');
     adminLink.href = 'admin.html';
     adminLink.className = 'btn-secondary';
@@ -116,7 +114,6 @@ function injectNavExtras() {
     adminLink.style.display = 'none';
     nav.insertBefore(adminLink, nav.querySelector('#authBtn'));
     
-    // Notification bell
     const bellContainer = document.createElement('div');
     bellContainer.className = 'nav-bell';
     bellContainer.id = 'navBell';
@@ -128,7 +125,6 @@ function injectNavExtras() {
     };
     nav.insertBefore(bellContainer, nav.querySelector('#authBtn'));
     
-    // Notification dropdown
     const dropdown = document.createElement('div');
     dropdown.className = 'notification-dropdown';
     dropdown.id = 'notificationDropdown';
@@ -150,7 +146,7 @@ function injectNavExtras() {
 }
 
 // ============================================
-// SHARE BUTTON (Floating)
+// SHARE BUTTON
 // ============================================
 function injectShareButton() {
     if (document.getElementById('shareFab')) return;
@@ -163,7 +159,6 @@ function injectShareButton() {
     fab.onclick = openShareModal;
     document.body.appendChild(fab);
     
-    // Share modal
     const modal = document.createElement('div');
     modal.id = 'shareModal';
     modal.className = 'share-modal';
@@ -186,7 +181,6 @@ function injectShareButton() {
     `;
     document.body.appendChild(modal);
     
-    // Close on backdrop click
     modal.addEventListener('click', (e) => {
         if (e.target === modal) closeShareModal();
     });
@@ -216,7 +210,6 @@ function copyShareText() {
     navigator.clipboard.writeText(text).then(() => {
         alert('Message copied! Paste it anywhere.');
     }).catch(() => {
-        // Fallback
         const ta = document.createElement('textarea');
         ta.value = text;
         document.body.appendChild(ta);
@@ -232,45 +225,52 @@ function copyShareText() {
 // ============================================
 async function trackVisitor() {
     if (!supabaseClient) return;
-    // Only count once per session
     if (sessionStorage.getItem('visitorTracked')) return;
     
     try {
-        const { data } = await supabaseClient.rpc('increment_visitors');
+        const { data: stats } = await supabaseClient.from('site_stats').select('total_visitors').eq('id', 1).single();
+        if (stats) {
+            await supabaseClient.from('site_stats').update({ 
+                total_visitors: stats.total_visitors + 1,
+                last_updated: new Date().toISOString()
+            }).eq('id', 1);
+        }
         sessionStorage.setItem('visitorTracked', 'true');
     } catch (e) {
-        // If RPC doesn't exist, try direct update
-        try {
-            const { data: stats } = await supabaseClient.from('site_stats').select('total_visitors').eq('id', 1).single();
-            if (stats) {
-                await supabaseClient.from('site_stats').update({ 
-                    total_visitors: stats.total_visitors + 1,
-                    last_updated: new Date().toISOString()
-                }).eq('id', 1);
-            }
-            sessionStorage.setItem('visitorTracked', 'true');
-        } catch (err) {
-            console.log('Visitor tracking skipped');
-        }
+        console.log('Visitor tracking skipped');
     }
 }
 
 // ============================================
-// AUTH
+// AUTH (FIXED - fetches is_admin from database)
 // ============================================
 async function checkAuth() {
     try {
         if (!supabaseClient) return;
         const { data: { user } } = await supabaseClient.auth.getUser();
         currentUser = user;
-        updateAuthUI();
+        
         if (user) {
+            // Fetch profile including is_admin
+            const { data: profile } = await supabaseClient
+                .from('profiles')
+                .select('is_admin')
+                .eq('id', user.id)
+                .single();
+            currentProfile = profile;
+            
             loadNotifications();
             startNotificationPolling();
         }
+        
+        updateAuthUI();
     } catch (e) {
         console.log('Auth check failed:', e.message);
     }
+}
+
+function isAdmin() {
+    return currentProfile && currentProfile.is_admin === true;
 }
 
 function updateAuthUI() {
@@ -307,10 +307,6 @@ function updateAuthUI() {
         if (bell) bell.style.display = 'none';
         if (adminLink) adminLink.style.display = 'none';
     }
-}
-
-function isAdmin() {
-    return currentUser && currentUser.email === 'Internationalpimerchant@gmail.com';
 }
 
 // ============================================
