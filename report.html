@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report Issue - Handy Man</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <a href="index.html" class="logo">🔧 Handy Man</a>
+            <nav class="nav" id="nav">
+                <a href="index.html">Home</a>
+                <a href="workers.html">Find Workers</a>
+                <a href="jobs.html">Find Jobs</a>
+                <a href="login.html" class="btn-secondary">Join as Worker</a>
+                <a href="post-job.html" class="btn-secondary">Post a Job</a>
+                <a href="login.html" class="btn-primary" id="authBtn">Login</a>
+            </nav>
+            <button class="menu-toggle" id="menuToggle">☰</button>
+        </div>
+    </header>
+
+    <main class="report-page">
+        <div class="container">
+            <div class="report-box">
+                <h2>🚩 Report an Issue</h2>
+                <p>Help us keep Handy Man Buea safe and trustworthy.</p>
+                
+                <div class="target-info" id="targetInfo">
+                    <h4 id="targetName">Loading...</h4>
+                    <p id="targetType">Loading...</p>
+                </div>
+                
+                <form id="reportForm" onsubmit="handleReport(event)">
+                    <div class="form-group">
+                        <label>Reason *</label>
+                        <select id="reportReason" required>
+                            <option value="">Select a reason</option>
+                            <option value="Fake profile">Fake profile or identity</option>
+                            <option value="Inappropriate behavior">Inappropriate behavior</option>
+                            <option value="Scam or fraud">Scam or fraud</option>
+                            <option value="Job not as described">Job not as described</option>
+                            <option value="Payment issue">Payment issue</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Details *</label>
+                        <textarea id="reportDetails" required rows="4" placeholder="Please describe the issue in detail..."></textarea>
+                    </div>
+                    <button type="submit" class="btn-primary full">Submit Report</button>
+                </form>
+                
+                <p id="reportMessage" class="message"></p>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+    <script>
+        let reportTarget = { type: '', id: '', name: '' };
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkAuth();
+            
+            const params = new URLSearchParams(window.location.search);
+            reportTarget.type = params.get('type') || 'worker';
+            reportTarget.id = params.get('id') || '';
+            reportTarget.name = decodeURIComponent(params.get('name') || 'Unknown');
+            
+            document.getElementById('targetName').textContent = reportTarget.name;
+            document.getElementById('targetType').textContent = reportTarget.type === 'worker' 
+                ? 'Reporting a worker profile' 
+                : 'Reporting a job posting';
+        });
+        
+        async function handleReport(e) {
+            e.preventDefault();
+            
+            const reason = document.getElementById('reportReason').value;
+            const details = document.getElementById('reportDetails').value;
+            
+            let reporterName = 'Anonymous';
+            let reporterId = null;
+            
+            if (currentUser) {
+                reporterId = currentUser.id;
+                reporterName = currentUser.user_metadata?.full_name || currentUser.email || 'User';
+            }
+            
+            const reportData = {
+                reporter_id: reporterId,
+                reporter_name: reporterName,
+                target_type: reportTarget.type,
+                target_id: reportTarget.id,
+                target_name: reportTarget.name,
+                reason: reason,
+                details: details,
+                status: 'Open'
+            };
+            
+            const { error } = await supabaseClient.from('disputes').insert([reportData]);
+            
+            if (error) {
+                showReportMessage('Error submitting report: ' + error.message, 'error');
+                return;
+            }
+            
+            showReportMessage('Report submitted successfully. Our team will review it shortly.', 'success');
+            document.getElementById('reportForm').reset();
+        }
+        
+        function showReportMessage(msg, type) {
+            const el = document.getElementById('reportMessage');
+            el.textContent = msg;
+            el.className = 'message ' + type;
+        }
+    </script>
+</body>
+</html>
