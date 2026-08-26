@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Worker Profile - Handy Man</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .portfolio-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 12px; }
+        .portfolio-img { width: 100%; height: 180px; object-fit: cover; border-radius: 10px; cursor: pointer; transition: transform 0.2s; border: 2px solid var(--border); }
+        .portfolio-img:hover { transform: scale(1.03); border-color: var(--primary); }
+        .img-error { background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: var(--text-light); font-size: 0.85rem; }
+    </style>
 </head>
 <body>
     <header class="header">
@@ -32,9 +38,7 @@
     <script src="app.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
-            setTimeout(async () => {
-                await loadWorkerProfile();
-            }, 100);
+            setTimeout(async () => { await loadWorkerProfile(); }, 100);
         });
         
         async function loadWorkerProfile() {
@@ -42,54 +46,45 @@
             const id = params.get('id');
             const container = document.getElementById('profileContainer');
             
-            if (!id) {
-                container.innerHTML = '<p class="error">Worker not found.</p>';
-                return;
-            }
-            
-            if (!supabaseClient) {
-                container.innerHTML = '<p class="error">Cannot connect to database.</p>';
-                return;
-            }
+            if (!id) { container.innerHTML = '<p class="error">Worker not found.</p>'; return; }
+            if (!supabaseClient) { container.innerHTML = '<p class="error">Cannot connect to database.</p>'; return; }
             
             try {
                 const { data: worker, error: workerError } = await supabaseClient
-                    .from('worker_details')
-                    .select('*')
-                    .eq('id', id)
-                    .single();
+                    .from('worker_details').select('*').eq('id', id).single();
                 
-                if (workerError || !worker) {
-                    container.innerHTML = '<p class="error">Worker not found.</p>';
-                    return;
-                }
+                if (workerError || !worker) { container.innerHTML = '<p class="error">Worker not found.</p>'; return; }
                 
                 const { data: profile } = await supabaseClient
-                    .from('profiles')
-                    .select('full_name, avatar_url, location, phone, portfolio')
-                    .eq('id', id)
-                    .single();
+                    .from('profiles').select('full_name, avatar_url, location, phone, portfolio').eq('id', id).single();
                 
                 const { data: reviews } = await supabaseClient
-                    .from('reviews')
-                    .select('*')
-                    .eq('worker_id', id);
+                    .from('reviews').select('*').eq('worker_id', id);
                 
                 const p = profile || {};
                 const phoneNum = (worker.whatsapp_number || p.phone || '').replace(/\D/g, '');
                 const whatsappLink = phoneNum ? `https://wa.me/237${phoneNum}` : '#';
                 const callLink = p.phone ? `tel:${p.phone}` : '#';
                 
-                // Portfolio images
-                const portfolio = worker.portfolio || p.portfolio || [];
+                // Handle avatar with fallback
+                const avatarUrl = p.avatar_url || 'https://via.placeholder.com/120?text=No+Photo';
+                
+                // Portfolio - check both worker_details and profiles
+                let portfolio = [];
+                if (worker.portfolio && Array.isArray(worker.portfolio) && worker.portfolio.length > 0) {
+                    portfolio = worker.portfolio;
+                } else if (p.portfolio && Array.isArray(p.portfolio) && p.portfolio.length > 0) {
+                    portfolio = p.portfolio;
+                }
+                
                 let portfolioHtml = '';
-                if (portfolio && portfolio.length > 0) {
+                if (portfolio.length > 0) {
                     portfolioHtml = `
                         <div class="profile-section">
-                            <h3>📸 Portfolio</h3>
+                            <h3>📸 Portfolio (${portfolio.length} photo${portfolio.length > 1 ? 's' : ''})</h3>
                             <div class="portfolio-grid">
-                                ${portfolio.map(url => `
-                                    <img src="${url}" class="portfolio-img" onclick="window.open('${url}', '_blank')" alt="Portfolio">
+                                ${portfolio.map((url, i) => `
+                                    <img src="${url}" class="portfolio-img" onerror="this.onerror=null;this.src='https://via.placeholder.com/180?text=Image+Not+Found';this.classList.add('img-error');" onclick="window.open('${url}', '_blank')" alt="Portfolio ${i+1}">
                                 `).join('')}
                             </div>
                         </div>
@@ -98,7 +93,7 @@
                 
                 container.innerHTML = `
                     <div class="profile-header">
-                        <img src="${p.avatar_url || 'https://via.placeholder.com/120'}" class="profile-avatar" alt="${p.full_name || 'Worker'}">
+                        <img src="${avatarUrl}" class="profile-avatar" onerror="this.onerror=null;this.src='https://via.placeholder.com/120?text=No+Photo'" alt="${p.full_name || 'Worker'}">
                         <div class="profile-info">
                             <h1>${p.full_name || 'Unknown'}</h1>
                             <span class="badge">${worker.verified ? '✓ Verified' : 'New'}</span>
