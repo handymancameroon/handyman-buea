@@ -16,16 +16,8 @@
             text-transform: uppercase;
             letter-spacing: 1px;
         }
-        .status-open {
-            background: #dcfce7;
-            color: #166534;
-            border: 2px solid #86efac;
-        }
-        .status-closed {
-            background: #fee2e2;
-            color: #991b1b;
-            border: 2px solid #fca5a5;
-        }
+        .status-open { background: #dcfce7; color: #166534; border: 2px solid #86efac; }
+        .status-closed { background: #fee2e2; color: #991b1b; border: 2px solid #fca5a5; }
         .client-contact-box {
             background: #f0fdf4;
             border: 1px solid #bbf7d0;
@@ -55,21 +47,9 @@
             padding: 20px;
             margin-top: 16px;
         }
-        .tips-box h4 {
-            color: #1e40af;
-            margin-bottom: 12px;
-            font-size: 1rem;
-        }
-        .tips-box ul {
-            margin: 0;
-            padding-left: 20px;
-            color: var(--text-light);
-            font-size: 0.9rem;
-            line-height: 1.7;
-        }
-        .tips-box li {
-            margin-bottom: 6px;
-        }
+        .tips-box h4 { color: #1e40af; margin-bottom: 12px; font-size: 1rem; }
+        .tips-box ul { margin: 0; padding-left: 20px; color: var(--text-light); font-size: 0.9rem; line-height: 1.7; }
+        .tips-box li { margin-bottom: 6px; }
         .owner-notice {
             background: #fffbeb;
             border: 1px solid #fcd34d;
@@ -77,14 +57,11 @@
             padding: 16px 20px;
             margin-bottom: 20px;
         }
-        .owner-notice p {
-            margin: 0;
-            color: #92400e;
-            font-size: 0.95rem;
-        }
-        .owner-notice a {
-            color: var(--primary);
-            font-weight: 600;
+        .owner-notice p { margin: 0; color: #92400e; font-size: 0.95rem; }
+        .owner-notice a { color: var(--primary); font-weight: 600; }
+        .report-section {
+            margin-top: 20px;
+            text-align: center;
         }
     </style>
 </head>
@@ -141,7 +118,7 @@
             try {
                 const { data: job, error } = await supabaseClient
                     .from('job_posts')
-                    .select('*, profiles(full_name, phone, avatar_url, location)')
+                    .select('*, profiles(full_name, phone, avatar_url, location, portfolio)')
                     .eq('id', id)
                     .single();
                 
@@ -157,51 +134,63 @@
                 const callLink = p.phone ? `tel:${p.phone}` : '#';
                 const postedDate = new Date(job.created_at).toLocaleDateString('en-GB');
                 
-                // Check if current user is the job owner
                 const { data: { user } } = await supabaseClient.auth.getUser();
                 const isOwner = user && user.id === job.client_id;
                 
-                // Determine status display
                 const isOpen = job.status === 'Open';
                 const statusBannerClass = isOpen ? 'status-open' : 'status-closed';
                 const statusText = isOpen ? '🟢 OPEN — Workers Can Apply' : '🔴 CLOSED — No Longer Accepting Applications';
                 
-                // Owner notice + tips for job posters
+                // Client portfolio
+                const portfolio = p.portfolio || [];
+                let portfolioHtml = '';
+                if (portfolio && portfolio.length > 0) {
+                    portfolioHtml = `
+                        <div class="profile-section">
+                            <h3>📸 Reference Photos</h3>
+                            <div class="portfolio-grid">
+                                ${portfolio.map(url => `
+                                    <img src="${url}" class="portfolio-img" onclick="window.open('${url}', '_blank')" alt="Reference">
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+                
                 let ownerSection = '';
                 if (isOwner) {
                     if (isOpen) {
                         ownerSection = `
                             <div class="owner-notice">
-                                <p>💡 <strong>This is your job posting.</strong> You can close it anytime from your <a href="dashboard.html">Dashboard</a> when you have found a worker.</p>
+                                <p>💡 <strong>This is your job.</strong> Close it from your <a href="dashboard.html">Dashboard</a> when done.</p>
                             </div>
                             <div class="tips-box">
                                 <h4>💡 Tips for Job Posters</h4>
                                 <ul>
-                                    <li>Respond to worker inquiries quickly — good workers get booked fast.</li>
-                                    <li>Be clear about your budget and timeline to avoid misunderstandings.</li>
-                                    <li>Ask for references or past work photos before hiring.</li>
-                                    <li>Agree on payment terms (Mobile Money, cash) before work starts.</li>
-                                    <li>Close the job on your Dashboard once you have found someone.</li>
-                                    <li>Leave a review after the job is completed to help other clients.</li>
+                                    <li>Respond to worker inquiries quickly.</li>
+                                    <li>Be clear about budget and timeline.</li>
+                                    <li>Ask for references before hiring.</li>
+                                    <li>Agree on payment terms upfront.</li>
+                                    <li>Close the job on your Dashboard when done.</li>
+                                    <li>Leave a review after completion.</li>
                                 </ul>
                             </div>
                         `;
                     } else {
                         ownerSection = `
                             <div class="owner-notice">
-                                <p>✅ <strong>This job is closed.</strong> You marked it as taken. If you need more help, <a href="post-job.html">post a new job</a>.</p>
+                                <p>✅ <strong>This job is closed.</strong> <a href="post-job.html">Post a new job</a> if you need more help.</p>
                             </div>
                         `;
                     }
                 }
                 
-                // Contact section for workers
                 let contactSection = '';
                 if (isOpen) {
                     if (p.phone) {
                         contactSection = `
                             <div class="client-contact-box">
-                                <p style="color: var(--text-light); margin-bottom: 8px;">📞 Contact the client about this job:</p>
+                                <p style="color: var(--text-light); margin-bottom: 8px;">📞 Contact the client:</p>
                                 <p class="phone-display">📱 ${p.phone}</p>
                                 <div class="contact-buttons">
                                     <a href="${whatsappLink}" target="_blank" class="btn-whatsapp">💬 WhatsApp</a>
@@ -210,25 +199,23 @@
                             </div>
                         `;
                     } else {
-                        contactSection = `<p style="color: var(--text-light);">This client has not provided a phone number.</p>`;
+                        contactSection = `<p style="color: var(--text-light);">No phone number provided.</p>`;
                     }
                 } else {
-                    contactSection = `<p style="color: var(--text-light); font-weight: 600;">This job is closed and no longer accepting applications.</p>`;
+                    contactSection = `<p style="color: var(--text-light); font-weight: 600;">This job is closed.</p>`;
                 }
                 
-                // Tips for workers (only show on open jobs)
                 let workerTips = '';
                 if (isOpen && !isOwner) {
                     workerTips = `
                         <div class="tips-box">
                             <h4>💡 Tips for Workers</h4>
                             <ul>
-                                <li>Always confirm details, pricing, and timing before starting.</li>
-                                <li>Ask for the client's exact location in Buea.</li>
-                                <li>Discuss payment method (cash, Mobile Money) upfront.</li>
+                                <li>Confirm details, pricing, and timing before starting.</li>
+                                <li>Ask for the exact location in Buea.</li>
+                                <li>Discuss payment method upfront.</li>
                                 <li>Be professional and arrive on time.</li>
-                                <li>Bring your own tools unless the client says otherwise.</li>
-                                <li>Ask the client to close the job once work is done.</li>
+                                <li>Bring your own tools unless told otherwise.</li>
                             </ul>
                         </div>
                     `;
@@ -258,6 +245,8 @@
                         <p>${job.description}</p>
                     </div>
                     
+                    ${portfolioHtml}
+                    
                     <div class="client-info">
                         <h3>Client Information</h3>
                         <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
@@ -268,6 +257,9 @@
                             </div>
                         </div>
                         ${contactSection}
+                        <div class="report-section">
+                            <button onclick="reportJob('${id}', '${job.title}')" class="btn-report">🚩 Report this job</button>
+                        </div>
                     </div>
                     
                     ${workerTips}
@@ -277,6 +269,10 @@
                 console.error('Job load error:', err);
                 container.innerHTML = '<p class="error">Error loading job. Please try again.</p>';
             }
+        }
+        
+        function reportJob(jobId, jobTitle) {
+            window.location.href = `report.html?type=job&id=${jobId}&name=${encodeURIComponent(jobTitle)}`;
         }
     </script>
 </body>
