@@ -1,5 +1,5 @@
 // ============================================
-// Handy Man - App Script
+// Handy Man - App Script (With Notifications)
 // ============================================
 
 const SUPABASE_URL = 'https://zuhkhpdrxwfjcqnolmpu.supabase.co';
@@ -7,6 +7,7 @@ const SUPABASE_KEY = 'sb_publishable_foPRwQRlPGlWBKYqeBHg4A_WcajeKKI';
 
 var supabaseClient = null;
 var currentUser = null;
+var notificationPollingInterval = null;
 
 const FALLBACK_CATEGORIES = [
     {name: 'Plumbing', icon: '🔧', description: 'Leak repairs, installations, toilets, water heaters'},
@@ -32,6 +33,7 @@ if (typeof window.supabase !== 'undefined' && typeof window.supabase.createClien
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
+        injectNavExtras();
         checkAuth().catch(() => {});
         
         if (document.getElementById('categoryGrid')) {
@@ -58,12 +60,70 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
+// ============================================
+// NAV EXTRAS: Dashboard link + Notification Bell
+// ============================================
+function injectNavExtras() {
+    const nav = document.getElementById('nav');
+    if (!nav) return;
+    if (nav.querySelector('.nav-bell')) return; // Already injected
+    
+    // Dashboard link
+    const dashLink = document.createElement('a');
+    dashLink.href = 'dashboard.html';
+    dashLink.className = 'btn-secondary';
+    dashLink.id = 'navDashboard';
+    dashLink.textContent = 'My Jobs';
+    dashLink.style.display = 'none';
+    nav.insertBefore(dashLink, nav.querySelector('#authBtn'));
+    
+    // Notification bell
+    const bellContainer = document.createElement('div');
+    bellContainer.className = 'nav-bell';
+    bellContainer.id = 'navBell';
+    bellContainer.innerHTML = '🔔<span class="bell-count" id="bellCount" style="display:none;">0</span>';
+    bellContainer.style.display = 'none';
+    bellContainer.onclick = (e) => {
+        e.stopPropagation();
+        toggleNotifications();
+    };
+    nav.insertBefore(bellContainer, nav.querySelector('#authBtn'));
+    
+    // Notification dropdown
+    const dropdown = document.createElement('div');
+    dropdown.className = 'notification-dropdown';
+    dropdown.id = 'notificationDropdown';
+    dropdown.innerHTML = `
+        <div class="notification-header">🔔 Notifications</div>
+        <div class="notification-list" id="notificationList">
+            <p class="notification-empty">Loading...</p>
+        </div>
+    `;
+    document.body.appendChild(dropdown);
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        const dropdown = document.getElementById('notificationDropdown');
+        const bell = document.getElementById('navBell');
+        if (dropdown && bell && !dropdown.contains(e.target) && !bell.contains(e.target)) {
+            dropdown.classList.remove('active');
+        }
+    });
+}
+
+// ============================================
+// AUTH
+// ============================================
 async function checkAuth() {
     try {
         if (!supabaseClient) return;
         const { data: { user } } = await supabaseClient.auth.getUser();
         currentUser = user;
         updateAuthUI();
+        if (user) {
+            loadNotifications();
+            startNotificationPolling();
+        }
     } catch (e) {
         console.log('Auth check failed:', e.message);
     }
@@ -71,6 +131,9 @@ async function checkAuth() {
 
 function updateAuthUI() {
     const authBtn = document.getElementById('authBtn');
+    const dashLink = document.getElementById('navDashboard');
+    const bell = document.getElementById('navBell');
+    
     if (!authBtn) return;
     
     if (currentUser && supabaseClient) {
@@ -80,16 +143,117 @@ function updateAuthUI() {
             e.preventDefault();
             try {
                 await supabaseClient.auth.signOut();
+                stopNotificationPolling();
             } catch (e) {}
             window.location.reload();
         };
+        if (dashLink) dashLink.style.display = 'inline-block';
+        if (bell) bell.style.display = 'inline-flex';
     } else {
         authBtn.textContent = 'Login';
         authBtn.href = 'login.html';
         authBtn.onclick = null;
+        if (dashLink) dashLink.style.display = 'none';
+        if (bell) bell.style.display = 'none';
     }
 }
 
+// ============================================
+// NOTIFICATIONS
+// ============================================
+async function loadNotifications() {
+    if (!supabaseClient || !currentUser) return;
+    
+    try {
+        const { data: notifications, error } = await supabaseClient
+            .from('notifications')
+            .select('*')
+            .eq('user_id', currentUser.id)
+            .eq('read', false)
+            .order('created_at', { ascending: false })
+            .limit(20);
+        
+        if (error) {
+            console.error('Notification load error:', error);
+            return;
+        }
+        
+        renderNotificationBell(notifications ? notifications.length : 0);
+        renderNotificationList(notifications || []);
+        
+    } catch (err) {
+        console.error('Notification error:', err);
+    }
+}
+
+function renderNotificationBell(count) {
+    const bellCount = document.getElementById('bellCount');
+    if (!bellCount) return;
+    
+    if (count > 0) {
+        bellCount.textContent = count > 9 ? '9+' : count;
+        bellCount.style.display = 'flex';
+    } else {
+        bellCount.style.display = 'none';
+    }
+}
+
+function toggleNotifications() {
+    const dropdown = document.getElementById('notificationDropdown');
+    if (!dropdown) return;
+    dropdown.classList.toggle('active');
+    if (dropdown.classList.contains('active')) {
+        loadNotifications();
+    }
+}
+
+function renderNotificationList(notifications) {
+    const list = document.getElementById('notificationList');
+    if (!list) return;
+    
+    if (!notifications || notifications.length === 0) {
+        list.innerHTML = '<p class="notification-empty">No new notifications</p>';
+        return;
+    }
+    
+    list.innerHTML = notifications.map(n => `
+        <div class="notification-item ${n.read ? 'read' : 'unread'}" onclick="handleNotificationClick('${n.id}', '${n.job_id}')">
+            <p class="notification-msg">${escapeHtml(n.message)}</p>
+            <span class="notification-time">${timeAgo(n.created_at)}</span>
+        </div>
+    `).join('');
+}
+
+async function handleNotificationClick(notificationId, jobId) {
+    // Mark as read
+    if (supabaseClient && notificationId) {
+        await supabaseClient.from('notifications').update({ read: true }).eq('id', notificationId);
+        loadNotifications();
+    }
+    // Navigate to job
+    if (jobId) {
+        window.location.href = `job.html?id=${jobId}`;
+    }
+}
+
+function startNotificationPolling() {
+    if (notificationPollingInterval) return;
+    loadNotifications(); // Load immediately
+    notificationPollingInterval = setInterval(() => {
+        if (currentUser) loadNotifications();
+    }, 30000); // Every 30 seconds
+}
+
+function stopNotificationPolling() {
+    if (notificationPollingInterval) {
+        clearInterval(notificationPollingInterval);
+        notificationPollingInterval = null;
+    }
+}
+
+// ============================================
+// CATEGORIES & WORKERS
+// ============================================
 async function loadCategories() {
     const grid = document.getElementById('categoryGrid');
     if (!grid) return;
@@ -174,6 +338,9 @@ function renderWorkers(workers, container) {
     `).join('');
 }
 
+// ============================================
+// CAROUSEL & NAVIGATION
+// ============================================
 function initCarousel() {
     const slides = document.querySelectorAll('.carousel-slide');
     const dotsContainer = document.getElementById('carouselDots');
@@ -217,4 +384,28 @@ function viewWorker(id) {
 
 function viewJob(id) {
     window.location.href = `job.html?id=${id}`;
+}
+
+// ============================================
+// UTILITIES
+// ============================================
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function timeAgo(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const seconds = Math.floor((now - date) / 1000);
+    
+    if (seconds < 60) return 'Just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
 }
