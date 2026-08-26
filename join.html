@@ -5,11 +5,66 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Join as Worker - Handy Man</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .photo-upload-box {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            background: #f8fafc;
+        }
+        .photo-upload-box input[type="file"] {
+            width: 100%;
+            margin-top: 8px;
+            font-size: 0.9rem;
+        }
+        .avatar-preview {
+            width: 96px;
+            height: 96px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 12px auto 0;
+            display: none;
+            border: 3px solid var(--primary);
+        }
+        .avatar-preview.show { display: block; }
+        .file-preview {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+            justify-content: center;
+        }
+        .file-preview-item {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px solid var(--border);
+        }
+        .upload-hint {
+            color: var(--text-light);
+            font-size: 0.8rem;
+            margin-top: 6px;
+            display: block;
+        }
+        .auth-box { max-width: 520px; }
+        .custom-category-field { display: none; margin-top: 8px; }
+        .custom-category-field.active { display: block; }
+    </style>
 </head>
 <body>
     <header class="header">
         <div class="container">
             <a href="index.html" class="logo">🔧 Handy Man</a>
+            <nav class="nav" id="nav">
+                <a href="index.html">Home</a>
+                <a href="workers.html">Find Workers</a>
+                <a href="jobs.html">Find Jobs</a>
+                <a href="dashboard.html" class="btn-secondary">My Jobs</a>
+                <a href="login.html" class="btn-primary" id="authBtn">Login</a>
+            </nav>
+            <button class="menu-toggle" id="menuToggle">☰</button>
         </div>
     </header>
 
@@ -17,12 +72,14 @@
         <div class="container">
             <div class="auth-box">
                 <h2>Join as a Service Provider</h2>
-                <p>Create your worker profile to start receiving job requests.</p>
-                
+                <p style="color: var(--text-light); margin-bottom: 24px;">
+                    Create your worker profile to appear in search and start receiving requests.
+                </p>
+
                 <form id="workerForm" onsubmit="handleWorkerJoin(event)">
                     <div class="form-group">
                         <label>Service Category *</label>
-                        <select id="wCategory" required>
+                        <select id="wCategory" required onchange="handleCategoryChange()">
                             <option value="">Select your main skill</option>
                             <option value="Plumbing">Plumbing</option>
                             <option value="Electrical">Electrical</option>
@@ -34,27 +91,58 @@
                             <option value="Phone/Laptop Repair">Phone/Laptop Repair</option>
                             <option value="Hairdressing">Hairdressing</option>
                             <option value="Catering">Catering</option>
+                            <option value="Others">Others (specify below)</option>
                         </select>
+                        <div id="customCategoryField" class="custom-category-field">
+                            <input type="text" id="customCategory" placeholder="Enter your skill or category">
+                        </div>
                     </div>
+
                     <div class="form-group">
                         <label>Description of Services *</label>
                         <textarea id="wDescription" required rows="4" placeholder="Describe what you do, your skills, and experience..."></textarea>
                     </div>
+
                     <div class="form-group">
                         <label>Years of Experience</label>
                         <input type="number" id="wExperience" min="0" value="0">
                     </div>
+
                     <div class="form-group">
                         <label>Phone for Calls</label>
                         <input type="tel" id="wPhone" placeholder="6XX XXX XXX">
                     </div>
+
                     <div class="form-group">
                         <label>WhatsApp Number</label>
                         <input type="tel" id="wWhatsapp" placeholder="6XX XXX XXX">
                     </div>
-                    <button type="submit" class="btn-primary full">Create Profile</button>
+
+                    <!-- Profile photo -->
+                    <div class="form-group">
+                        <label>Profile Photo (optional)</label>
+                        <div class="photo-upload-box">
+                            <p style="margin-bottom: 8px; font-size: 0.9rem;">📷 Take a photo or choose from gallery</p>
+                            <input type="file" id="wAvatar" accept="image/*" capture="environment">
+                            <img id="wAvatarPreview" class="avatar-preview" alt="Preview">
+                            <small class="upload-hint">JPEG or PNG. On phones you can use the camera.</small>
+                        </div>
+                    </div>
+
+                    <!-- Portfolio max 2 -->
+                    <div class="form-group">
+                        <label>Portfolio Photos (optional, max 2)</label>
+                        <div class="photo-upload-box">
+                            <p style="margin-bottom: 8px; font-size: 0.9rem;">📸 Photos of your past work</p>
+                            <input type="file" id="wPortfolio" accept="image/*" multiple>
+                            <small class="upload-hint">Select up to 2 images.</small>
+                            <div class="file-preview" id="wPortfolioPreview"></div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-primary full" id="joinSubmitBtn">Create Profile</button>
                 </form>
-                
+
                 <p id="joinMessage" class="message"></p>
             </div>
         </div>
@@ -69,41 +157,153 @@
                 window.location.href = 'login.html';
                 return;
             }
+            setupPreviews();
+
+            // Prefill phone from profile if available
+            try {
+                const { data: profile } = await supabaseClient
+                    .from('profiles')
+                    .select('phone, full_name')
+                    .eq('id', currentUser.id)
+                    .single();
+                if (profile && profile.phone) {
+                    document.getElementById('wPhone').value = profile.phone;
+                    document.getElementById('wWhatsapp').value = profile.phone;
+                }
+            } catch (e) {}
         });
-        
-        async function handleWorkerJoin(e) {
-            e.preventDefault();
-            
-            const { data: { user } } = await supabaseClient.auth.getUser();
-            if (!user) {
-                showJoinMessage('Please login first.', 'error');
-                return;
-            }
-            
-            const details = {
-                id: user.id,
-                category: document.getElementById('wCategory').value,
-                description: document.getElementById('wDescription').value,
-                experience_years: parseInt(document.getElementById('wExperience').value) || 0,
-                contact_phone: document.getElementById('wPhone').value,
-                whatsapp_number: document.getElementById('wWhatsapp').value,
-                availability: 'Available'
-            };
-            
-            const { error } = await supabaseClient.from('worker_details').insert([details]);
-            
-            if (error) {
-                showJoinMessage('Error: ' + error.message, 'error');
+
+        function handleCategoryChange() {
+            const cat = document.getElementById('wCategory').value;
+            const field = document.getElementById('customCategoryField');
+            const input = document.getElementById('customCategory');
+            if (cat === 'Others') {
+                field.classList.add('active');
+                input.required = true;
             } else {
-                showJoinMessage('Profile created successfully! Redirecting...', 'success');
-                setTimeout(() => window.location.href = 'index.html', 1500);
+                field.classList.remove('active');
+                input.required = false;
             }
         }
-        
+
+        function setupPreviews() {
+            const avatarInput = document.getElementById('wAvatar');
+            const avatarPreview = document.getElementById('wAvatarPreview');
+            if (avatarInput && avatarPreview) {
+                avatarInput.addEventListener('change', function () {
+                    const file = this.files && this.files[0];
+                    if (file && file.type.startsWith('image/')) {
+                        avatarPreview.src = URL.createObjectURL(file);
+                        avatarPreview.classList.add('show');
+                    } else {
+                        avatarPreview.classList.remove('show');
+                    }
+                });
+            }
+
+            const portfolioInput = document.getElementById('wPortfolio');
+            const portfolioPreview = document.getElementById('wPortfolioPreview');
+            if (portfolioInput && portfolioPreview) {
+                portfolioInput.addEventListener('change', function () {
+                    portfolioPreview.innerHTML = '';
+                    const files = Array.from(this.files || []).slice(0, 2);
+                    if (this.files && this.files.length > 2) {
+                        alert('Maximum 2 photos. Only the first 2 will be used.');
+                    }
+                    files.forEach(file => {
+                        if (file.type.startsWith('image/')) {
+                            const img = document.createElement('img');
+                            img.className = 'file-preview-item';
+                            img.src = URL.createObjectURL(file);
+                            portfolioPreview.appendChild(img);
+                        }
+                    });
+                });
+            }
+        }
+
         function showJoinMessage(msg, type) {
             const el = document.getElementById('joinMessage');
             el.textContent = msg;
             el.className = 'message ' + type;
+        }
+
+        async function handleWorkerJoin(e) {
+            e.preventDefault();
+
+            if (!supabaseClient || !currentUser) {
+                showJoinMessage('Please login first.', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('joinSubmitBtn');
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+
+            try {
+                let category = document.getElementById('wCategory').value;
+                if (category === 'Others') {
+                    category = document.getElementById('customCategory').value.trim() || 'Others';
+                }
+
+                const phone = document.getElementById('wPhone').value.trim();
+                const whatsapp = document.getElementById('wWhatsapp').value.trim() || phone;
+                const userId = currentUser.id;
+
+                // Upload avatar
+                let avatarUrl = null;
+                const avatarFile = document.getElementById('wAvatar').files[0];
+                if (avatarFile) {
+                    showJoinMessage('Uploading profile photo...', 'success');
+                    avatarUrl = await uploadFile(avatarFile, 'profiles', userId);
+                }
+
+                // Upload portfolio (max 2)
+                showJoinMessage('Uploading portfolio...', 'success');
+                const portfolioFiles = document.getElementById('wPortfolio').files;
+                const portfolioUrls = await uploadMultipleFiles(portfolioFiles, 'portfolio', userId, 2);
+
+                // Update profile
+                const profileUpdate = {
+                    is_worker: true,
+                    phone: phone || undefined
+                };
+                if (avatarUrl) profileUpdate.avatar_url = avatarUrl;
+                if (portfolioUrls.length > 0) profileUpdate.portfolio = portfolioUrls;
+
+                await supabaseClient.from('profiles').update(profileUpdate).eq('id', userId);
+
+                // Create / update worker_details
+                const details = {
+                    id: userId,
+                    category: category,
+                    description: document.getElementById('wDescription').value.trim(),
+                    experience_years: parseInt(document.getElementById('wExperience').value, 10) || 0,
+                    contact_phone: phone,
+                    whatsapp_number: whatsapp,
+                    availability: 'Available',
+                    portfolio: portfolioUrls
+                };
+
+                const { error } = await supabaseClient
+                    .from('worker_details')
+                    .upsert([details], { onConflict: 'id' });
+
+                if (error) {
+                    showJoinMessage('Error: ' + error.message, 'error');
+                    btn.disabled = false;
+                    btn.textContent = 'Create Profile';
+                    return;
+                }
+
+                showJoinMessage('Profile created successfully! Redirecting...', 'success');
+                setTimeout(() => window.location.href = 'worker.html?id=' + userId, 1500);
+            } catch (err) {
+                console.error(err);
+                showJoinMessage('Unexpected error: ' + (err.message || 'Try again'), 'error');
+                btn.disabled = false;
+                btn.textContent = 'Create Profile';
+            }
         }
     </script>
 </body>
