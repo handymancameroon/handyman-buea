@@ -141,7 +141,7 @@
                 </div>
             </div>
             
-            <!-- ALL USERS (with Call & WhatsApp) -->
+            <!-- ALL USERS (with Call, WhatsApp & Notify) -->
             <div class="admin-section">
                 <h2>👥 All Users (Clients & Workers)</h2>
                 <div class="admin-filter-bar">
@@ -176,7 +176,7 @@
                 </div>
             </div>
             
-            <!-- All Workers (keep existing) -->
+            <!-- All Workers -->
             <div class="admin-section">
                 <h2>👷 All Workers (Quick Delete)</h2>
                 <div id="allWorkersList">
@@ -276,7 +276,7 @@
             }
         }
 
-        // ========== ALL USERS + WHATSAPP ==========
+        // ========== ALL USERS ==========
         async function loadAllUsers() {
             const container = document.getElementById('allUsersList');
             if (!supabaseClient) {
@@ -319,6 +319,7 @@
                 container.innerHTML = list.map(u => {
                     const type = u.is_admin ? '👑 Admin' : (u.is_worker ? '👷 Worker' : '👤 Client');
                     const phone = u.phone || '';
+                    const safeName = (u.full_name || 'User').replace(/'/g, "\\'");
                     return `
                         <div class="user-row">
                             <div>
@@ -331,13 +332,38 @@
                                 ${phone ? `
                                     <a class="btn-call" href="${callLink(phone)}">📞 Call</a>
                                     <a class="btn-whatsapp" href="${whatsappLink(phone)}" target="_blank">💬 WhatsApp</a>
-                                ` : '<span style="color:#999;font-size:0.85rem;">No phone</span>'}
+                                ` : ''}
+                                <button class="btn-small" onclick="sendSingleNotification('${u.id}', '${safeName}')">🔔 Notify</button>
                             </div>
                         </div>
                     `;
                 }).join('');
             } catch (err) {
                 container.innerHTML = '<p class="empty-dashboard">Error loading users.</p>';
+            }
+        }
+
+        // Single user notification
+        async function sendSingleNotification(userId, userName) {
+            const message = prompt(`Write a message for ${userName}:`);
+            if (!message || !message.trim()) return;
+
+            try {
+                const { error } = await supabaseClient.from('notifications').insert([{
+                    user_id: userId,
+                    title: 'Message from Admin',
+                    message: message.trim(),
+                    read: false,
+                    created_at: new Date().toISOString()
+                }]);
+
+                if (error) {
+                    alert('Error: ' + error.message);
+                    return;
+                }
+                alert('✅ Notification sent to ' + userName);
+            } catch (err) {
+                alert('Error: ' + err.message);
             }
         }
 
@@ -368,15 +394,14 @@
                     return;
                 }
 
-                // Insert notifications in batches
                 const rows = users.map(u => ({
                     user_id: u.id,
+                    title: 'Message from Admin',
                     message: message,
                     read: false,
                     created_at: new Date().toISOString()
                 }));
 
-                // Supabase allows bulk insert
                 const { error: insertError } = await supabaseClient
                     .from('notifications')
                     .insert(rows);
@@ -437,7 +462,7 @@
             }
         }
 
-        // ========== EXISTING FUNCTIONS (kept) ==========
+        // ========== DISPUTES ==========
         async function loadDisputes() {
             const container = document.getElementById('disputesList');
             if (!supabaseClient) {
@@ -485,6 +510,7 @@
             loadDisputes(); loadStats();
         }
         
+        // ========== WORKERS ==========
         async function loadAllWorkers() {
             const container = document.getElementById('allWorkersList');
             if (!supabaseClient) { container.innerHTML = '<p class="empty-dashboard">Cannot connect.</p>'; return; }
@@ -524,6 +550,7 @@
             loadAllWorkers(); loadAllUsers(); loadStats();
         }
         
+        // ========== JOBS ==========
         async function loadAllJobs() {
             const container = document.getElementById('allJobsList');
             if (!supabaseClient) { container.innerHTML = '<p class="empty-dashboard">Cannot connect.</p>'; return; }
