@@ -39,6 +39,7 @@
                     <option value="Phone/Laptop Repair">Phone/Laptop Repair</option>
                     <option value="Hairdressing">Hairdressing</option>
                     <option value="Catering">Catering</option>
+                    <option value="Others">Others</option>
                 </select>
                 <button onclick="performSearch()" class="btn-primary">Search</button>
             </div>
@@ -87,6 +88,7 @@
             const { data: workers, error } = await dbQuery;
             
             if (error) {
+                console.error(error);
                 container.innerHTML = '<p class="error">Error loading workers.</p>';
                 return;
             }
@@ -106,7 +108,22 @@
                 return;
             }
             
-            renderWorkers(filtered, container);
+            if (typeof renderWorkers === 'function') {
+                renderWorkers(filtered, container);
+            } else {
+                // Fallback renderer
+                container.innerHTML = filtered.map(w => `
+                    <div class="worker-card" onclick="window.location.href='worker.html?id=${w.id}'">
+                        <div class="worker-avatar">
+                            <img src="${w.profiles?.avatar_url || 'https://via.placeholder.com/80'}" alt="${w.profiles?.full_name || 'Worker'}">
+                        </div>
+                        <h3>${w.profiles?.full_name || 'Worker'}</h3>
+                        <p class="worker-category">${w.category || ''}</p>
+                        <p class="worker-location">📍 ${w.profiles?.location || 'Buea'}</p>
+                        <a href="worker.html?id=${w.id}" class="btn-small">View Profile</a>
+                    </div>
+                `).join('');
+            }
         }
     </script>
 </body>
