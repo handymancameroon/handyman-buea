@@ -13,10 +13,7 @@
             padding: 20px;
             margin-top: 16px;
         }
-        .client-contact-box p {
-            margin-bottom: 12px;
-            font-size: 1rem;
-        }
+        .client-contact-box p { margin-bottom: 12px; font-size: 1rem; }
         .client-contact-box .phone-display {
             font-size: 1.25rem;
             font-weight: 700;
@@ -24,21 +21,32 @@
             margin-bottom: 16px;
         }
         .client-avatar-small {
-            width: 60px;
-            height: 60px;
+            width: 60px; height: 60px;
             border-radius: 50%;
             object-fit: cover;
             margin-bottom: 12px;
         }
-        .contact-buttons {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
+        .contact-buttons { display: flex; gap: 12px; flex-wrap: wrap; }
+        .contact-buttons a { flex: 1; min-width: 140px; text-align: center; }
+        
+        .status-badge-large {
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 24px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-        .contact-buttons a {
-            flex: 1;
-            min-width: 140px;
-            text-align: center;
+        .status-available-large {
+            background: #dcfce7;
+            color: #166534;
+            border: 2px solid #86efac;
+        }
+        .status-closed-large {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 2px solid #fca5a5;
         }
     </style>
 </head>
@@ -115,42 +123,26 @@
                 const { data: { user } } = await supabaseClient.auth.getUser();
                 const isOwner = user && user.id === job.client_id;
                 
-                // Status color
-                let statusColor = 'var(--success)';
-                if (job.status === 'Taken') statusColor = 'var(--warning)';
+                // Determine status display
+                const isAvailable = job.status === 'Open';
+                const statusBadgeClass = isAvailable ? 'status-available-large' : 'status-closed-large';
+                const statusText = isAvailable ? '✅ Available' : '🔒 Closed';
                 
-                // Status section - ONLY owner sees action buttons
-                let statusSection = '';
-                if (isOwner) {
-                    if (job.status === 'Open') {
-                        statusSection = `
-                            <div style="margin-bottom: 16px;">
-                                <button onclick="updateStatus('Taken')" class="btn-primary">✅ Mark as Taken</button>
-                                <p style="color: var(--text-light); margin-top: 8px; font-size: 0.875rem;">Click this when you have found a worker for this job.</p>
-                            </div>
-                        `;
-                    } else if (job.status === 'Taken') {
-                        statusSection = `
-                            <div style="margin-bottom: 16px;">
-                                <span style="color: var(--warning); font-weight: 600; font-size: 1.1rem;">⚡ This job is taken</span>
-                                <p style="color: var(--text-light); margin-top: 8px; font-size: 0.875rem;">You marked this job as taken.</p>
-                            </div>
-                        `;
-                    }
-                } else {
-                    // Non-owner only sees status text
-                    if (job.status === 'Taken') {
-                        statusSection = `
-                            <div style="margin-bottom: 16px;">
-                                <span style="color: var(--warning); font-weight: 600; font-size: 1.1rem;">⚡ This job has been taken</span>
-                            </div>
-                        `;
-                    }
+                // Owner notice
+                let ownerNotice = '';
+                if (isOwner && isAvailable) {
+                    ownerNotice = `
+                        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px;">
+                            <p style="color: #1e40af; font-size: 0.9rem; margin: 0;">
+                                💡 <strong>This is your job.</strong> You can close it from your <a href="dashboard.html" style="color: var(--primary); font-weight: 600;">Dashboard</a>.
+                            </p>
+                        </div>
+                    `;
                 }
                 
-                // Contact section - show client contact info prominently
+                // Contact section
                 let contactSection = '';
-                if (job.status === 'Open') {
+                if (isAvailable) {
                     if (p.phone) {
                         contactSection = `
                             <div class="client-contact-box">
@@ -163,29 +155,29 @@
                             </div>
                         `;
                     } else {
-                        contactSection = `
-                            <p style="color: var(--text-light);">This client has not provided a phone number. You may still contact them through the platform.</p>
-                        `;
+                        contactSection = `<p style="color: var(--text-light);">This client has not provided a phone number.</p>`;
                     }
                 } else {
-                    contactSection = `
-                        <p>This job is no longer accepting new applications.</p>
-                    `;
+                    contactSection = `<p style="color: var(--text-light);">This job is closed and no longer accepting applications.</p>`;
                 }
                 
                 container.innerHTML = `
                     <div class="job-detail-header">
-                        <div>
-                            <span class="badge" style="background: ${statusColor};">${job.status}</span>
+                        <div style="width: 100%;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
+                                <span class="status-badge-large ${statusBadgeClass}">${statusText}</span>
+                                <span style="color: var(--text-light); font-size: 0.875rem;">📅 Posted ${postedDate}</span>
+                            </div>
                             <h1>${job.title}</h1>
                             <p class="job-detail-category">${job.category || 'General'}</p>
                             <div class="job-meta">
                                 <span>📍 ${job.location || 'Buea'}</span>
                                 <span>💰 ${job.budget || 'Not specified'}</span>
-                                <span>📅 Posted ${postedDate}</span>
                             </div>
                         </div>
                     </div>
+                    
+                    ${ownerNotice}
                     
                     <div class="job-description">
                         <h3>Job Description</h3>
@@ -205,10 +197,12 @@
                     </div>
                     
                     <div class="apply-section">
-                        <h3>Job Status</h3>
-                        ${statusSection}
-                        <p style="color: var(--text-light); font-size: 0.875rem; margin-top: 12px;">
-                            💡 <strong>Tip:</strong> Always discuss details, pricing, and timing before starting any work.
+                        <h3>💡 Tips for Workers</h3>
+                        <p style="color: var(--text-light); font-size: 0.9rem; line-height: 1.6;">
+                            • Always confirm details, pricing, and timing before starting.<br>
+                            • Ask for the client's exact location in Buea.<br>
+                            • Discuss payment method (cash, Mobile Money) upfront.<br>
+                            • Be professional and arrive on time.
                         </p>
                     </div>
                 `;
@@ -217,22 +211,6 @@
                 console.error('Job load error:', err);
                 container.innerHTML = '<p class="error">Error loading job. Please try again.</p>';
             }
-        }
-        
-        async function updateStatus(newStatus) {
-            if (!supabaseClient || !currentJobId) return;
-            
-            const { error } = await supabaseClient
-                .from('job_posts')
-                .update({ status: newStatus })
-                .eq('id', currentJobId);
-            
-            if (error) {
-                alert('Error updating status: ' + error.message);
-                return;
-            }
-            
-            window.location.reload();
         }
     </script>
 </body>
