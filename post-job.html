@@ -3,8 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Post a Job - Handy Man</title>
+    <title>Post a Job – Find Workers in Buea, Douala, Yaoundé & Cameroon | Handy Man</title>
+    <meta name="description" content="Post a job for free and get contacted by skilled workers in Buea, Douala, Yaoundé, Bamenda and other towns in Cameroon. Plumbers, electricians, drivers, cleaners and more.">
+    <meta name="keywords" content="post job Cameroon, hire plumber Buea, electrician Douala, driver needed Yaoundé, cleaning job Bamenda, handyman Cameroon">
+    <meta property="og:title" content="Post a Job – Handy Man Cameroon">
+    <meta property="og:description" content="Post your job for free and connect with trusted local workers across Cameroon.">
+    <meta property="og:url" content="https://handyman-buea.vercel.app/post-job.html">
+    <meta property="og:type" content="website">
     <link rel="stylesheet" href="style.css">
+    <style>
+        .custom-category-field, .custom-town-field { display: none; margin-top: 8px; }
+        .custom-category-field.active, .custom-town-field.active { display: block; }
+        .report-fab {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            width: 52px;
+            height: 52px;
+            background: #ef4444;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            text-decoration: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 999;
+        }
+    </style>
 </head>
 <body>
     <header class="header">
@@ -25,17 +52,36 @@
     <main class="auth-page">
         <div class="container">
             <div class="auth-box" id="postJobBox">
-                <h2>Post a Job</h2>
-                <p>Describe what you need and skilled workers will contact you.</p>
+                <h1>Post a Job</h1>
+                <p>Describe what you need and skilled workers from your town will contact you.</p>
                 
                 <form id="jobForm" onsubmit="handlePostJob(event)">
                     <div class="form-group">
                         <label>Job Title *</label>
                         <input type="text" id="jTitle" required placeholder="e.g. Fix leaking kitchen pipe">
                     </div>
+
+                    <div class="form-group">
+                        <label>Town / City *</label>
+                        <select id="jTown" required onchange="handleTownChange()">
+                            <option value="">Select town</option>
+                            <option value="Buea">Buea</option>
+                            <option value="Douala">Douala</option>
+                            <option value="Yaoundé">Yaoundé</option>
+                            <option value="Bamenda">Bamenda</option>
+                            <option value="Limbe">Limbe</option>
+                            <option value="Kribi">Kribi</option>
+                            <option value="Bafoussam">Bafoussam</option>
+                            <option value="Others">Others (specify below)</option>
+                        </select>
+                        <div id="customTownField" class="custom-town-field">
+                            <input type="text" id="customTown" placeholder="Enter town or area">
+                        </div>
+                    </div>
+
                     <div class="form-group">
                         <label>Service Category *</label>
-                        <select id="jCategory" required>
+                        <select id="jCategory" required onchange="handleCategoryChange()">
                             <option value="">Select category</option>
                             <option value="Plumbing">Plumbing</option>
                             <option value="Electrical">Electrical</option>
@@ -47,20 +93,37 @@
                             <option value="Phone/Laptop Repair">Phone/Laptop Repair</option>
                             <option value="Hairdressing">Hairdressing</option>
                             <option value="Catering">Catering</option>
+                            <option value="Sales Person">Sales Person</option>
+                            <option value="Baby Sitter / Nanny">Baby Sitter / Nanny</option>
+                            <option value="General Labour">General Labour</option>
+                            <option value="Drivers">Drivers</option>
+                            <option value="Construction Engineers">Construction Engineers</option>
+                            <option value="Welding">Welding</option>
+                            <option value="Tiling">Tiling</option>
+                            <option value="Security Guards">Security Guards</option>
+                            <option value="Gardening">Gardening</option>
+                            <option value="Others">Others (specify below)</option>
                         </select>
+                        <div id="customCategoryField" class="custom-category-field">
+                            <input type="text" id="customCategory" placeholder="Enter the skill needed">
+                        </div>
                     </div>
+
                     <div class="form-group">
                         <label>Description *</label>
                         <textarea id="jDescription" required rows="4" placeholder="Describe the job in detail..."></textarea>
                     </div>
+
                     <div class="form-group">
-                        <label>Location *</label>
-                        <input type="text" id="jLocation" required placeholder="e.g. Molyko, Buea" value="Buea">
+                        <label>Exact Location / Quarter (optional)</label>
+                        <input type="text" id="jLocationDetail" placeholder="e.g. Molyko, Bonamoussadi, Bastos">
                     </div>
+
                     <div class="form-group">
                         <label>Budget (optional)</label>
                         <input type="text" id="jBudget" placeholder="e.g. 10,000 FCFA or Negotiable">
                     </div>
+
                     <button type="submit" class="btn-primary full">Post Job</button>
                 </form>
                 
@@ -83,6 +146,32 @@
                 `;
             }
         });
+
+        function handleCategoryChange() {
+            const cat = document.getElementById('jCategory').value;
+            const field = document.getElementById('customCategoryField');
+            const input = document.getElementById('customCategory');
+            if (cat === 'Others') {
+                field.classList.add('active');
+                input.required = true;
+            } else {
+                field.classList.remove('active');
+                input.required = false;
+            }
+        }
+
+        function handleTownChange() {
+            const town = document.getElementById('jTown').value;
+            const field = document.getElementById('customTownField');
+            const input = document.getElementById('customTown');
+            if (town === 'Others') {
+                field.classList.add('active');
+                input.required = true;
+            } else {
+                field.classList.remove('active');
+                input.required = false;
+            }
+        }
         
         async function handlePostJob(e) {
             e.preventDefault();
@@ -92,18 +181,30 @@
                 showJobMessage('Please login first.', 'error');
                 return;
             }
+
+            let category = document.getElementById('jCategory').value;
+            if (category === 'Others') {
+                category = document.getElementById('customCategory').value.trim() || 'Others';
+            }
+
+            let town = document.getElementById('jTown').value;
+            if (town === 'Others') {
+                town = document.getElementById('customTown').value.trim() || 'Others';
+            }
+
+            const detail = document.getElementById('jLocationDetail').value.trim();
+            const fullLocation = detail ? `${detail}, ${town}` : town;
             
             const jobData = {
                 client_id: user.id,
-                title: document.getElementById('jTitle').value,
-                category: document.getElementById('jCategory').value,
-                description: document.getElementById('jDescription').value,
-                location: document.getElementById('jLocation').value,
-                budget: document.getElementById('jBudget').value,
+                title: document.getElementById('jTitle').value.trim(),
+                category: category,
+                description: document.getElementById('jDescription').value.trim(),
+                location: fullLocation,
+                budget: document.getElementById('jBudget').value.trim(),
                 status: 'Open'
             };
             
-            // Insert job and get the created job back
             const { data: insertedJob, error } = await supabaseClient
                 .from('job_posts')
                 .insert([jobData])
@@ -115,20 +216,21 @@
                 return;
             }
             
-            // Create notifications for workers in this category
+            // Notify workers in the same category
             try {
                 const { data: workersInCategory } = await supabaseClient
                     .from('worker_details')
                     .select('id')
-                    .eq('category', jobData.category)
+                    .eq('category', category)
                     .eq('availability', 'Available');
                 
                 if (workersInCategory && workersInCategory.length > 0) {
                     const notifications = workersInCategory.map(w => ({
                         user_id: w.id,
-                        type: 'new_job',
-                        message: `New ${jobData.category} job posted: "${jobData.title}" in ${jobData.location}`,
-                        job_id: insertedJob.id
+                        title: 'New Job Posted',
+                        message: `New ${category} job: "${jobData.title}" in ${fullLocation}`,
+                        job_id: insertedJob.id,
+                        read: false
                     }));
                     
                     await supabaseClient.from('notifications').insert(notifications);
