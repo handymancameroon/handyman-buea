@@ -1,5 +1,6 @@
 // ============================================
-// Handy Man - App Script (With Notifications)
+// Handy Man - App Script (Full Upgrade)
+// Portfolio | Others | Admin | Notifications | Share
 // ============================================
 
 const SUPABASE_URL = 'https://zuhkhpdrxwfjcqnolmpu.supabase.co';
@@ -19,7 +20,8 @@ const FALLBACK_CATEGORIES = [
     {name: 'Auto Mechanics', icon: '🚗', description: 'Car and motorcycle repairs'},
     {name: 'Phone/Laptop Repair', icon: '💻', description: 'Device repairs and troubleshooting'},
     {name: 'Hairdressing', icon: '💇', description: 'Hair styling, barbing, braiding'},
-    {name: 'Catering', icon: '🍲', description: 'Event cooking and food services'}
+    {name: 'Catering', icon: '🍲', description: 'Event cooking and food services'},
+    {name: 'Others', icon: '✨', description: 'Other services not listed above'}
 ];
 
 if (typeof window.supabase !== 'undefined' && typeof window.supabase.createClient === 'function') {
@@ -34,6 +36,8 @@ if (typeof window.supabase !== 'undefined' && typeof window.supabase.createClien
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         injectNavExtras();
+        injectShareButton();
+        trackVisitor();
         checkAuth().catch(() => {});
         
         if (document.getElementById('categoryGrid')) {
@@ -61,12 +65,38 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ============================================
-// NAV EXTRAS: Dashboard link + Notification Bell
+// FILE UPLOAD HELPER
+// ============================================
+async function uploadFile(file, folder) {
+    if (!supabaseClient || !file) return null;
+    
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+    const filePath = `${folder}/${currentUser ? currentUser.id : 'anonymous'}/${fileName}`;
+    
+    const { error: uploadError } = await supabaseClient.storage
+        .from('handyman-files')
+        .upload(filePath, file);
+    
+    if (uploadError) {
+        console.error('Upload error:', uploadError);
+        return null;
+    }
+    
+    const { data } = supabaseClient.storage
+        .from('handyman-files')
+        .getPublicUrl(filePath);
+    
+    return data.publicUrl;
+}
+
+// ============================================
+// NAV EXTRAS: Dashboard + Notification Bell + Admin
 // ============================================
 function injectNavExtras() {
     const nav = document.getElementById('nav');
     if (!nav) return;
-    if (nav.querySelector('.nav-bell')) return; // Already injected
+    if (nav.querySelector('.nav-bell')) return;
     
     // Dashboard link
     const dashLink = document.createElement('a');
@@ -76,6 +106,15 @@ function injectNavExtras() {
     dashLink.textContent = 'My Jobs';
     dashLink.style.display = 'none';
     nav.insertBefore(dashLink, nav.querySelector('#authBtn'));
+    
+    // Admin link (hidden by default)
+    const adminLink = document.createElement('a');
+    adminLink.href = 'admin.html';
+    adminLink.className = 'btn-secondary';
+    adminLink.id = 'navAdmin';
+    adminLink.textContent = '⚙️ Admin';
+    adminLink.style.display = 'none';
+    nav.insertBefore(adminLink, nav.querySelector('#authBtn'));
     
     // Notification bell
     const bellContainer = document.createElement('div');
@@ -101,7 +140,6 @@ function injectNavExtras() {
     `;
     document.body.appendChild(dropdown);
     
-    // Close dropdown when clicking outside
     document.addEventListener('click', (e) => {
         const dropdown = document.getElementById('notificationDropdown');
         const bell = document.getElementById('navBell');
@@ -109,6 +147,112 @@ function injectNavExtras() {
             dropdown.classList.remove('active');
         }
     });
+}
+
+// ============================================
+// SHARE BUTTON (Floating)
+// ============================================
+function injectShareButton() {
+    if (document.getElementById('shareFab')) return;
+    
+    const fab = document.createElement('div');
+    fab.id = 'shareFab';
+    fab.className = 'share-fab';
+    fab.innerHTML = '🔗';
+    fab.title = 'Share Handy Man Buea';
+    fab.onclick = openShareModal;
+    document.body.appendChild(fab);
+    
+    // Share modal
+    const modal = document.createElement('div');
+    modal.id = 'shareModal';
+    modal.className = 'share-modal';
+    modal.innerHTML = `
+        <div class="share-modal-content">
+            <div class="share-modal-header">
+                <h3>🔗 Share Handy Man Buea</h3>
+                <button class="share-close" onclick="closeShareModal()">✕</button>
+            </div>
+            <div class="share-message-box">
+                <p id="shareText">🔧 Find trusted local workers in Buea, Cameroon! Need a plumber, electrician, cleaner, or any skilled worker? Handy Man Buea connects you with verified professionals fast. Check it out: https://handyman-buea.vercel.app/</p>
+                <button class="btn-small" onclick="copyShareText()" style="margin-top: 12px;">📋 Copy Message</button>
+            </div>
+            <div class="share-buttons">
+                <a href="#" id="shareWhatsApp" target="_blank" class="btn-whatsapp share-btn">📱 WhatsApp</a>
+                <a href="#" id="shareFacebook" target="_blank" class="btn-primary share-btn" style="background:#1877f2;">📘 Facebook</a>
+                <a href="#" id="shareTwitter" target="_blank" class="btn-primary share-btn" style="background:#1da1f2;">🐦 Twitter</a>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    
+    // Close on backdrop click
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeShareModal();
+    });
+}
+
+function openShareModal() {
+    const modal = document.getElementById('shareModal');
+    if (!modal) return;
+    
+    const text = encodeURIComponent('🔧 Find trusted local workers in Buea, Cameroon! Need a plumber, electrician, cleaner, or any skilled worker? Handy Man Buea connects you with verified professionals fast. Check it out: https://handyman-buea.vercel.app/');
+    const url = encodeURIComponent('https://handyman-buea.vercel.app/');
+    
+    document.getElementById('shareWhatsApp').href = `https://wa.me/?text=${text}`;
+    document.getElementById('shareFacebook').href = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
+    document.getElementById('shareTwitter').href = `https://twitter.com/intent/tweet?text=${text}`;
+    
+    modal.classList.add('active');
+}
+
+function closeShareModal() {
+    const modal = document.getElementById('shareModal');
+    if (modal) modal.classList.remove('active');
+}
+
+function copyShareText() {
+    const text = document.getElementById('shareText').textContent;
+    navigator.clipboard.writeText(text).then(() => {
+        alert('Message copied! Paste it anywhere.');
+    }).catch(() => {
+        // Fallback
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        alert('Message copied! Paste it anywhere.');
+    });
+}
+
+// ============================================
+// VISITOR TRACKING
+// ============================================
+async function trackVisitor() {
+    if (!supabaseClient) return;
+    // Only count once per session
+    if (sessionStorage.getItem('visitorTracked')) return;
+    
+    try {
+        const { data } = await supabaseClient.rpc('increment_visitors');
+        sessionStorage.setItem('visitorTracked', 'true');
+    } catch (e) {
+        // If RPC doesn't exist, try direct update
+        try {
+            const { data: stats } = await supabaseClient.from('site_stats').select('total_visitors').eq('id', 1).single();
+            if (stats) {
+                await supabaseClient.from('site_stats').update({ 
+                    total_visitors: stats.total_visitors + 1,
+                    last_updated: new Date().toISOString()
+                }).eq('id', 1);
+            }
+            sessionStorage.setItem('visitorTracked', 'true');
+        } catch (err) {
+            console.log('Visitor tracking skipped');
+        }
+    }
 }
 
 // ============================================
@@ -133,6 +277,7 @@ function updateAuthUI() {
     const authBtn = document.getElementById('authBtn');
     const dashLink = document.getElementById('navDashboard');
     const bell = document.getElementById('navBell');
+    const adminLink = document.getElementById('navAdmin');
     
     if (!authBtn) return;
     
@@ -149,13 +294,23 @@ function updateAuthUI() {
         };
         if (dashLink) dashLink.style.display = 'inline-block';
         if (bell) bell.style.display = 'inline-flex';
+        
+        // Show admin link if admin
+        if (adminLink && isAdmin()) {
+            adminLink.style.display = 'inline-block';
+        }
     } else {
         authBtn.textContent = 'Login';
         authBtn.href = 'login.html';
         authBtn.onclick = null;
         if (dashLink) dashLink.style.display = 'none';
         if (bell) bell.style.display = 'none';
+        if (adminLink) adminLink.style.display = 'none';
     }
+}
+
+function isAdmin() {
+    return currentUser && currentUser.email === 'Internationalpimerchant@gmail.com';
 }
 
 // ============================================
@@ -225,12 +380,10 @@ function renderNotificationList(notifications) {
 }
 
 async function handleNotificationClick(notificationId, jobId) {
-    // Mark as read
     if (supabaseClient && notificationId) {
         await supabaseClient.from('notifications').update({ read: true }).eq('id', notificationId);
         loadNotifications();
     }
-    // Navigate to job
     if (jobId) {
         window.location.href = `job.html?id=${jobId}`;
     }
@@ -238,10 +391,10 @@ async function handleNotificationClick(notificationId, jobId) {
 
 function startNotificationPolling() {
     if (notificationPollingInterval) return;
-    loadNotifications(); // Load immediately
+    loadNotifications();
     notificationPollingInterval = setInterval(() => {
         if (currentUser) loadNotifications();
-    }, 30000); // Every 30 seconds
+    }, 30000);
 }
 
 function stopNotificationPolling() {
@@ -267,7 +420,7 @@ async function loadCategories() {
         const { data: categories, error } = await supabaseClient
             .from('categories')
             .select('*')
-            .limit(10);
+            .limit(11);
         
         if (error || !categories || categories.length === 0) {
             renderCategories(FALLBACK_CATEGORIES);
