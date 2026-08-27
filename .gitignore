@@ -29,3 +29,6 @@ yarn-error.log*
 
 # Vercel
 .vercel/
+
+# Handy Man Buea — never commit files with real credentials
+config.js
