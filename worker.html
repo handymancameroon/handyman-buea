@@ -35,6 +35,7 @@
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
     <script src="app.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
@@ -66,10 +67,8 @@
                 const whatsappLink = phoneNum ? `https://wa.me/237${phoneNum}` : '#';
                 const callLink = p.phone ? `tel:${p.phone}` : '#';
                 
-                // Handle avatar with fallback
                 const avatarUrl = p.avatar_url || 'https://via.placeholder.com/120?text=No+Photo';
                 
-                // Portfolio - check both worker_details and profiles
                 let portfolio = [];
                 if (worker.portfolio && Array.isArray(worker.portfolio) && worker.portfolio.length > 0) {
                     portfolio = worker.portfolio;
