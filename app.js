@@ -20,7 +20,7 @@
 //   window.HANDYMAN_CONFIG = {
 //     SUPABASE_URL: 'https://your-project.supabase.co',
 //     SUPABASE_ANON_KEY: 'your-anon-key',
-//     ADMIN_EMAIL: 'your-admin@example.com'   // optional fallback
+//     ADMIN_EMAIL: 'your-admin@example.com'
 //   };
 //
 // config.js is listed in .gitignore and should NOT be committed.
@@ -35,10 +35,8 @@ const SUPABASE_KEY = CONFIG.SUPABASE_ANON_KEY || '';
 // Validate configuration on load
 if (!SUPABASE_URL || !SUPABASE_KEY) {
     console.error(
-        '[HandyMan] CRITICAL: Missing Supabase configuration.
-' +
-        'Please create config.js from config.template.js and include it BEFORE app.js.
-' +
+        '[HandyMan] CRITICAL: Missing Supabase configuration. ' +
+        'Please create config.js from config.template.js and include it BEFORE app.js. ' +
         'See README.md → Getting Started → Supabase Setup for details.'
     );
 }
@@ -463,7 +461,7 @@ function renderNotificationList(notifications) {
         return;
     }
     list.innerHTML = notifications.map(function(n) {
-        return '<div class="notification-item ' + (n.read ? 'read' : 'unread') + '" onclick="handleNotificationClick('' + n.id + '', '' + (n.job_id || '') + '')">' +
+        return '<div class="notification-item ' + (n.read ? 'read' : 'unread') + '" onclick="handleNotificationClick(\'' + n.id + '\', \'' + (n.job_id || '') + '\')">' +
             '<p class="notification-msg">' + escapeHtml(n.message) + '</p>' +
             '<span class="notification-time">' + timeAgo(n.created_at) + '</span>' +
             '</div>';
@@ -520,7 +518,7 @@ function renderCategories(categories) {
     var grid = document.getElementById('categoryGrid');
     if (!grid) return;
     grid.innerHTML = categories.map(function(cat) {
-        return '<div class="category-card" onclick="searchByCategory('' + cat.name + '')">' +
+        return '<div class="category-card" onclick="searchByCategory(\'' + cat.name + '\')">' +
             '<div class="category-icon">' + (cat.icon || '🔧') + '</div>' +
             '<h3>' + cat.name + '</h3>' +
             '<p>' + (cat.description || '') + '</p>' +
@@ -561,9 +559,9 @@ function renderWorkers(workers, container) {
         var avatar = w.profiles && w.profiles.avatar_url ? w.profiles.avatar_url : 'https://via.placeholder.com/80?text=No+Photo';
         var name = w.profiles && w.profiles.full_name ? w.profiles.full_name : 'Unknown';
         var location = w.profiles && w.profiles.location ? w.profiles.location : 'Buea';
-        return '<div class="worker-card" onclick="viewWorker('' + w.id + '')">' +
+        return '<div class="worker-card" onclick="viewWorker(\'' + w.id + '\')">' +
             '<div class="worker-avatar">' +
-            '<img src="' + avatar + '" alt="' + name + '" onerror="this.src='https://via.placeholder.com/80?text=No+Photo'">' +
+            '<img src="' + avatar + '" alt="' + name + '" onerror="this.src=\'https://via.placeholder.com/80?text=No+Photo\'">' +
             '</div>' +
             '<h3>' + name + '</h3>' +
             '<p class="worker-category">' + (w.category || 'General') + '</p>' +
