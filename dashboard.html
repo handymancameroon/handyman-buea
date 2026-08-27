@@ -27,7 +27,6 @@
             <h1>My Dashboard</h1>
             
             <div class="dashboard-grid">
-                <!-- My Posted Jobs -->
                 <div class="dashboard-section">
                     <h2>📋 My Posted Jobs</h2>
                     <div id="myJobsList">
@@ -35,7 +34,6 @@
                     </div>
                 </div>
                 
-                <!-- My Worker Profile -->
                 <div class="dashboard-section">
                     <h2>🔧 My Worker Profile</h2>
                     <div id="myWorkerProfile">
@@ -47,6 +45,7 @@
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
     <script src="app.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
@@ -61,9 +60,6 @@
             loadMyWorkerProfile();
         });
         
-        // ============================================
-        // MY POSTED JOBS
-        // ============================================
         async function loadMyJobs() {
             const container = document.getElementById('myJobsList');
             
@@ -140,9 +136,6 @@
             loadMyJobs();
         }
         
-        // ============================================
-        // MY WORKER PROFILE
-        // ============================================
         async function loadMyWorkerProfile() {
             const container = document.getElementById('myWorkerProfile');
             
