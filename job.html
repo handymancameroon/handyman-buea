@@ -52,6 +52,7 @@
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
     <script src="app.js"></script>
     <script>
         let currentJob = null;
@@ -90,10 +91,8 @@
                 const statusBannerClass = isOpen ? 'status-open' : 'status-closed';
                 const statusText = isOpen ? '🟢 OPEN — Workers Can Apply' : '🔴 CLOSED — No Longer Accepting Applications';
                 
-                // Avatar with fallback
                 const avatarUrl = p.avatar_url || 'https://via.placeholder.com/60?text=No+Photo';
                 
-                // Portfolio from profiles
                 let portfolio = [];
                 if (p.portfolio && Array.isArray(p.portfolio) && p.portfolio.length > 0) {
                     portfolio = p.portfolio;
