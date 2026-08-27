@@ -1,419 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Handy Man</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .admin-filter-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+        .admin-filter-bar select, .admin-filter-bar input { padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); }
+        .user-row, .dispute-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px; background: #fff; flex-wrap: wrap; }
+        .user-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn-whatsapp { background: #25D366; color: white; border: none; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; cursor: pointer; }
+        .btn-call { background: #0ea5e9; color: white; border: none; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; }
+        .broadcast-box { background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 24px; }
+        .broadcast-box textarea { width: 100%; min-height: 100px; padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin: 10px 0; }
+        .stat-card.today { border-left: 4px solid #22c55e; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <a href="index.html" class="logo">🔧 Handy Man</a>
+            <nav class="nav" id="nav">
+                <a href="index.html">Home</a>
+                <a href="workers.html">Find Workers</a>
+                <a href="jobs.html">Find Jobs</a>
+                <a href="dashboard.html" class="btn-secondary">My Jobs</a>
+                <a href="login.html" class="btn-primary" id="authBtn">Login</a>
+            </nav>
+            <button class="menu-toggle" id="menuToggle">☰</button>
+        </div>
+    </header>
+
+    <main class="admin-page">
+        <div class="container">
+            <h1>⚙️ Admin Control Panel</h1>
+            <p style="color: var(--text-light); margin-bottom: 32px;">Welcome back, Administrator.</p>
+
+            <div class="admin-stats-grid" id="statsGrid">
+                <div class="stat-card visitors"><h3 id="statVisitors">...</h3><p>Total Visitors</p></div>
+                <div class="stat-card today"><h3 id="statTodayRegs">...</h3><p>Registered Today</p></div>
+                <div class="stat-card workers"><h3 id="statWorkers">...</h3><p>Workers Registered</p></div>
+                <div class="stat-card clients"><h3 id="statClients">...</h3><p>Employers / Clients</p></div>
+                <div class="stat-card jobs"><h3 id="statJobs">...</h3><p>Total Job Posts</p></div>
+                <div class="stat-card disputes"><h3 id="statDisputes">...</h3><p>Open Disputes</p></div>
+            </div>
+
+            <div class="admin-section">
+                <h2>📢 Send Message / Broadcast</h2>
+                <div class="broadcast-box">
+                    <label><strong>Send to:</strong></label>
+                    <select id="broadcastAudience" style="margin-left:8px; padding:8px;">
+                        <option value="all">All Users</option>
+                        <option value="workers">Only Workers</option>
+                        <option value="clients">Only Clients</option>
+                    </select>
+                    <textarea id="broadcastMessage" placeholder="Type your message here..."></textarea>
+                    <button type="button" class="btn-primary" onclick="sendBroadcast()">Send In-App Notification</button>
+                    <p id="broadcastStatus" class="message"></p>
+                </div>
+            </div>
+
+            <div class="admin-section">
+                <h2>👥 All Users (Clients & Workers)</h2>
+                <div class="admin-filter-bar">
+                    <select id="userFilter" onchange="loadAllUsers()">
+                        <option value="all">All Users</option>
+                        <option value="workers">Workers only</option>
+                        <option value="clients">Clients only</option>
+                    </select>
+                    <input type="text" id="userSearch" placeholder="Search name or phone..." oninput="loadAllUsers()">
+                </div>
+                <div id="allUsersList"><p class="loading">Loading users...</p></div>
+            </div>
+
+            <div class="admin-section">
+                <h2>🚩 Disputes & Reports</h2>
+                <div id="disputesList"><p class="loading">Loading disputes...</p></div>
+            </div>
+
+            <div class="admin-section">
+                <h2>🐞 Report a Bug or Case</h2>
+                <div class="broadcast-box">
+                    <input type="text" id="bugTitle" placeholder="Short title" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid var(--border);">
+                    <textarea id="bugDetails" placeholder="Describe the problem..."></textarea>
+                    <button type="button" class="btn-primary" onclick="submitBugReport()">Save Bug / Case Report</button>
+                    <p id="bugStatus" class="message"></p>
+                </div>
+            </div>
+
+            <div class="admin-section">
+                <h2>👷 All Workers (Quick Delete)</h2>
+                <div id="allWorkersList"><p class="loading">Loading workers...</p></div>
+            </div>
+
+            <div class="admin-section">
+                <h2>📋 All Job Posts</h2>
+                <div id="allJobsList"><p class="loading">Loading jobs...</p></div>
+            </div>
+        </div>
+    </main>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <script src="app.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            await checkAuth();
+    document.addEventListener('DOMContentLoaded', async function () {
+        await checkAuth();
 
-            // Allow admin if DB flag is true OR email matches ADMIN_EMAIL in config
-            const adminEmail = (window.HANDYMAN_CONFIG && window.HANDYMAN_CONFIG.ADMIN_EMAIL) || '';
-            const emailOk = currentUser && adminEmail &&
-                currentUser.email &&
-                currentUser.email.toLowerCase() === adminEmail.toLowerCase();
+        var adminEmail = (window.HANDYMAN_CONFIG && window.HANDYMAN_CONFIG.ADMIN_EMAIL) || 'internationalpimerchant@gmail.com';
+        var emailOk = currentUser && currentUser.email &&
+            currentUser.email.toLowerCase() === adminEmail.toLowerCase();
 
-            if (!isAdmin() && !emailOk) {
-                document.body.innerHTML = `
-                    <div style="text-align: center; padding: 100px 20px;">
-                        <h1>⛔ Access Denied</h1>
-                        <p style="color: var(--text-light); margin: 16px 0;">You do not have permission to view this page.</p>
-                        <p style="color: var(--text-light); font-size: 0.9rem;">Logged in as: ${currentUser ? currentUser.email : 'not logged in'}</p>
-                        <a href="index.html" class="btn-primary">Go Home</a>
-                    </div>
-                `;
+        if (!isAdmin() && !emailOk) {
+            document.body.innerHTML =
+                '<div style="text-align:center;padding:100px 20px;">' +
+                '<h1>Access Denied</h1>' +
+                '<p>You do not have permission to view this page.</p>' +
+                '<p>Logged in as: ' + (currentUser ? currentUser.email : 'not logged in') + '</p>' +
+                '<a href="index.html" class="btn-primary">Go Home</a></div>';
+            return;
+        }
+
+        loadStats();
+        loadAllUsers();
+        loadDisputes();
+        loadAllWorkers();
+        loadAllJobs();
+    });
+
+    function formatPhone(phone) {
+        if (!phone) return null;
+        var p = phone.toString().replace(/\D/g, '');
+        if (p.indexOf('237') === 0) p = p.substring(3);
+        if (p.length === 9) return '237' + p;
+        return p;
+    }
+
+    function whatsappLink(phone) {
+        var p = formatPhone(phone);
+        if (!p) return '#';
+        return 'https://wa.me/' + p + '?text=' + encodeURIComponent('Hello from Handy Man Buea Admin');
+    }
+
+    function callLink(phone) {
+        var p = formatPhone(phone);
+        return p ? 'tel:+' + p : '#';
+    }
+
+    function setText(id, value) {
+        var el = document.getElementById(id);
+        if (el) el.textContent = value;
+    }
+
+    function setHtml(id, html) {
+        var el = document.getElementById(id);
+        if (el) el.innerHTML = html;
+    }
+
+    async function loadStats() {
+        if (!supabaseClient) return;
+        try {
+            var statsRes = await supabaseClient.from('site_stats').select('total_visitors').eq('id', 1).maybeSingle();
+            setText('statVisitors', (statsRes.data && statsRes.data.total_visitors) || 0);
+
+            var todayStart = new Date();
+            todayStart.setHours(0, 0, 0, 0);
+
+            var todayRes = await supabaseClient.from('profiles').select('*', { count: 'exact', head: true }).gte('created_at', todayStart.toISOString());
+            setText('statTodayRegs', todayRes.count || 0);
+
+            var workerRes = await supabaseClient.from('profiles').select('*', { count: 'exact', head: true }).eq('is_worker', true);
+            setText('statWorkers', workerRes.count || 0);
+
+            var clientRes = await supabaseClient.from('profiles').select('*', { count: 'exact', head: true }).eq('is_worker', false);
+            setText('statClients', clientRes.count || 0);
+
+            var jobRes = await supabaseClient.from('job_posts').select('*', { count: 'exact', head: true });
+            setText('statJobs', jobRes.count || 0);
+
+            var disputeRes = await supabaseClient.from('disputes').select('*', { count: 'exact', head: true }).eq('status', 'Open');
+            setText('statDisputes', disputeRes.count || 0);
+        } catch (err) {
+            console.error('Stats error:', err);
+        }
+    }
+
+    async function loadAllUsers() {
+        if (!supabaseClient) {
+            setHtml('allUsersList', '<p class="empty-dashboard">Cannot connect.</p>');
+            return;
+        }
+        var filterEl = document.getElementById('userFilter');
+        var searchEl = document.getElementById('userSearch');
+        var filter = filterEl ? filterEl.value : 'all';
+        var search = searchEl ? searchEl.value.toLowerCase().trim() : '';
+
+        try {
+            var query = supabaseClient
+                .from('profiles')
+                .select('id, full_name, phone, is_worker, is_admin, location, created_at')
+                .order('created_at', { ascending: false })
+                .limit(200);
+
+            if (filter === 'workers') query = query.eq('is_worker', true);
+            if (filter === 'clients') query = query.eq('is_worker', false);
+
+            var res = await query;
+            if (res.error) {
+                setHtml('allUsersList', '<p class="empty-dashboard">Error: ' + res.error.message + '</p>');
                 return;
             }
 
-            loadStats();
+            var list = res.data || [];
+            if (search) {
+                list = list.filter(function (u) {
+                    return (u.full_name || '').toLowerCase().indexOf(search) !== -1 ||
+                        (u.phone || '').indexOf(search) !== -1;
+                });
+            }
+
+            if (list.length === 0) {
+                setHtml('allUsersList', '<p class="empty-dashboard">No users found.</p>');
+                return;
+            }
+
+            setHtml('allUsersList', list.map(function (u) {
+                var type = u.is_admin ? 'Admin' : (u.is_worker ? 'Worker' : 'Client');
+                var phone = u.phone || '';
+                var safeName = (u.full_name || 'User').replace(/'/g, "\\'");
+                var contact = phone
+                    ? '<a class="btn-call" href="' + callLink(phone) + '">Call</a> ' +
+                      '<a class="btn-whatsapp" href="' + whatsappLink(phone) + '" target="_blank">WhatsApp</a> '
+                    : '';
+                return '<div class="user-row"><div><h4 style="margin:0 0 4px;">' + (u.full_name || 'No name') +
+                    '</h4><p style="margin:0;font-size:0.9rem;">' + type + ' • ' + (u.location || 'Buea') +
+                    ' • ' + (phone || 'No phone') + '</p></div><div class="user-actions">' + contact +
+                    '<button class="btn-small" onclick="sendSingleNotification(\'' + u.id + '\',\'' + safeName + '\')">Notify</button> ' +
+                    '<button class="btn-close-job" onclick="deleteUser(\'' + u.id + '\',\'' + safeName + '\')">Delete</button></div></div>';
+            }).join(''));
+        } catch (err) {
+            setHtml('allUsersList', '<p class="empty-dashboard">Error loading users.</p>');
+        }
+    }
+
+    async function sendSingleNotification(userId, userName) {
+        var message = prompt('Write a message for ' + userName + ':');
+        if (!message || !message.trim()) return;
+        var res = await supabaseClient.from('notifications').insert([{
+            user_id: userId,
+            title: 'Message from Admin',
+            message: message.trim(),
+            read: false
+        }]);
+        if (res.error) alert('Error: ' + res.error.message);
+        else alert('Notification sent to ' + userName);
+    }
+
+    async function deleteUser(userId, name) {
+        if (!confirm('Delete ' + name + '? This cannot be undone.')) return;
+        await supabaseClient.from('worker_details').delete().eq('id', userId);
+        await supabaseClient.from('reviews').delete().eq('worker_id', userId);
+        await supabaseClient.from('job_posts').delete().eq('client_id', userId);
+        await supabaseClient.from('notifications').delete().eq('user_id', userId);
+        var res = await supabaseClient.from('profiles').delete().eq('id', userId);
+        if (res.error) alert('Error: ' + res.error.message);
+        else {
+            alert(name + ' deleted.');
             loadAllUsers();
-            loadDisputes();
             loadAllWorkers();
-            loadAllJobs();
+            loadStats();
+        }
+    }
+
+    async function sendBroadcast() {
+        var audience = document.getElementById('broadcastAudience').value;
+        var message = document.getElementById('broadcastMessage').value.trim();
+        var status = document.getElementById('broadcastStatus');
+        if (!message) {
+            status.textContent = 'Please type a message first.';
+            status.className = 'message error';
+            return;
+        }
+        status.textContent = 'Sending...';
+        status.className = 'message';
+
+        var query = supabaseClient.from('profiles').select('id');
+        if (audience === 'workers') query = query.eq('is_worker', true);
+        if (audience === 'clients') query = query.eq('is_worker', false);
+
+        var res = await query;
+        if (res.error || !res.data || res.data.length === 0) {
+            status.textContent = 'No users found for this group.';
+            status.className = 'message error';
+            return;
+        }
+
+        var rows = res.data.map(function (u) {
+            return { user_id: u.id, title: 'Message from Admin', message: message, read: false };
         });
-
-        function formatPhone(phone) {
-            if (!phone) return null;
-            let p = phone.toString().replace(/\D/g, '');
-            if (p.startsWith('237')) p = p.substring(3);
-            if (p.length === 9) return '237' + p;
-            return p;
+        var insertRes = await supabaseClient.from('notifications').insert(rows);
+        if (insertRes.error) {
+            status.textContent = 'Error: ' + insertRes.error.message;
+            status.className = 'message error';
+        } else {
+            status.textContent = 'Message sent to ' + res.data.length + ' user(s)!';
+            status.className = 'message success';
+            document.getElementById('broadcastMessage').value = '';
         }
+    }
 
-        function whatsappLink(phone, message = '') {
-            const p = formatPhone(phone);
-            if (!p) return '#';
-            const text = encodeURIComponent(message || 'Hello from Handy Man Buea Admin');
-            return `https://wa.me/${p}?text=${text}`;
+    async function submitBugReport() {
+        var title = document.getElementById('bugTitle').value.trim();
+        var details = document.getElementById('bugDetails').value.trim();
+        var status = document.getElementById('bugStatus');
+        if (!title) {
+            status.textContent = 'Please enter a title.';
+            status.className = 'message error';
+            return;
         }
-
-        function callLink(phone) {
-            const p = formatPhone(phone);
-            return p ? `tel:+${p}` : '#';
-        }
-
-        async function loadStats() {
-            if (!supabaseClient) return;
-            try {
-                const { data: stats } = await supabaseClient
-                    .from('site_stats').select('total_visitors').eq('id', 1).single();
-                document.getElementById('statVisitors').textContent = (stats && stats.total_visitors) || 0;
-
-                const todayStart = new Date();
-                todayStart.setHours(0, 0, 0, 0);
-                const { count: todayCount } = await supabaseClient
-                    .from('profiles')
-                    .select('*', { count: 'exact', head: true })
-                    .gte('created_at', todayStart.toISOString());
-                document.getElementById('statTodayRegs').textContent = todayCount || 0;
-
-                const { count: workerCount } = await supabaseClient
-                    .from('profiles').select('*', { count: 'exact', head: true }).eq('is_worker', true);
-                document.getElementById('statWorkers').textContent = workerCount || 0;
-
-                const { count: clientCount } = await supabaseClient
-                    .from('profiles').select('*', { count: 'exact', head: true }).eq('is_worker', false);
-                document.getElementById('statClients').textContent = clientCount || 0;
-
-                const { count: jobCount } = await supabaseClient
-                    .from('job_posts').select('*', { count: 'exact', head: true });
-                document.getElementById('statJobs').textContent = jobCount || 0;
-
-                const { count: disputeCount } = await supabaseClient
-                    .from('disputes').select('*', { count: 'exact', head: true }).eq('status', 'Open');
-                document.getElementById('statDisputes').textContent = disputeCount || 0;
-            } catch (err) {
-                console.error('Stats error:', err);
-            }
-        }
-
-        async function loadAllUsers() {
-            const container = document.getElementById('allUsersList');
-            if (!supabaseClient) {
-                container.innerHTML = '<p class="empty-dashboard">Cannot connect.</p>';
-                return;
-            }
-
-            const filter = document.getElementById('userFilter')?.value || 'all';
-            const search = (document.getElementById('userSearch')?.value || '').toLowerCase().trim();
-
-            try {
-                let query = supabaseClient
-                    .from('profiles')
-                    .select('id, full_name, phone, is_worker, is_admin, location, created_at')
-                    .order('created_at', { ascending: false })
-                    .limit(200);
-
-                if (filter === 'workers') query = query.eq('is_worker', true);
-                if (filter === 'clients') query = query.eq('is_worker', false);
-
-                const { data: users, error } = await query;
-                if (error) {
-                    container.innerHTML = '<p class="empty-dashboard">Error loading users: ' + error.message + '</p>';
-                    return;
-                }
-
-                let list = users || [];
-                if (search) {
-                    list = list.filter(u =>
-                        (u.full_name || '').toLowerCase().includes(search) ||
-                        (u.phone || '').includes(search)
-                    );
-                }
-
-                if (list.length === 0) {
-                    container.innerHTML = '<p class="empty-dashboard">No users found.</p>';
-                    return;
-                }
-
-                container.innerHTML = list.map(u => {
-                    const type = u.is_admin ? '👑 Admin' : (u.is_worker ? '👷 Worker' : '👤 Client');
-                    const phone = u.phone || '';
-                    const safeName = (u.full_name || 'User').replace(/'/g, "\\'");
-                    return `
-                        <div class="user-row">
-                            <div>
-                                <h4 style="margin:0 0 4px;">${u.full_name || 'No name'}</h4>
-                                <p style="margin:0; font-size:0.9rem;">
-                                    ${type} • 📍 ${u.location || 'Buea'} • 📞 ${phone || 'No phone'}
-                                </p>
-                            </div>
-                            <div class="user-actions">
-                                ${phone ? `
-                                    <a class="btn-call" href="${callLink(phone)}">📞 Call</a>
-                                    <a class="btn-whatsapp" href="${whatsappLink(phone)}" target="_blank">💬 WhatsApp</a>
-                                ` : ''}
-                                <button class="btn-small" onclick="sendSingleNotification('${u.id}', '${safeName}')">🔔 Notify</button>
-                                <button class="btn-close-job" onclick="deleteUser('${u.id}', '${safeName}')">🗑️ Delete</button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            } catch (err) {
-                container.innerHTML = '<p class="empty-dashboard">Error loading users.</p>';
-            }
-        }
-
-        async function sendSingleNotification(userId, userName) {
-            const message = prompt('Write a message for ' + userName + ':');
-            if (!message || !message.trim()) return;
-            try {
-                const { error } = await supabaseClient.from('notifications').insert([{
-                    user_id: userId,
-                    title: 'Message from Admin',
-                    message: message.trim(),
-                    read: false
-                }]);
-                if (error) { alert('Error: ' + error.message); return; }
-                alert('Notification sent to ' + userName);
-            } catch (err) {
-                alert('Error: ' + err.message);
-            }
-        }
-
-        async function deleteUser(userId, name) {
-            if (!confirm('Delete ' + name + '? This cannot be undone.')) return;
-            try {
-                await supabaseClient.from('worker_details').delete().eq('id', userId);
-                await supabaseClient.from('reviews').delete().eq('worker_id', userId);
-                await supabaseClient.from('job_posts').delete().eq('client_id', userId);
-                await supabaseClient.from('notifications').delete().eq('user_id', userId);
-                const { error } = await supabaseClient.from('profiles').delete().eq('id', userId);
-                if (error) { alert('Error: ' + error.message); return; }
-                alert(name + ' deleted.');
-                loadAllUsers();
-                loadAllWorkers();
-                loadStats();
-            } catch (err) {
-                alert('Error: ' + err.message);
-            }
-        }
-
-        async function sendBroadcast() {
-            const audience = document.getElementById('broadcastAudience').value;
-            const message = document.getElementById('broadcastMessage').value.trim();
-            const status = document.getElementById('broadcastStatus');
-
-            if (!message) {
-                status.textContent = 'Please type a message first.';
-                status.className = 'message error';
-                return;
-            }
-
-            status.textContent = 'Sending...';
-            status.className = 'message';
-
-            try {
-                let query = supabaseClient.from('profiles').select('id');
-                if (audience === 'workers') query = query.eq('is_worker', true);
-                if (audience === 'clients') query = query.eq('is_worker', false);
-
-                const { data: users, error } = await query;
-                if (error || !users || users.length === 0) {
-                    status.textContent = 'No users found for this group.';
-                    status.className = 'message error';
-                    return;
-                }
-
-                const rows = users.map(u => ({
-                    user_id: u.id,
-                    title: 'Message from Admin',
-                    message: message,
-                    read: false
-                }));
-
-                const { error: insertError } = await supabaseClient.from('notifications').insert(rows);
-                if (insertError) {
-                    status.textContent = 'Error: ' + insertError.message;
-                    status.className = 'message error';
-                    return;
-                }
-
-                status.textContent = 'Message sent to ' + users.length + ' user(s)!';
-                status.className = 'message success';
-                document.getElementById('broadcastMessage').value = '';
-            } catch (err) {
-                status.textContent = 'Unexpected error: ' + err.message;
-                status.className = 'message error';
-            }
-        }
-
-        async function submitBugReport() {
-            const title = document.getElementById('bugTitle').value.trim();
-            const details = document.getElementById('bugDetails').value.trim();
-            const status = document.getElementById('bugStatus');
-
-            if (!title) {
-                status.textContent = 'Please enter a title.';
-                status.className = 'message error';
-                return;
-            }
-
-            try {
-                const { error } = await supabaseClient.from('disputes').insert([{
-                    reason: 'Bug/Case: ' + title,
-                    details: details || 'No details',
-                    target_name: 'Internal',
-                    target_type: 'Bug',
-                    reporter_name: (currentProfile && currentProfile.full_name) || (currentUser && currentUser.email) || 'Admin',
-                    status: 'Open'
-                }]);
-
-                if (error) {
-                    status.textContent = 'Error: ' + error.message;
-                    status.className = 'message error';
-                    return;
-                }
-
-                status.textContent = 'Bug/Case saved successfully!';
-                status.className = 'message success';
-                document.getElementById('bugTitle').value = '';
-                document.getElementById('bugDetails').value = '';
-                loadDisputes();
-                loadStats();
-            } catch (err) {
-                status.textContent = 'Error: ' + err.message;
-                status.className = 'message error';
-            }
-        }
-
-        async function loadDisputes() {
-            const container = document.getElementById('disputesList');
-            if (!supabaseClient) {
-                container.innerHTML = '<p class="empty-dashboard">Cannot connect.</p>';
-                return;
-            }
-            try {
-                const { data: disputes, error } = await supabaseClient
-                    .from('disputes').select('*').order('created_at', { ascending: false });
-
-                if (error || !disputes || disputes.length === 0) {
-                    container.innerHTML = '<p class="empty-dashboard">No disputes reported yet.</p>';
-                    return;
-                }
-
-                container.innerHTML = disputes.map(d => {
-                    const date = new Date(d.created_at).toLocaleDateString('en-GB');
-                    const statusClass = d.status === 'Open' ? 'status-open-dispute' : 'status-resolved';
-                    return `
-                        <div class="dispute-row">
-                            <div class="dispute-info">
-                                <h4>${d.reason}</h4>
-                                <p><strong>Target:</strong> ${d.target_name} (${d.target_type})</p>
-                                <p><strong>Reporter:</strong> ${d.reporter_name || 'Anonymous'}</p>
-                                <p><strong>Details:</strong> ${d.details || 'No details'}</p>
-                                <p style="font-size: 0.8rem; color: var(--text-light);">${date}</p>
-                            </div>
-                            <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-end;">
-                                <span class="dispute-status ${statusClass}">${d.status}</span>
-                                ${d.status === 'Open' ? `<button class="btn-small" onclick="resolveDispute('${d.id}')">Resolve</button>` : ''}
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            } catch (err) {
-                container.innerHTML = '<p class="empty-dashboard">Error loading disputes.</p>';
-            }
-        }
-
-        async function resolveDispute(disputeId) {
-            if (!confirm('Mark this dispute as resolved?')) return;
-            const { error } = await supabaseClient.from('disputes').update({ status: 'Resolved' }).eq('id', disputeId);
-            if (error) { alert('Error: ' + error.message); return; }
-            alert('Dispute resolved.');
+        var res = await supabaseClient.from('disputes').insert([{
+            reason: 'Bug/Case: ' + title,
+            details: details || 'No details',
+            target_name: 'Internal',
+            target_type: 'Bug',
+            reporter_name: (currentProfile && currentProfile.full_name) || (currentUser && currentUser.email) || 'Admin',
+            status: 'Open'
+        }]);
+        if (res.error) {
+            status.textContent = 'Error: ' + res.error.message;
+            status.className = 'message error';
+        } else {
+            status.textContent = 'Bug/Case saved!';
+            status.className = 'message success';
+            document.getElementById('bugTitle').value = '';
+            document.getElementById('bugDetails').value = '';
             loadDisputes();
             loadStats();
         }
+    }
 
-        async function loadAllWorkers() {
-            const container = document.getElementById('allWorkersList');
-            if (!supabaseClient) {
-                container.innerHTML = '<p class="empty-dashboard">Cannot connect.</p>';
+    async function loadDisputes() {
+        if (!supabaseClient) {
+            setHtml('disputesList', '<p class="empty-dashboard">Cannot connect.</p>');
+            return;
+        }
+        try {
+            var res = await supabaseClient.from('disputes').select('*').order('created_at', { ascending: false });
+            if (res.error || !res.data || res.data.length === 0) {
+                setHtml('disputesList', '<p class="empty-dashboard">No disputes yet.</p>');
                 return;
             }
-            try {
-                const { data: workers, error } = await supabaseClient
-                    .from('worker_details')
-                    .select('*, profiles(full_name, phone, location)')
-                    .order('created_at', { ascending: false });
-
-                if (error || !workers || workers.length === 0) {
-                    container.innerHTML = '<p class="empty-dashboard">No workers registered yet.</p>';
-                    return;
-                }
-
-                container.innerHTML = workers.map(w => {
-                    const p = w.profiles || {};
-                    const safeName = (p.full_name || 'this worker').replace(/'/g, "\\'");
-                    return `
-                        <div class="dispute-row">
-                            <div class="dispute-info">
-                                <h4>${p.full_name || 'Unknown'}</h4>
-                                <p>${w.category} • ${p.phone || 'No phone'} • ${p.location || 'Buea'}</p>
-                                <p style="font-size: 0.8rem; color: var(--text-light);">${w.rating || 0}/5 • ${w.review_count || 0} reviews</p>
-                            </div>
-                            <button class="btn-close-job" onclick="deleteWorker('${w.id}', '${safeName}')">Delete</button>
-                        </div>
-                    `;
-                }).join('');
-            } catch (err) {
-                container.innerHTML = '<p class="empty-dashboard">Error loading workers.</p>';
-            }
+            setHtml('disputesList', res.data.map(function (d) {
+                var date = new Date(d.created_at).toLocaleDateString('en-GB');
+                var btn = d.status === 'Open'
+                    ? '<button class="btn-small" onclick="resolveDispute(\'' + d.id + '\')">Resolve</button>'
+                    : '';
+                return '<div class="dispute-row"><div class="dispute-info"><h4>' + (d.reason || '') +
+                    '</h4><p><strong>Target:</strong> ' + (d.target_name || '') + ' (' + (d.target_type || '') +
+                    ')</p><p><strong>Reporter:</strong> ' + (d.reporter_name || 'Anonymous') +
+                    '</p><p><strong>Details:</strong> ' + (d.details || '') +
+                    '</p><p style="font-size:0.8rem;">' + date + '</p></div><div>' +
+                    '<span>' + (d.status || '') + '</span> ' + btn + '</div></div>';
+            }).join(''));
+        } catch (err) {
+            setHtml('disputesList', '<p class="empty-dashboard">Error loading disputes.</p>');
         }
+    }
 
-        async function deleteWorker(workerId, name) {
-            if (!confirm('Delete ' + name + '? This cannot be undone.')) return;
-            await supabaseClient.from('worker_details').delete().eq('id', workerId);
-            await supabaseClient.from('reviews').delete().eq('worker_id', workerId);
-            await supabaseClient.from('profiles').delete().eq('id', workerId);
-            alert(name + ' has been deleted.');
-            loadAllWorkers();
-            loadAllUsers();
+    async function resolveDispute(disputeId) {
+        if (!confirm('Mark as resolved?')) return;
+        var res = await supabaseClient.from('disputes').update({ status: 'Resolved' }).eq('id', disputeId);
+        if (res.error) alert('Error: ' + res.error.message);
+        else {
+            alert('Resolved.');
+            loadDisputes();
             loadStats();
         }
+    }
 
-        async function loadAllJobs() {
-            const container = document.getElementById('allJobsList');
-            if (!supabaseClient) {
-                container.innerHTML = '<p class="empty-dashboard">Cannot connect.</p>';
+    async function loadAllWorkers() {
+        if (!supabaseClient) {
+            setHtml('allWorkersList', '<p class="empty-dashboard">Cannot connect.</p>');
+            return;
+        }
+        try {
+            var res = await supabaseClient
+                .from('worker_details')
+                .select('*, profiles(full_name, phone, location)')
+                .order('created_at', { ascending: false });
+            if (res.error || !res.data || res.data.length === 0) {
+                setHtml('allWorkersList', '<p class="empty-dashboard">No workers yet.</p>');
                 return;
             }
-            try {
-                const { data: jobs, error } = await supabaseClient
-                    .from('job_posts')
-                    .select('*, profiles(full_name)')
-                    .order('created_at', { ascending: false });
+            setHtml('allWorkersList', res.data.map(function (w) {
+                var p = w.profiles || {};
+                var safeName = (p.full_name || 'worker').replace(/'/g, "\\'");
+                return '<div class="dispute-row"><div class="dispute-info"><h4>' + (p.full_name || 'Unknown') +
+                    '</h4><p>' + (w.category || '') + ' • ' + (p.phone || 'No phone') + ' • ' + (p.location || 'Buea') +
+                    '</p></div><button class="btn-close-job" onclick="deleteWorker(\'' + w.id + '\',\'' + safeName +
+                    '\')">Delete</button></div>';
+            }).join(''));
+        } catch (err) {
+            setHtml('allWorkersList', '<p class="empty-dashboard">Error loading workers.</p>');
+        }
+    }
 
-                if (error || !jobs || jobs.length === 0) {
-                    container.innerHTML = '<p class="empty-dashboard">No jobs posted yet.</p>';
-                    return;
-                }
+    async function deleteWorker(workerId, name) {
+        if (!confirm('Delete ' + name + '?')) return;
+        await supabaseClient.from('worker_details').delete().eq('id', workerId);
+        await supabaseClient.from('reviews').delete().eq('worker_id', workerId);
+        await supabaseClient.from('profiles').delete().eq('id', workerId);
+        alert(name + ' deleted.');
+        loadAllWorkers();
+        loadAllUsers();
+        loadStats();
+    }
 
-                container.innerHTML = jobs.map(job => {
-                    const date = new Date(job.created_at).toLocaleDateString('en-GB');
-                    const statusClass = job.status === 'Open' ? 'status-available' : 'status-closed';
-                    return `
-                        <div class="dispute-row">
-                            <div class="dispute-info">
-                                <h4>${job.title}</h4>
-                                <p>${job.category} • ${job.location} • by ${(job.profiles && job.profiles.full_name) || 'Unknown'} • ${date}</p>
-                                <span class="status-badge ${statusClass}">${job.status}</span>
-                            </div>
-                            <button class="btn-close-job" onclick="deleteJob('${job.id}')">Delete</button>
-                        </div>
-                    `;
-                }).join('');
-            } catch (err) {
-                container.innerHTML = '<p class="empty-dashboard">Error loading jobs.</p>';
+    async function loadAllJobs() {
+        if (!supabaseClient) {
+            setHtml('allJobsList', '<p class="empty-dashboard">Cannot connect.</p>');
+            return;
+        }
+        try {
+            var res = await supabaseClient
+                .from('job_posts')
+                .select('*, profiles(full_name)')
+                .order('created_at', { ascending: false });
+            if (res.error || !res.data || res.data.length === 0) {
+                setHtml('allJobsList', '<p class="empty-dashboard">No jobs yet.</p>');
+                return;
             }
+            setHtml('allJobsList', res.data.map(function (job) {
+                var date = new Date(job.created_at).toLocaleDateString('en-GB');
+                var poster = (job.profiles && job.profiles.full_name) || 'Unknown';
+                var safeTitle = (job.title || '').replace(/'/g, "\\'");
+                return '<div class="dispute-row"><div class="dispute-info"><h4>' + (job.title || '') +
+                    '</h4><p>' + (job.category || '') + ' • ' + (job.location || '') + ' • by ' + poster +
+                    ' • ' + date + '</p><span>' + (job.status || '') +
+                    '</span></div><button class="btn-close-job" onclick="deleteJob(\'' + job.id + '\',\'' +
+                    safeTitle + '\')">Delete</button></div>';
+            }).join(''));
+        } catch (err) {
+            setHtml('allJobsList', '<p class="empty-dashboard">Error loading jobs.</p>');
         }
+    }
 
-        async function deleteJob(jobId) {
-            if (!confirm('Delete this job?')) return;
-            const { error } = await supabaseClient.from('job_posts').delete().eq('id', jobId);
-            if (error) { alert('Error: ' + error.message); return; }
-            alert('Job deleted.');
-            loadAllJobs();
-            loadStats();
-        }
+    async function deleteJob(jobId, title) {
+        if (!confirm('Delete "' + title + '"?')) return;
+        await supabaseClient.from('job_posts').delete().eq('id', jobId);
+        alert('Job deleted.');
+        loadAllJobs();
+        loadStats();
+    }
     </script>
 </body>
 </html>
