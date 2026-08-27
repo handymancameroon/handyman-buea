@@ -39,7 +39,6 @@
                     <option value="Phone/Laptop Repair">Phone/Laptop Repair</option>
                     <option value="Hairdressing">Hairdressing</option>
                     <option value="Catering">Catering</option>
-                    <option value="Others">Others</option>
                 </select>
                 <button onclick="performSearch()" class="btn-primary">Search</button>
             </div>
@@ -50,74 +49,65 @@
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
     <script src="app.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
-            // Wait briefly if supabaseClient is still initializing
-            if (!supabaseClient) {
-                await new Promise(r => setTimeout(r, 300));
-            }
             await checkAuth();
-
+            
             const params = new URLSearchParams(window.location.search);
             const q = params.get('q');
             const cat = params.get('category');
             if (q) document.getElementById('searchQuery').value = q;
             if (cat) document.getElementById('categoryFilter').value = cat;
-
+            
             performSearch();
         });
-
+        
         async function performSearch() {
             const query = document.getElementById('searchQuery').value;
             const category = document.getElementById('categoryFilter').value;
             const container = document.getElementById('searchResults');
-
+            
             container.innerHTML = '<p class="loading">Searching...</p>';
-
+            
             if (!supabaseClient) {
-                container.innerHTML = '<p class="empty">Cannot load workers. Please refresh the page.</p>';
+                container.innerHTML = '<p class="empty">Cannot load workers. Please refresh.</p>';
                 return;
             }
-
-            try {
-                let dbQuery = supabaseClient
-                    .from('worker_details')
-                    .select('*, profiles(full_name, avatar_url, location, phone)')
-                    .eq('availability', 'Available');
-
-                if (category) {
-                    dbQuery = dbQuery.eq('category', category);
-                }
-
-                const { data: workers, error } = await dbQuery;
-
-                if (error) {
-                    console.error(error);
-                    container.innerHTML = '<p class="error">Error loading workers. Please try again.</p>';
-                    return;
-                }
-
-                let filtered = workers || [];
-                if (query) {
-                    const q = query.toLowerCase();
-                    filtered = filtered.filter(w =>
-                        (w.profiles?.full_name || '').toLowerCase().includes(q) ||
-                        (w.category || '').toLowerCase().includes(q) ||
-                        (w.description || '').toLowerCase().includes(q)
-                    );
-                }
-
-                if (filtered.length === 0) {
-                    container.innerHTML = '<p class="empty">No workers found. Try a different search.</p>';
-                    return;
-                }
-
-                renderWorkers(filtered, container);
-            } catch (err) {
-                console.error(err);
-                container.innerHTML = '<p class="error">Something went wrong. Please refresh.</p>';
+            
+            let dbQuery = supabaseClient
+                .from('worker_details')
+                .select('*, profiles(full_name, avatar_url, location, phone)')
+                .eq('availability', 'Available');
+            
+            if (category) {
+                dbQuery = dbQuery.eq('category', category);
             }
+            
+            const { data: workers, error } = await dbQuery;
+            
+            if (error) {
+                container.innerHTML = '<p class="error">Error loading workers.</p>';
+                return;
+            }
+            
+            let filtered = workers || [];
+            if (query) {
+                const q = query.toLowerCase();
+                filtered = filtered.filter(w => 
+                    (w.profiles?.full_name || '').toLowerCase().includes(q) ||
+                    (w.category || '').toLowerCase().includes(q) ||
+                    (w.description || '').toLowerCase().includes(q)
+                );
+            }
+            
+            if (filtered.length === 0) {
+                container.innerHTML = '<p class="empty">No workers found. Try a different search.</p>';
+                return;
+            }
+            
+            renderWorkers(filtered, container);
         }
     </script>
 </body>
