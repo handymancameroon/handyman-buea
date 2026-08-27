@@ -83,7 +83,6 @@
                     <button type="button" class="tab-btn" onclick="showTab('register')">Register</button>
                 </div>
 
-                <!-- LOGIN -->
                 <div id="loginTab" class="tab-content active">
                     <h2>Welcome Back</h2>
                     <form id="loginForm" onsubmit="handleLogin(event)">
@@ -99,7 +98,6 @@
                     </form>
                 </div>
 
-                <!-- REGISTER -->
                 <div id="registerTab" class="tab-content">
                     <h2>Create Account</h2>
                     <form id="registerForm" onsubmit="handleRegister(event)">
@@ -128,7 +126,6 @@
                             </select>
                         </div>
 
-                        <!-- PROFILE PHOTO: gallery + camera -->
                         <div class="form-group">
                             <label>Profile Photo (optional)</label>
                             <div class="photo-upload-box">
@@ -160,7 +157,6 @@
                             </div>
                         </div>
 
-                        <!-- WORKER FIELDS -->
                         <div id="workerFields" class="worker-fields">
                             <div class="form-group">
                                 <label>Description of Services *</label>
@@ -181,7 +177,6 @@
                             </div>
                         </div>
 
-                        <!-- CLIENT FIELDS -->
                         <div id="clientFields" class="client-fields">
                             <div class="form-group">
                                 <label>Job Title *</label>
@@ -220,6 +215,7 @@
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
     <script src="app.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -361,7 +357,6 @@
                     category = document.getElementById('customCategory').value.trim() || 'Others';
                 }
 
-                // 1) Create auth user FIRST (needed for storage path + RLS)
                 const { data, error } = await supabaseClient.auth.signUp({
                     email,
                     password,
@@ -387,7 +382,6 @@
                 const userId = data.user.id;
                 currentUser = data.user;
 
-                // 2) Upload profile photo (after we have userId)
                 let photoUrl = null;
                 const photoFile = document.getElementById('regPhotoFile').files[0];
                 if (photoFile) {
@@ -398,7 +392,6 @@
                     }
                 }
 
-                // 3) Create / update profile
                 const profileData = {
                     id: userId,
                     full_name: fullName,
@@ -420,7 +413,6 @@
                     return;
                 }
 
-                // 4) Worker or Client extra data
                 if (isWorker) {
                     showMessage('Uploading portfolio...', 'success');
                     const portfolioFiles = document.getElementById('wPortfolio').files;
@@ -448,7 +440,6 @@
                         return;
                     }
 
-                    // Also store portfolio on profiles for consistency
                     if (portfolioUrls.length > 0) {
                         await supabaseClient.from('profiles').update({ portfolio: portfolioUrls }).eq('id', userId);
                     }
@@ -473,14 +464,12 @@
                         status: 'Open'
                     };
 
-                    // Attach photos to job if your job_posts table has an images column (safe if missing)
                     if (portfolioUrls.length > 0) {
                         jobData.images = portfolioUrls;
                     }
 
                     const { error: jobError } = await supabaseClient.from('job_posts').insert([jobData]);
                     if (jobError) {
-                        // Retry without images if column does not exist
                         if (jobData.images) {
                             delete jobData.images;
                             const { error: jobError2 } = await supabaseClient.from('job_posts').insert([jobData]);
