@@ -50,6 +50,7 @@
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
     <script src="app.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
@@ -111,7 +112,6 @@
             if (typeof renderWorkers === 'function') {
                 renderWorkers(filtered, container);
             } else {
-                // Fallback renderer
                 container.innerHTML = filtered.map(w => `
                     <div class="worker-card" onclick="window.location.href='worker.html?id=${w.id}'">
                         <div class="worker-avatar">
