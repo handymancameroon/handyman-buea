@@ -53,4 +53,452 @@
                     <label><strong>Send to:</strong></label>
                     <select id="broadcastAudience" style="margin-left:8px; padding:8px;">
                         <option value="all">All Users</option>
-                        <
+                        <option value="workers">Only Workers</option>
+                        <option value="clients">Only Clients</option>
+                    </select>
+                    <textarea id="broadcastMessage" placeholder="Type your message here..."></textarea>
+                    <button type="button" class="btn-primary" onclick="sendBroadcast()">Send In-App Notification</button>
+                    <p id="broadcastStatus" class="message"></p>
+                </div>
+            </div>
+
+            <div class="admin-section">
+                <h2>👥 All Users (Clients & Workers)</h2>
+                <div class="admin-filter-bar">
+                    <select id="userFilter" onchange="loadAllUsers()">
+                        <option value="all">All Users</option>
+                        <option value="workers">Workers only</option>
+                        <option value="clients">Clients only</option>
+                        <option value="deleted">Deleted Accounts</option>
+                    </select>
+                    <input type="text" id="userSearch" placeholder="Search name or phone..." oninput="loadAllUsers()">
+                </div>
+                <div id="allUsersList"><p class="loading">Loading users...</p></div>
+            </div>
+
+            <div class="admin-section">
+                <h2>🚩 Disputes & Reports</h2>
+                <div id="disputesList"><p class="loading">Loading disputes...</p></div>
+            </div>
+
+            <div class="admin-section">
+                <h2>🐞 Report a Bug or Case</h2>
+                <div class="broadcast-box">
+                    <input type="text" id="bugTitle" placeholder="Short title" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid var(--border);">
+                    <textarea id="bugDetails" placeholder="Describe the problem..."></textarea>
+                    <button type="button" class="btn-primary" onclick="submitBugReport()">Save Bug / Case Report</button>
+                    <p id="bugStatus" class="message"></p>
+                </div>
+            </div>
+
+            <div class="admin-section">
+                <h2>👷 All Workers (Quick Delete)</h2>
+                <div id="allWorkersList"><p class="loading">Loading workers...</p></div>
+            </div>
+
+            <div class="admin-section">
+                <h2>📋 All Job Posts</h2>
+                <div id="allJobsList"><p class="loading">Loading jobs...</p></div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', async function () {
+        await checkAuth();
+
+        var adminEmail = (window.HANDYMAN_CONFIG && window.HANDYMAN_CONFIG.ADMIN_EMAIL) || 'internationalpimerchant@gmail.com';
+        var emailOk = currentUser && currentUser.email &&
+            currentUser.email.toLowerCase() === adminEmail.toLowerCase();
+
+        if (!isAdmin() && !emailOk) {
+            document.body.innerHTML =
+                '<div style="text-align:center;padding:100px 20px;">' +
+                '<h1>Access Denied</h1>' +
+                '<p>You do not have permission to view this page.</p>' +
+                '<p>Logged in as: ' + (currentUser ? currentUser.email : 'not logged in') + '</p>' +
+                '<a href="index.html" class="btn-primary">Go Home</a></div>';
+            return;
+        }
+
+        loadStats();
+        loadAllUsers();
+        loadDisputes();
+        loadAllWorkers();
+        loadAllJobs();
+    });
+
+    function formatPhone(phone) {
+        if (!phone) return null;
+        var p = phone.toString().replace(/\D/g, '');
+        if (p.indexOf('237') === 0) p = p.substring(3);
+        if (p.length === 9) return '237' + p;
+        return p;
+    }
+
+    function whatsappLink(phone) {
+        var p = formatPhone(phone);
+        if (!p) return '#';
+        return 'https://wa.me/' + p + '?text=' + encodeURIComponent('Hello from Handy Man Buea Admin');
+    }
+
+    function callLink(phone) {
+        var p = formatPhone(phone);
+        return p ? 'tel:+' + p : '#';
+    }
+
+    function setText(id, value) {
+        var el = document.getElementById(id);
+        if (el) el.textContent = value;
+    }
+
+    function setHtml(id, html) {
+        var el = document.getElementById(id);
+        if (el) el.innerHTML = html;
+    }
+
+    async function loadStats() {
+        if (!supabaseClient) return;
+        try {
+            var statsRes = await supabaseClient.from('site_stats').select('total_visitors').eq('id', 1).maybeSingle();
+            setText('statVisitors', (statsRes.data && statsRes.data.total_visitors) || 0);
+
+            var todayStart = new Date();
+            todayStart.setHours(0, 0, 0, 0);
+
+            var todayRes = await supabaseClient.from('profiles').select('*', { count: 'exact', head: true }).gte('created_at', todayStart.toISOString());
+            setText('statTodayRegs', todayRes.count || 0);
+
+            var workerRes = await supabaseClient.from('profiles').select('*', { count: 'exact', head: true }).eq('is_worker', true).eq('is_deleted', false);
+            setText('statWorkers', workerRes.count || 0);
+
+            var clientRes = await supabaseClient.from('profiles').select('*', { count: 'exact', head: true }).eq('is_worker', false).eq('is_deleted', false);
+            setText('statClients', clientRes.count || 0);
+
+            var jobRes = await supabaseClient.from('job_posts').select('*', { count: 'exact', head: true });
+            setText('statJobs', jobRes.count || 0);
+
+            var disputeRes = await supabaseClient.from('disputes').select('*', { count: 'exact', head: true }).eq('status', 'Open');
+            setText('statDisputes', disputeRes.count || 0);
+        } catch (err) {
+            console.error('Stats error:', err);
+        }
+    }
+
+    async function loadAllUsers() {
+        if (!supabaseClient) {
+            setHtml('allUsersList', '<p class="empty-dashboard">Cannot connect.</p>');
+            return;
+        }
+        var filterEl = document.getElementById('userFilter');
+        var searchEl = document.getElementById('userSearch');
+        var filter = filterEl ? filterEl.value : 'all';
+        var search = searchEl ? searchEl.value.toLowerCase().trim() : '';
+
+        try {
+            var query = supabaseClient
+                .from('profiles')
+                .select('id, full_name, phone, is_worker, is_admin, location, created_at, is_deleted')
+                .order('created_at', { ascending: false })
+                .limit(300);
+
+            if (filter === 'workers') query = query.eq('is_worker', true).eq('is_deleted', false);
+            if (filter === 'clients') query = query.eq('is_worker', false).eq('is_deleted', false);
+            if (filter === 'deleted') query = query.eq('is_deleted', true);
+
+            var res = await query;
+            if (res.error) {
+                setHtml('allUsersList', '<p class="empty-dashboard">Error: ' + res.error.message + '</p>');
+                return;
+            }
+
+            var list = res.data || [];
+            if (search) {
+                list = list.filter(function (u) {
+                    return (u.full_name || '').toLowerCase().indexOf(search) !== -1 ||
+                        (u.phone || '').indexOf(search) !== -1;
+                });
+            }
+
+            if (list.length === 0) {
+                setHtml('allUsersList', '<p class="empty-dashboard">No users found.</p>');
+                return;
+            }
+
+            setHtml('allUsersList', list.map(function (u) {
+                var type = u.is_admin ? 'Admin' : (u.is_worker ? 'Worker' : 'Client');
+                var phone = u.phone || '';
+                var safeName = (u.full_name || 'User').replace(/'/g, "\\'");
+                var isDeleted = u.is_deleted === true;
+
+                var contact = phone
+                    ? '<a class="btn-call" href="' + callLink(phone) + '">Call</a> ' +
+                      '<a class="btn-whatsapp" href="' + whatsappLink(phone) + '" target="_blank">WhatsApp</a> '
+                    : '';
+
+                var actionBtn = isDeleted
+                    ? '<button class="btn-primary" onclick="restoreUser(\'' + u.id + '\',\'' + safeName + '\')">Restore</button>'
+                    : '<button class="btn-close-job" onclick="deleteUser(\'' + u.id + '\',\'' + safeName + '\')">Delete</button>';
+
+                return '<div class="user-row ' + (isDeleted ? 'deleted-user' : '') + '">' +
+                    '<div><h4 style="margin:0 0 4px;">' + (u.full_name || 'No name') +
+                    (isDeleted ? ' <span style="color:#ef4444;">(Deleted)</span>' : '') +
+                    '</h4><p style="margin:0;font-size:0.9rem;">' + type + ' • ' + (u.location || 'Buea') +
+                    ' • ' + (phone || 'No phone') + '</p></div><div class="user-actions">' + contact +
+                    '<button class="btn-small" onclick="sendSingleNotification(\'' + u.id + '\',\'' + safeName + '\')">Notify</button> ' +
+                    actionBtn + '</div></div>';
+            }).join(''));
+        } catch (err) {
+            setHtml('allUsersList', '<p class="empty-dashboard">Error loading users.</p>');
+        }
+    }
+
+    async function sendSingleNotification(userId, userName) {
+        var message = prompt('Write a message for ' + userName + ':');
+        if (!message || !message.trim()) return;
+        var res = await supabaseClient.from('notifications').insert([{
+            user_id: userId,
+            title: 'Message from Admin',
+            message: message.trim(),
+            read: false
+        }]);
+        if (res.error) alert('Error: ' + res.error.message);
+        else alert('Notification sent to ' + userName);
+    }
+
+    // ========== SOFT DELETE ==========
+    async function deleteUser(userId, name) {
+        if (!confirm('Soft-delete ' + name + '? You can restore them later.')) return;
+
+        var res = await supabaseClient
+            .from('profiles')
+            .update({
+                is_deleted: true,
+                deleted_at: new Date().toISOString()
+            })
+            .eq('id', userId);
+
+        if (res.error) {
+            alert('Error: ' + res.error.message);
+            return;
+        }
+
+        await supabaseClient
+            .from('worker_details')
+            .update({ availability: 'Deleted' })
+            .eq('id', userId);
+
+        alert(name + ' has been soft-deleted. You can restore them anytime.');
+        loadAllUsers();
+        loadAllWorkers();
+        loadStats();
+    }
+
+    // ========== RESTORE ==========
+    async function restoreUser(userId, name) {
+        if (!confirm('Restore ' + name + '?')) return;
+
+        var res = await supabaseClient
+            .from('profiles')
+            .update({
+                is_deleted: false,
+                deleted_at: null
+            })
+            .eq('id', userId);
+
+        if (res.error) {
+            alert('Error: ' + res.error.message);
+            return;
+        }
+
+        await supabaseClient
+            .from('worker_details')
+            .update({ availability: 'Available' })
+            .eq('id', userId);
+
+        alert(name + ' restored successfully!');
+        loadAllUsers();
+        loadAllWorkers();
+        loadStats();
+    }
+
+    async function sendBroadcast() {
+        var audience = document.getElementById('broadcastAudience').value;
+        var message = document.getElementById('broadcastMessage').value.trim();
+        var status = document.getElementById('broadcastStatus');
+        if (!message) {
+            status.textContent = 'Please type a message first.';
+            status.className = 'message error';
+            return;
+        }
+        status.textContent = 'Sending...';
+        status.className = 'message';
+
+        var query = supabaseClient.from('profiles').select('id').eq('is_deleted', false);
+        if (audience === 'workers') query = query.eq('is_worker', true);
+        if (audience === 'clients') query = query.eq('is_worker', false);
+
+        var res = await query;
+        if (res.error || !res.data || res.data.length === 0) {
+            status.textContent = 'No users found for this group.';
+            status.className = 'message error';
+            return;
+        }
+
+        var rows = res.data.map(function (u) {
+            return { user_id: u.id, title: 'Message from Admin', message: message, read: false };
+        });
+        var insertRes = await supabaseClient.from('notifications').insert(rows);
+        if (insertRes.error) {
+            status.textContent = 'Error: ' + insertRes.error.message;
+            status.className = 'message error';
+        } else {
+            status.textContent = 'Message sent to ' + res.data.length + ' user(s)!';
+            status.className = 'message success';
+            document.getElementById('broadcastMessage').value = '';
+        }
+    }
+
+    async function submitBugReport() {
+        var title = document.getElementById('bugTitle').value.trim();
+        var details = document.getElementById('bugDetails').value.trim();
+        var status = document.getElementById('bugStatus');
+        if (!title) {
+            status.textContent = 'Please enter a title.';
+            status.className = 'message error';
+            return;
+        }
+        var res = await supabaseClient.from('disputes').insert([{
+            reason: 'Bug/Case: ' + title,
+            details: details || 'No details',
+            target_name: 'Internal',
+            target_type: 'Bug',
+            reporter_name: (currentProfile && currentProfile.full_name) || (currentUser && currentUser.email) || 'Admin',
+            status: 'Open'
+        }]);
+        if (res.error) {
+            status.textContent = 'Error: ' + res.error.message;
+            status.className = 'message error';
+        } else {
+            status.textContent = 'Bug/Case saved!';
+            status.className = 'message success';
+            document.getElementById('bugTitle').value = '';
+            document.getElementById('bugDetails').value = '';
+            loadDisputes();
+            loadStats();
+        }
+    }
+
+    async function loadDisputes() {
+        if (!supabaseClient) {
+            setHtml('disputesList', '<p class="empty-dashboard">Cannot connect.</p>');
+            return;
+        }
+        try {
+            var res = await supabaseClient.from('disputes').select('*').order('created_at', { ascending: false });
+            if (res.error || !res.data || res.data.length === 0) {
+                setHtml('disputesList', '<p class="empty-dashboard">No disputes yet.</p>');
+                return;
+            }
+            setHtml('disputesList', res.data.map(function (d) {
+                var date = new Date(d.created_at).toLocaleDateString('en-GB');
+                var btn = d.status === 'Open'
+                    ? '<button class="btn-small" onclick="resolveDispute(\'' + d.id + '\')">Resolve</button>'
+                    : '';
+                return '<div class="dispute-row"><div class="dispute-info"><h4>' + (d.reason || '') +
+                    '</h4><p><strong>Target:</strong> ' + (d.target_name || '') + ' (' + (d.target_type || '') +
+                    ')</p><p><strong>Reporter:</strong> ' + (d.reporter_name || 'Anonymous') +
+                    '</p><p><strong>Details:</strong> ' + (d.details || '') +
+                    '</p><p style="font-size:0.8rem;">' + date + '</p></div><div>' +
+                    '<span>' + (d.status || '') + '</span> ' + btn + '</div></div>';
+            }).join(''));
+        } catch (err) {
+            setHtml('disputesList', '<p class="empty-dashboard">Error loading disputes.</p>');
+        }
+    }
+
+    async function resolveDispute(disputeId) {
+        if (!confirm('Mark as resolved?')) return;
+        var res = await supabaseClient.from('disputes').update({ status: 'Resolved' }).eq('id', disputeId);
+        if (res.error) alert('Error: ' + res.error.message);
+        else {
+            alert('Resolved.');
+            loadDisputes();
+            loadStats();
+        }
+    }
+
+    async function loadAllWorkers() {
+        if (!supabaseClient) {
+            setHtml('allWorkersList', '<p class="empty-dashboard">Cannot connect.</p>');
+            return;
+        }
+        try {
+            var res = await supabaseClient
+                .from('worker_details')
+                .select('*, profiles(full_name, phone, location, is_deleted)')
+                .order('created_at', { ascending: false });
+            if (res.error || !res.data || res.data.length === 0) {
+                setHtml('allWorkersList', '<p class="empty-dashboard">No workers yet.</p>');
+                return;
+            }
+            setHtml('allWorkersList', res.data.map(function (w) {
+                var p = w.profiles || {};
+                var safeName = (p.full_name || 'worker').replace(/'/g, "\\'");
+                var isDeleted = p.is_deleted === true;
+                return '<div class="dispute-row ' + (isDeleted ? 'deleted-user' : '') + '"><div class="dispute-info"><h4>' + (p.full_name || 'Unknown') +
+                    (isDeleted ? ' <span style="color:#ef4444;">(Deleted)</span>' : '') +
+                    '</h4><p>' + (w.category || '') + ' • ' + (p.phone || 'No phone') + ' • ' + (p.location || 'Buea') +
+                    '</p></div>' +
+                    (isDeleted 
+                        ? '<button class="btn-primary" onclick="restoreUser(\'' + w.id + '\',\'' + safeName + '\')">Restore</button>'
+                        : '<button class="btn-close-job" onclick="deleteUser(\'' + w.id + '\',\'' + safeName + '\')">Delete</button>') +
+                    '</div>';
+            }).join(''));
+        } catch (err) {
+            setHtml('allWorkersList', '<p class="empty-dashboard">Error loading workers.</p>');
+        }
+    }
+
+    async function loadAllJobs() {
+        if (!supabaseClient) {
+            setHtml('allJobsList', '<p class="empty-dashboard">Cannot connect.</p>');
+            return;
+        }
+        try {
+            var res = await supabaseClient
+                .from('job_posts')
+                .select('*, profiles(full_name)')
+                .order('created_at', { ascending: false });
+            if (res.error || !res.data || res.data.length === 0) {
+                setHtml('allJobsList', '<p class="empty-dashboard">No jobs yet.</p>');
+                return;
+            }
+            setHtml('allJobsList', res.data.map(function (job) {
+                var date = new Date(job.created_at).toLocaleDateString('en-GB');
+                var poster = (job.profiles && job.profiles.full_name) || 'Unknown';
+                var safeTitle = (job.title || '').replace(/'/g, "\\'");
+                return '<div class="dispute-row"><div class="dispute-info"><h4>' + (job.title || '') +
+                    '</h4><p>' + (job.category || '') + ' • ' + (job.location || '') + ' • by ' + poster +
+                    ' • ' + date + '</p><span>' + (job.status || '') +
+                    '</span></div><button class="btn-close-job" onclick="deleteJob(\'' + job.id + '\',\'' +
+                    safeTitle + '\')">Delete</button></div>';
+            }).join(''));
+        } catch (err) {
+            setHtml('allJobsList', '<p class="empty-dashboard">Error loading jobs.</p>');
+        }
+    }
+
+    async function deleteJob(jobId, title) {
+        if (!confirm('Delete "' + title + '"?')) return;
+        await supabaseClient.from('job_posts').delete().eq('id', jobId);
+        alert('Job deleted.');
+        loadAllJobs();
+        loadStats();
+    }
+    </script>
+</body>
+</html>
