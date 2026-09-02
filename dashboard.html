@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Dashboard - Handy Man</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .dashboard-section { background: var(--card); padding: 24px; border-radius: 12px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .job-row, .dispute-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px; background: #fff; flex-wrap: wrap; }
+        .photo-upload-box { text-align: center; margin: 16px 0; }
+        .photo-upload-box img { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin-bottom: 12px; border: 3px solid var(--border); }
+    </style>
 </head>
 <body>
     <header class="header">
@@ -16,7 +22,7 @@
                 <a href="jobs.html">Find Jobs</a>
                 <a href="login.html" class="btn-secondary">Join as Worker</a>
                 <a href="post-job.html" class="btn-secondary">Post a Job</a>
-                <a href="login.html" class="btn-primary" id="authBtn">Login</a>
+                <a href="login.html" class="btn-secondary" id="authBtn">Login</a>
             </nav>
             <button class="menu-toggle" id="menuToggle">☰</button>
         </div>
@@ -25,21 +31,37 @@
     <main class="dashboard-page">
         <div class="container">
             <h1>My Dashboard</h1>
-            
-            <div class="dashboard-grid">
-                <div class="dashboard-section">
-                    <h2>📋 My Posted Jobs</h2>
-                    <div id="myJobsList">
-                        <p class="loading">Loading your jobs...</p>
-                    </div>
+
+            <!-- Profile Photo -->
+            <div class="dashboard-section">
+                <h2>📷 My Profile Photo</h2>
+                <div class="photo-upload-box" id="photoSection">
+                    <p class="loading">Loading...</p>
                 </div>
-                
-                <div class="dashboard-section">
-                    <h2>🔧 My Worker Profile</h2>
-                    <div id="myWorkerProfile">
-                        <p class="loading">Loading profile...</p>
-                    </div>
-                </div>
+            </div>
+
+            <!-- My Posted Jobs (Clients) -->
+            <div class="dashboard-section">
+                <h2>📋 My Posted Jobs</h2>
+                <div id="myJobsList"><p class="loading">Loading your jobs...</p></div>
+            </div>
+
+            <!-- Jobs in my category (Workers) -->
+            <div class="dashboard-section" id="categoryJobsSection" style="display:none;">
+                <h2>🛠️ Open Jobs in My Category</h2>
+                <div id="categoryJobsList"><p class="loading">Loading jobs...</p></div>
+            </div>
+
+            <!-- Worker Profile -->
+            <div class="dashboard-section">
+                <h2>🔧 My Worker Profile</h2>
+                <div id="myWorkerProfile"><p class="loading">Loading profile...</p></div>
+            </div>
+
+            <!-- Disputes -->
+            <div class="dashboard-section">
+                <h2>🚩 My Disputes / Reports</h2>
+                <div id="myDisputesList"><p class="loading">Loading disputes...</p></div>
             </div>
         </div>
     </main>
@@ -48,140 +70,231 @@
     <script src="config.js"></script>
     <script src="app.js"></script>
     <script>
+        let myWorkerCategory = null;
+
         document.addEventListener('DOMContentLoaded', async () => {
             await checkAuth();
-            
             if (!currentUser) {
                 window.location.href = 'login.html';
                 return;
             }
-            
+            loadPhotoSection();
             loadMyJobs();
             loadMyWorkerProfile();
+            loadMyDisputes();
         });
-        
-        async function loadMyJobs() {
-            const container = document.getElementById('myJobsList');
-            
-            if (!supabaseClient) {
-                container.innerHTML = '<p class="empty-dashboard">Cannot connect to database.</p>';
+
+        // ===== PHOTO =====
+        async function loadPhotoSection() {
+            const container = document.getElementById('photoSection');
+            const { data: profile } = await supabaseClient
+                .from('profiles')
+                .select('avatar_url, full_name')
+                .eq('id', currentUser.id)
+                .single();
+
+            const avatar = (profile && profile.avatar_url) || 'https://via.placeholder.com/100?text=No+Photo';
+            container.innerHTML = `
+                <img src="${avatar}" id="currentAvatar" onerror="this.src='https://via.placeholder.com/100?text=No+Photo'">
+                <p><strong>${profile ? profile.full_name : ''}</strong></p>
+                <input type="file" id="avatarInput" accept="image/*" style="margin:12px 0;">
+                <br>
+                <button class="btn-primary" onclick="changePhoto()">Upload / Change Photo</button>
+            `;
+        }
+
+        async function changePhoto() {
+            const input = document.getElementById('avatarInput');
+            if (!input.files || !input.files[0]) {
+                alert('Please select a photo first.');
                 return;
             }
-            
+            const url = await uploadFile(input.files[0], 'profiles', currentUser.id);
+            if (!url) {
+                alert('Upload failed. Try again.');
+                return;
+            }
+            await supabaseClient.from('profiles').update({ avatar_url: url }).eq('id', currentUser.id);
+            alert('Photo updated successfully!');
+            loadPhotoSection();
+            loadMyWorkerProfile();
+        }
+
+        // ===== MY POSTED JOBS =====
+        async function loadMyJobs() {
+            const container = document.getElementById('myJobsList');
             try {
                 const { data: jobs, error } = await supabaseClient
                     .from('job_posts')
                     .select('*')
                     .eq('client_id', currentUser.id)
                     .order('created_at', { ascending: false });
-                
-                if (error) {
-                    container.innerHTML = '<p class="empty-dashboard">Error loading jobs.</p>';
-                    return;
-                }
-                
-                if (!jobs || jobs.length === 0) {
+
+                if (error || !jobs || jobs.length === 0) {
                     container.innerHTML = `
                         <div class="empty-dashboard">
                             <p>You haven't posted any jobs yet.</p>
-                            <a href="post-job.html" class="btn-primary" style="margin-top: 12px; display: inline-block;">Post Your First Job</a>
-                        </div>
-                    `;
+                            <a href="post-job.html" class="btn-primary" style="margin-top:12px;display:inline-block;">Post Your First Job</a>
+                        </div>`;
                     return;
                 }
-                
+
                 container.innerHTML = jobs.map(job => {
                     const isOpen = job.status === 'Open';
                     const statusClass = isOpen ? 'status-available' : 'status-closed';
-                    const statusText = isOpen ? 'Open' : 'Closed';
                     const postedDate = new Date(job.created_at).toLocaleDateString('en-GB');
-                    
                     return `
                         <div class="job-row">
-                            <div class="job-row-info">
+                            <div>
                                 <h4>${job.title}</h4>
                                 <p>${job.category} • ${job.location} • ${postedDate}</p>
-                                <span class="status-badge ${statusClass}">${statusText}</span>
+                                <span class="status-badge ${statusClass}">${isOpen ? 'Open' : 'Closed'}</span>
                             </div>
                             ${isOpen ? `<button class="btn-close-job" onclick="closeJob('${job.id}')">Close Job</button>` : ''}
-                        </div>
-                    `;
+                        </div>`;
                 }).join('');
-                
             } catch (err) {
-                console.error('Load jobs error:', err);
-                container.innerHTML = '<p class="empty-dashboard">Error loading your jobs.</p>';
+                container.innerHTML = '<p class="empty-dashboard">Error loading jobs.</p>';
             }
         }
-        
+
         async function closeJob(jobId) {
-            if (!confirm('Are you sure you want to close this job? Workers will no longer be able to contact you about it.')) {
-                return;
-            }
-            
-            if (!supabaseClient) return;
-            
-            const { error } = await supabaseClient
-                .from('job_posts')
-                .update({ status: 'Taken' })
-                .eq('id', jobId)
-                .eq('client_id', currentUser.id);
-            
-            if (error) {
-                alert('Error closing job: ' + error.message);
-                return;
-            }
-            
+            if (!confirm('Are you sure you want to close this job?')) return;
+            await supabaseClient.from('job_posts').update({ status: 'Taken' }).eq('id', jobId).eq('client_id', currentUser.id);
             alert('Job closed successfully!');
             loadMyJobs();
         }
-        
+
+        // ===== WORKER PROFILE + CATEGORY JOBS =====
         async function loadMyWorkerProfile() {
             const container = document.getElementById('myWorkerProfile');
-            
-            if (!supabaseClient) {
-                container.innerHTML = '<p class="empty-dashboard">Cannot connect to database.</p>';
-                return;
-            }
-            
+            const catSection = document.getElementById('categoryJobsSection');
+
             try {
                 const { data: worker, error } = await supabaseClient
                     .from('worker_details')
                     .select('*, profiles(full_name, avatar_url, location, phone)')
                     .eq('id', currentUser.id)
                     .single();
-                
+
                 if (error || !worker) {
                     container.innerHTML = `
                         <div class="empty-dashboard">
                             <p>You don't have a worker profile yet.</p>
-                            <a href="join.html" class="btn-primary" style="margin-top: 12px; display: inline-block;">Create Worker Profile</a>
-                        </div>
-                    `;
+                            <a href="join.html" class="btn-primary" style="margin-top:12px;display:inline-block;">Create Worker Profile</a>
+                        </div>`;
                     return;
                 }
-                
+
+                myWorkerCategory = worker.category;
+                catSection.style.display = 'block';
+                loadCategoryJobs(worker.category);
+
                 const p = worker.profiles || {};
-                
                 container.innerHTML = `
-                    <div style="text-align: center; margin-bottom: 16px;">
-                        <img src="${p.avatar_url || 'https://via.placeholder.com/80'}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 12px;">
-                        <h3 style="margin-bottom: 4px;">${p.full_name || 'Your Name'}</h3>
-                        <p style="color: var(--primary); font-weight: 600;">${worker.category}</p>
+                    <div style="text-align:center;margin-bottom:16px;">
+                        <img src="${p.avatar_url || 'https://via.placeholder.com/80'}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;margin-bottom:12px;">
+                        <h3>${p.full_name || 'Your Name'}</h3>
+                        <p style="color:var(--primary);font-weight:600;">${worker.category}</p>
                     </div>
-                    <div style="margin-bottom: 16px;">
-                        <p style="margin-bottom: 8px;"><strong>📍 Location:</strong> ${p.location || 'Buea'}</p>
-                        <p style="margin-bottom: 8px;"><strong>📞 Phone:</strong> ${p.phone || 'Not set'}</p>
-                        <p style="margin-bottom: 8px;"><strong>⭐ Rating:</strong> ${worker.rating || 0}/5 (${worker.review_count || 0} reviews)</p>
-                        <p style="margin-bottom: 8px;"><strong>🛠️ Experience:</strong> ${worker.experience_years || 0} years</p>
-                        <p style="margin-bottom: 8px;"><strong>✅ Status:</strong> ${worker.availability || 'Available'}</p>
+                    <p><strong>📍 Location:</strong> ${p.location || 'Buea'}</p>
+                    <p><strong>📞 Phone:</strong> ${p.phone || 'Not set'}</p>
+                    <p><strong>⭐ Rating:</strong> ${worker.rating || 0}/5 (${worker.review_count || 0} reviews)</p>
+                    <p><strong>🛠️ Experience:</strong> ${worker.experience_years || 0} years</p>
+                    <p><strong>✅ Status:</strong> ${worker.availability || 'Available'}</p>
+                    <p style="margin-top:12px;color:var(--text-light);">${worker.description || 'No description yet.'}</p>
+                    <div style="margin-top:20px;">
+                        <label><strong>Update Portfolio Photos (max 2)</strong></label><br>
+                        <input type="file" id="portfolioInput" accept="image/*" multiple style="margin:8px 0;">
+                        <br>
+                        <button class="btn-primary" onclick="updatePortfolio()">Upload Portfolio Photos</button>
                     </div>
-                    <p style="color: var(--text-light); font-size: 0.9rem; line-height: 1.5;">${worker.description || 'No description yet.'}</p>
                 `;
-                
             } catch (err) {
-                console.error('Worker profile error:', err);
                 container.innerHTML = '<p class="empty-dashboard">Error loading profile.</p>';
+            }
+        }
+
+        async function updatePortfolio() {
+            const input = document.getElementById('portfolioInput');
+            if (!input.files || input.files.length === 0) {
+                alert('Please select at least one photo.');
+                return;
+            }
+            const urls = await uploadMultipleFiles(input.files, 'portfolio', currentUser.id, 2);
+            if (urls.length === 0) {
+                alert('Upload failed. Try again.');
+                return;
+            }
+            await supabaseClient.from('worker_details').update({ portfolio: urls }).eq('id', currentUser.id);
+            alert('Portfolio updated!');
+            loadMyWorkerProfile();
+        }
+
+        async function loadCategoryJobs(category) {
+            const container = document.getElementById('categoryJobsList');
+            if (!category) {
+                container.innerHTML = '<p>No category set on your profile.</p>';
+                return;
+            }
+            const { data: jobs } = await supabaseClient
+                .from('job_posts')
+                .select('*, profiles(full_name, phone)')
+                .eq('category', category)
+                .eq('status', 'Open')
+                .order('created_at', { ascending: false })
+                .limit(40);
+
+            if (!jobs || jobs.length === 0) {
+                container.innerHTML = '<p class="empty-dashboard">No open jobs in your category right now.</p>';
+                return;
+            }
+
+            container.innerHTML = jobs.map(job => {
+                const date = new Date(job.created_at).toLocaleDateString('en-GB');
+                const client = job.profiles || {};
+                return `
+                    <div class="job-row">
+                        <div>
+                            <h4>${job.title}</h4>
+                            <p>${job.location} • ${date} • Budget: ${job.budget || 'Negotiable'}</p>
+                            <p style="font-size:0.85rem;">Client: ${client.full_name || 'Unknown'}</p>
+                        </div>
+                        <a href="job.html?id=${job.id}" class="btn-primary">View Job</a>
+                    </div>`;
+            }).join('');
+        }
+
+        // ===== DISPUTES =====
+        async function loadMyDisputes() {
+            const container = document.getElementById('myDisputesList');
+            try {
+                const { data: disputes } = await supabaseClient
+                    .from('disputes')
+                    .select('*')
+                    .or(`reporter_id.eq.${currentUser.id},target_id.eq.${currentUser.id}`)
+                    .order('created_at', { ascending: false });
+
+                if (!disputes || disputes.length === 0) {
+                    container.innerHTML = '<p class="empty-dashboard">No disputes involving you.</p>';
+                    return;
+                }
+
+                container.innerHTML = disputes.map(d => {
+                    const date = new Date(d.created_at).toLocaleDateString('en-GB');
+                    const isMine = d.reporter_id === currentUser.id;
+                    return `
+                        <div class="dispute-row">
+                            <div>
+                                <h4>${d.reason || 'Report'}</h4>
+                                <p>${isMine ? 'You reported' : 'Reported against you'}: ${d.target_name || ''} (${d.target_type || ''})</p>
+                                <p style="font-size:0.85rem;">${d.details || ''}</p>
+                                <p style="font-size:0.8rem;">${date} • Status: <strong>${d.status}</strong></p>
+                            </div>
+                        </div>`;
+                }).join('');
+            } catch (err) {
+                container.innerHTML = '<p class="empty-dashboard">Error loading disputes.</p>';
             }
         }
     </script>
