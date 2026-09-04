@@ -16,6 +16,30 @@
         .broadcast-box textarea { width: 100%; min-height: 100px; padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin: 10px 0; }
         .stat-card.today { border-left: 4px solid #22c55e; }
         .deleted-user { opacity: 0.65; background: #fef2f2 !important; }
+        .admin-page { padding: 40px 20px; }
+        .admin-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+        .stat-card {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .stat-card h3 { font-size: 1.75rem; margin-bottom: 4px; color: var(--primary); }
+        .stat-card p { color: var(--text-light); font-size: 0.9rem; }
+        .admin-section {
+            background: var(--card);
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .admin-section h2 { margin-bottom: 16px; }
     </style>
 </head>
 <body>
@@ -64,6 +88,10 @@
 
             <div class="admin-section">
                 <h2>👥 All Users (Clients & Workers)</h2>
+                <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 12px;">
+                    <strong>Delete</strong> disables the account: the user cannot log in and is hidden from the public site.
+                    Use the filter <strong>Deleted Accounts</strong> and <strong>Restore</strong> to bring them back.
+                </p>
                 <div class="admin-filter-bar">
                     <select id="userFilter" onchange="loadAllUsers()">
                         <option value="all">All Users</option>
@@ -92,7 +120,7 @@
             </div>
 
             <div class="admin-section">
-                <h2>👷 All Workers (Quick Delete)</h2>
+                <h2>👷 All Workers (Quick Delete / Restore)</h2>
                 <div id="allWorkersList"><p class="loading">Loading workers...</p></div>
             </div>
 
@@ -142,7 +170,7 @@
     function whatsappLink(phone) {
         var p = formatPhone(phone);
         if (!p) return '#';
-        return 'https://wa.me/' + p + '?text=' + encodeURIComponent('Hello from Handy Man Buea Admin');
+        return 'https://wa.me/' + p + '?text=' + encodeURIComponent('Hello from Handy Man Admin');
     }
 
     function callLink(phone) {
@@ -246,7 +274,7 @@
                 return '<div class="user-row ' + (isDeleted ? 'deleted-user' : '') + '">' +
                     '<div><h4 style="margin:0 0 4px;">' + (u.full_name || 'No name') +
                     (isDeleted ? ' <span style="color:#ef4444;">(Deleted)</span>' : '') +
-                    '</h4><p style="margin:0;font-size:0.9rem;">' + type + ' • ' + (u.location || 'Buea') +
+                    '</h4><p style="margin:0;font-size:0.9rem;">' + type + ' • ' + (u.location || 'Cameroon') +
                     ' • ' + (phone || 'No phone') + '</p></div><div class="user-actions">' + contact +
                     '<button class="btn-small" onclick="sendSingleNotification(\'' + u.id + '\',\'' + safeName + '\')">Notify</button> ' +
                     actionBtn + '</div></div>';
@@ -269,9 +297,11 @@
         else alert('Notification sent to ' + userName);
     }
 
-    // ========== SOFT DELETE ==========
+    // ========== DELETE (disables account — user cannot log in) ==========
     async function deleteUser(userId, name) {
-        if (!confirm('Soft-delete ' + name + '? You can restore them later.')) return;
+        if (!confirm('Delete (disable) account for "' + name + '"?\n\n• They will not be able to log in\n• They will be hidden from the public site\n• You can Restore them later from "Deleted Accounts"')) {
+            return;
+        }
 
         var res = await supabaseClient
             .from('profiles')
@@ -282,16 +312,29 @@
             .eq('id', userId);
 
         if (res.error) {
-            alert('Error: ' + res.error.message);
+            alert('Error deleting account: ' + res.error.message +
+                '\n\nIf it says a column does not exist, run the SQL for is_deleted in Supabase first.');
             return;
         }
 
+        // Hide worker profile from public listings
         await supabaseClient
             .from('worker_details')
             .update({ availability: 'Deleted' })
             .eq('id', userId);
 
-        alert(name + ' has been soft-deleted. You can restore them anytime.');
+        // Close their open jobs so they stop receiving contact
+        try {
+            await supabaseClient
+                .from('job_posts')
+                .update({ status: 'Taken' })
+                .eq('client_id', userId)
+                .eq('status', 'Open');
+        } catch (e) {
+            console.log('Close jobs skipped:', e);
+        }
+
+        alert('"' + name + '" has been deleted from the app.\nThey cannot log in until you Restore them.');
         loadAllUsers();
         loadAllWorkers();
         loadStats();
@@ -299,7 +342,9 @@
 
     // ========== RESTORE ==========
     async function restoreUser(userId, name) {
-        if (!confirm('Restore ' + name + '?')) return;
+        if (!confirm('Restore account for "' + name + '"?\nThey will be able to log in again and appear on the site.')) {
+            return;
+        }
 
         var res = await supabaseClient
             .from('profiles')
@@ -310,7 +355,7 @@
             .eq('id', userId);
 
         if (res.error) {
-            alert('Error: ' + res.error.message);
+            alert('Error restoring account: ' + res.error.message);
             return;
         }
 
@@ -319,7 +364,7 @@
             .update({ availability: 'Available' })
             .eq('id', userId);
 
-        alert(name + ' restored successfully!');
+        alert('"' + name + '" has been restored successfully!');
         loadAllUsers();
         loadAllWorkers();
         loadStats();
@@ -451,9 +496,9 @@
                 var isDeleted = p.is_deleted === true;
                 return '<div class="dispute-row ' + (isDeleted ? 'deleted-user' : '') + '"><div class="dispute-info"><h4>' + (p.full_name || 'Unknown') +
                     (isDeleted ? ' <span style="color:#ef4444;">(Deleted)</span>' : '') +
-                    '</h4><p>' + (w.category || '') + ' • ' + (p.phone || 'No phone') + ' • ' + (p.location || 'Buea') +
+                    '</h4><p>' + (w.category || '') + ' • ' + (p.phone || 'No phone') + ' • ' + (p.location || 'Cameroon') +
                     '</p></div>' +
-                    (isDeleted 
+                    (isDeleted
                         ? '<button class="btn-primary" onclick="restoreUser(\'' + w.id + '\',\'' + safeName + '\')">Restore</button>'
                         : '<button class="btn-close-job" onclick="deleteUser(\'' + w.id + '\',\'' + safeName + '\')">Delete</button>') +
                     '</div>';
@@ -493,8 +538,12 @@
     }
 
     async function deleteJob(jobId, title) {
-        if (!confirm('Delete "' + title + '"?')) return;
-        await supabaseClient.from('job_posts').delete().eq('id', jobId);
+        if (!confirm('Permanently delete job "' + title + '"?')) return;
+        var res = await supabaseClient.from('job_posts').delete().eq('id', jobId);
+        if (res.error) {
+            alert('Error: ' + res.error.message);
+            return;
+        }
         alert('Job deleted.');
         loadAllJobs();
         loadStats();
