@@ -5,11 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Join as Worker - Handy Man</title>
     <link rel="stylesheet" href="style.css">
-    <style>
-        .custom-town-field { display: none; margin-top: 8px; }
-        .custom-town-field.active { display: block; }
-        .upload-hint { color: var(--text-light); font-size: 0.8rem; margin-top: 6px; display: block; }
-    </style>
 </head>
 <body>
     <header class="header">
@@ -19,7 +14,8 @@
                 <a href="index.html">Home</a>
                 <a href="workers.html">Find Workers</a>
                 <a href="jobs.html">Find Jobs</a>
-                <a href="dashboard.html" class="btn-secondary">My Jobs</a>
+                <a href="login.html" class="btn-secondary">Join as Worker</a>
+                <a href="post-job.html" class="btn-secondary">Post a Job</a>
                 <a href="login.html" class="btn-secondary" id="authBtn">Login</a>
             </nav>
             <button class="menu-toggle" id="menuToggle">☰</button>
@@ -30,9 +26,32 @@
         <div class="container">
             <div class="auth-box">
                 <h2>Join as a Service Provider</h2>
-                <p>Create your worker profile to start receiving job requests.</p>
-                
+                <p>Create your worker profile to receive jobs anywhere in Cameroon.</p>
+
                 <form id="workerForm" onsubmit="handleWorkerJoin(event)">
+                    <div class="form-group">
+                        <label>Town where you work *</label>
+                        <select id="wTown" required>
+                            <option value="">Select town</option>
+                            <option value="Buea">Buea</option>
+                            <option value="Limbe">Limbe</option>
+                            <option value="Douala">Douala</option>
+                            <option value="Yaoundé">Yaoundé</option>
+                            <option value="Bamenda">Bamenda</option>
+                            <option value="Bafoussam">Bafoussam</option>
+                            <option value="Kribi">Kribi</option>
+                            <option value="Garoua">Garoua</option>
+                            <option value="Maroua">Maroua</option>
+                            <option value="Ngaoundéré">Ngaoundéré</option>
+                            <option value="Bertoua">Bertoua</option>
+                            <option value="Ebolowa">Ebolowa</option>
+                            <option value="Kumba">Kumba</option>
+                            <option value="Dschang">Dschang</option>
+                            <option value="Nkongsamba">Nkongsamba</option>
+                            <option value="Edéa">Edéa</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
                     <div class="form-group">
                         <label>Service Category *</label>
                         <select id="wCategory" required>
@@ -50,35 +69,6 @@
                             <option value="Others">Others</option>
                         </select>
                     </div>
-
-                    <!-- TOWN SELECTOR -->
-                    <div class="form-group">
-                        <label>Town / City where you work *</label>
-                        <select id="wTown" required onchange="handleWorkerTownChange()">
-                            <option value="">Select town</option>
-                            <option value="Buea">Buea</option>
-                            <option value="Limbe">Limbe</option>
-                            <option value="Douala">Douala</option>
-                            <option value="Yaoundé">Yaoundé</option>
-                            <option value="Bamenda">Bamenda</option>
-                            <option value="Kumba">Kumba</option>
-                            <option value="Kribi">Kribi</option>
-                            <option value="Bafoussam">Bafoussam</option>
-                            <option value="Garoua">Garoua</option>
-                            <option value="Maroua">Maroua</option>
-                            <option value="Ngaoundéré">Ngaoundéré</option>
-                            <option value="Bertoua">Bertoua</option>
-                            <option value="Ebolowa">Ebolowa</option>
-                            <option value="Mutengene">Mutengene</option>
-                            <option value="Tiko">Tiko</option>
-                            <option value="Other">Other (specify below)</option>
-                        </select>
-                        <div id="wCustomTownField" class="custom-town-field">
-                            <input type="text" id="wCustomTown" placeholder="Enter your town">
-                        </div>
-                        <small class="upload-hint">This is where clients will find you.</small>
-                    </div>
-
                     <div class="form-group">
                         <label>Description of Services *</label>
                         <textarea id="wDescription" required rows="4" placeholder="Describe what you do, your skills, and experience..."></textarea>
@@ -97,7 +87,7 @@
                     </div>
                     <button type="submit" class="btn-primary full">Create Profile</button>
                 </form>
-                
+
                 <p id="joinMessage" class="message"></p>
             </div>
         </div>
@@ -115,68 +105,40 @@
             }
         });
 
-        function handleWorkerTownChange() {
-            const town = document.getElementById('wTown').value;
-            const field = document.getElementById('wCustomTownField');
-            const input = document.getElementById('wCustomTown');
-            if (town === 'Other') {
-                field.classList.add('active');
-                input.required = true;
-            } else {
-                field.classList.remove('active');
-                input.required = false;
-            }
-        }
-
-        function getWorkerTown() {
-            const town = document.getElementById('wTown').value;
-            if (town === 'Other') {
-                return document.getElementById('wCustomTown').value.trim() || 'Cameroon';
-            }
-            return town || 'Cameroon';
-        }
-        
         async function handleWorkerJoin(e) {
             e.preventDefault();
-            
+
             const { data: { user } } = await supabaseClient.auth.getUser();
             if (!user) {
                 showJoinMessage('Please login first.', 'error');
                 return;
             }
 
-            const selectedTown = getWorkerTown();
-            
+            const town = document.getElementById('wTown').value;
+            if (town) {
+                await supabaseClient.from('profiles').update({ location: town, is_worker: true }).eq('id', user.id);
+            }
+
             const details = {
                 id: user.id,
                 category: document.getElementById('wCategory').value,
-                description: document.getElementById('wDescription').value.trim(),
+                description: document.getElementById('wDescription').value,
                 experience_years: parseInt(document.getElementById('wExperience').value) || 0,
-                contact_phone: document.getElementById('wPhone').value.trim(),
-                whatsapp_number: document.getElementById('wWhatsapp').value.trim(),
+                contact_phone: document.getElementById('wPhone').value,
+                whatsapp_number: document.getElementById('wWhatsapp').value,
                 availability: 'Available'
             };
-            
+
             const { error } = await supabaseClient.from('worker_details').upsert([details], { onConflict: 'id' });
-            
+
             if (error) {
                 showJoinMessage('Error: ' + error.message, 'error');
-                return;
+            } else {
+                showJoinMessage('Profile created successfully! Redirecting...', 'success');
+                setTimeout(() => window.location.href = 'index.html', 1500);
             }
-
-            // Also update the location in the profiles table
-            await supabaseClient
-                .from('profiles')
-                .update({ 
-                    location: selectedTown,
-                    is_worker: true 
-                })
-                .eq('id', user.id);
-
-            showJoinMessage('Profile created successfully! Redirecting...', 'success');
-            setTimeout(() => window.location.href = 'dashboard.html', 1500);
         }
-        
+
         function showJoinMessage(msg, type) {
             const el = document.getElementById('joinMessage');
             el.textContent = msg;
