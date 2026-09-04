@@ -12,8 +12,8 @@
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .custom-category-field { display: none; margin-top: 8px; }
-        .custom-category-field.active { display: block; }
+        .custom-category-field, .custom-town-field { display: none; margin-top: 8px; }
+        .custom-category-field.active, .custom-town-field.active { display: block; }
         .photo-upload-box {
             border: 2px dashed var(--border);
             border-radius: 12px;
@@ -69,7 +69,7 @@
                 <a href="jobs.html">Find Jobs</a>
                 <a href="login.html" class="btn-secondary">Join as Worker</a>
                 <a href="post-job.html" class="btn-secondary">Post a Job</a>
-                <a href="login.html" class="btn-primary" id="authBtn">Login</a>
+                <a href="login.html" class="btn-secondary" id="authBtn">Login</a>
             </nav>
             <button class="menu-toggle" id="menuToggle">☰</button>
         </div>
@@ -126,6 +126,34 @@
                             </select>
                         </div>
 
+                        <!-- TOWN / CITY SELECTOR (for both Clients and Workers) -->
+                        <div class="form-group">
+                            <label>Town / City *</label>
+                            <select id="regTown" required onchange="handleTownChange()">
+                                <option value="">Select your town</option>
+                                <option value="Buea">Buea</option>
+                                <option value="Limbe">Limbe</option>
+                                <option value="Douala">Douala</option>
+                                <option value="Yaoundé">Yaoundé</option>
+                                <option value="Bamenda">Bamenda</option>
+                                <option value="Kumba">Kumba</option>
+                                <option value="Kribi">Kribi</option>
+                                <option value="Bafoussam">Bafoussam</option>
+                                <option value="Garoua">Garoua</option>
+                                <option value="Maroua">Maroua</option>
+                                <option value="Ngaoundéré">Ngaoundéré</option>
+                                <option value="Bertoua">Bertoua</option>
+                                <option value="Ebolowa">Ebolowa</option>
+                                <option value="Mutengene">Mutengene</option>
+                                <option value="Tiko">Tiko</option>
+                                <option value="Other">Other (specify below)</option>
+                            </select>
+                            <div id="customTownField" class="custom-town-field">
+                                <input type="text" id="customTown" placeholder="Enter your town or quarter">
+                            </div>
+                            <small class="upload-hint">Select the main town where you live or offer services.</small>
+                        </div>
+
                         <div class="form-group">
                             <label>Profile Photo (optional)</label>
                             <div class="photo-upload-box">
@@ -171,7 +199,7 @@
                                 <div class="photo-upload-box">
                                     <p style="margin-bottom: 8px; font-size: 0.9rem;">📸 Photos of your past work</p>
                                     <input type="file" id="wPortfolio" accept="image/*" multiple>
-                                    <small class="upload-hint">Select up to 2 images (gallery or camera on some phones).</small>
+                                    <small class="upload-hint">Select up to 2 images.</small>
                                     <div class="file-preview" id="wPortfolioPreview"></div>
                                 </div>
                             </div>
@@ -187,8 +215,9 @@
                                 <textarea id="cJobDesc" rows="3" placeholder="Describe what you need..."></textarea>
                             </div>
                             <div class="form-group">
-                                <label>Location *</label>
-                                <input type="text" id="cLocation" placeholder="e.g. Molyko, Buea" value="Buea">
+                                <label>More precise location (optional)</label>
+                                <input type="text" id="cLocationDetail" placeholder="e.g. Molyko, opposite Total">
+                                <small class="upload-hint">You can add quarter or landmark. Town is already selected above.</small>
                             </div>
                             <div class="form-group">
                                 <label>Budget (optional)</label>
@@ -247,14 +276,12 @@
                 document.getElementById('wDescription').required = true;
                 document.getElementById('cJobTitle').required = false;
                 document.getElementById('cJobDesc').required = false;
-                document.getElementById('cLocation').required = false;
             } else {
                 workerFields.classList.remove('active');
                 clientFields.classList.add('active');
                 document.getElementById('wDescription').required = false;
                 document.getElementById('cJobTitle').required = true;
                 document.getElementById('cJobDesc').required = true;
-                document.getElementById('cLocation').required = true;
             }
         }
 
@@ -269,6 +296,27 @@
                 field.classList.remove('active');
                 input.required = false;
             }
+        }
+
+        function handleTownChange() {
+            const town = document.getElementById('regTown').value;
+            const field = document.getElementById('customTownField');
+            const input = document.getElementById('customTown');
+            if (town === 'Other') {
+                field.classList.add('active');
+                input.required = true;
+            } else {
+                field.classList.remove('active');
+                input.required = false;
+            }
+        }
+
+        function getSelectedTown() {
+            const town = document.getElementById('regTown').value;
+            if (town === 'Other') {
+                return document.getElementById('customTown').value.trim() || 'Cameroon';
+            }
+            return town || 'Cameroon';
         }
 
         function setupAvatarPreview() {
@@ -351,6 +399,7 @@
                 const fullName = document.getElementById('regName').value.trim();
                 const phone = document.getElementById('regPhone').value.trim();
                 const isWorker = document.getElementById('regType').value === 'worker';
+                const selectedTown = getSelectedTown();
 
                 let category = document.getElementById('serviceCategory').value;
                 if (category === 'Others') {
@@ -387,9 +436,6 @@
                 if (photoFile) {
                     showMessage('Uploading profile photo...', 'success');
                     photoUrl = await uploadFile(photoFile, 'profiles', userId);
-                    if (!photoUrl) {
-                        console.warn('Profile photo upload failed — continuing without it');
-                    }
                 }
 
                 const profileData = {
@@ -397,7 +443,7 @@
                     full_name: fullName,
                     phone: phone,
                     is_worker: isWorker,
-                    location: isWorker ? 'Buea' : (document.getElementById('cLocation').value.trim() || 'Buea'),
+                    location: selectedTown,
                     avatar_url: photoUrl,
                     portfolio: []
                 };
@@ -454,12 +500,19 @@
                             .eq('id', userId);
                     }
 
+                    // Build full location: Town + optional detail
+                    let fullLocation = selectedTown;
+                    const detail = document.getElementById('cLocationDetail').value.trim();
+                    if (detail) {
+                        fullLocation = detail + ', ' + selectedTown;
+                    }
+
                     const jobData = {
                         client_id: userId,
                         title: document.getElementById('cJobTitle').value.trim(),
                         description: document.getElementById('cJobDesc').value.trim(),
                         category: category,
-                        location: document.getElementById('cLocation').value.trim() || 'Buea',
+                        location: fullLocation,
                         budget: document.getElementById('cBudget').value.trim() || 'Not specified',
                         status: 'Open'
                     };
