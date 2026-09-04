@@ -19,6 +19,9 @@
         .dispute-detail-box { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
         .dispute-detail-box p { margin-bottom: 8px; }
         .detail-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+        .party-box { background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin: 12px 0; }
+        .party-box h4 { margin-bottom: 8px; }
+        .party-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -273,9 +276,9 @@
         else alert('Notification sent to ' + userName);
     }
 
-    // ========== SOFT DELETE (deactivates account — user cannot log in) ==========
+    // ========== SOFT DELETE ==========
     async function deleteUser(userId, name) {
-        if (!confirm('Delete (deactivate) ' + name + '?\n\nThey will NOT be able to log in or use the account.\nYou can restore them later from the "Deleted Accounts" filter.')) return;
+        if (!confirm('Delete (deactivate) ' + name + '?\n\nThey will NOT be able to log in or appear on the site.\nYou can restore them later from the "Deleted Accounts" filter.')) return;
 
         var res = await supabaseClient
             .from('profiles')
@@ -303,7 +306,7 @@
 
     // ========== RESTORE ==========
     async function restoreUser(userId, name) {
-        if (!confirm('Restore ' + name + '? They will be able to log in again.')) return;
+        if (!confirm('Restore ' + name + '? They will be able to log in again and appear on the site.')) return;
 
         var res = await supabaseClient
             .from('profiles')
@@ -396,6 +399,7 @@
         }
     }
 
+    // ========== DISPUTES ==========
     async function loadDisputes() {
         if (!supabaseClient) {
             setHtml('disputesList', '<p class="empty-dashboard">Cannot connect.</p>');
@@ -441,27 +445,86 @@
         var safeReporter = (d.reporter_name || 'Reporter').replace(/'/g, "\\'");
         var safeTarget = (d.target_name || 'User').replace(/'/g, "\\'");
 
-        var msgReporterBtn = reporterId
-            ? '<button class="btn-primary" onclick="messageUser(\'' + reporterId + '\',\'' + safeReporter + '\')">Message Reporter</button>'
-            : '';
-        var msgTargetBtn = (targetId && d.target_type !== 'Bug' && d.target_type !== 'job')
-            ? '<button class="btn-primary" onclick="messageUser(\'' + targetId + '\',\'' + safeTarget + '\')">Message Reported Person</button>'
-            : '';
+        // Fetch phone numbers for both parties
+        var reporterPhone = null;
+        var targetPhone = null;
+
+        if (reporterId) {
+            var { data: reporterProfile } = await supabaseClient
+                .from('profiles')
+                .select('phone, full_name')
+                .eq('id', reporterId)
+                .maybeSingle();
+            if (reporterProfile) {
+                reporterPhone = reporterProfile.phone;
+                if (reporterProfile.full_name) safeReporter = reporterProfile.full_name.replace(/'/g, "\\'");
+            }
+        }
+
+        if (targetId && d.target_type !== 'Bug' && d.target_type !== 'job') {
+            var { data: targetProfile } = await supabaseClient
+                .from('profiles')
+                .select('phone, full_name')
+                .eq('id', targetId)
+                .maybeSingle();
+            if (targetProfile) {
+                targetPhone = targetProfile.phone;
+                if (targetProfile.full_name) safeTarget = targetProfile.full_name.replace(/'/g, "\\'");
+            }
+        }
+
+        // Build action buttons for Reporter
+        var reporterActions = '';
+        if (reporterId) {
+            reporterActions += '<button class="btn-primary" onclick="messageUser(\'' + reporterId + '\',\'' + safeReporter + '\')">📩 In-App Message</button> ';
+        }
+        if (reporterPhone) {
+            reporterActions += '<a class="btn-call" href="' + callLink(reporterPhone) + '">📞 Call</a> ';
+            reporterActions += '<a class="btn-whatsapp" href="' + whatsappLink(reporterPhone) + '" target="_blank">💬 WhatsApp</a>';
+        }
+
+        // Build action buttons for Target
+        var targetActions = '';
+        if (targetId && d.target_type !== 'Bug' && d.target_type !== 'job') {
+            targetActions += '<button class="btn-primary" onclick="messageUser(\'' + targetId + '\',\'' + safeTarget + '\')">📩 In-App Message</button> ';
+            if (targetPhone) {
+                targetActions += '<a class="btn-call" href="' + callLink(targetPhone) + '">📞 Call</a> ';
+                targetActions += '<a class="btn-whatsapp" href="' + whatsappLink(targetPhone) + '" target="_blank">💬 WhatsApp</a>';
+            }
+        }
+
         var resolveBtn = d.status === 'Open'
-            ? '<button class="btn-small" onclick="resolveDispute(\'' + d.id + '\')">Mark Resolved</button>'
+            ? '<button class="btn-small" onclick="resolveDispute(\'' + d.id + '\')">✅ Mark Resolved</button>'
             : '';
 
         var html = '<div class="dispute-detail-box">' +
             '<h3>🚩 Dispute Detail</h3>' +
             '<p><strong>Reason:</strong> ' + (d.reason || '') + '</p>' +
-            '<p><strong>Target:</strong> ' + (d.target_name || '') + ' (' + (d.target_type || '') + ') — ID: ' + (targetId || 'n/a') + '</p>' +
-            '<p><strong>Reporter:</strong> ' + (d.reporter_name || 'Anonymous') + ' — ID: ' + (reporterId || 'n/a') + '</p>' +
+            '<p><strong>Target:</strong> ' + (d.target_name || '') + ' (' + (d.target_type || '') + ')</p>' +
+            '<p><strong>Reporter:</strong> ' + (d.reporter_name || 'Anonymous') + '</p>' +
             '<p><strong>Status:</strong> ' + (d.status || '') + '</p>' +
             '<p><strong>Date:</strong> ' + date + '</p>' +
             '<p style="margin-top:12px;"><strong>Full details:</strong></p>' +
-            '<p style="background:#f8fafc;padding:12px;border-radius:8px;white-space:pre-wrap;">' + (d.details || 'No details') + '</p>' +
-            '<div class="detail-actions">' +
-            msgReporterBtn + msgTargetBtn + resolveBtn +
+            '<p style="background:#f8fafc;padding:12px;border-radius:8px;white-space:pre-wrap;">' + (d.details || 'No details') + '</p>';
+
+        // Reporter box
+        html += '<div class="party-box">' +
+            '<h4>👤 Reporter: ' + (d.reporter_name || 'Anonymous') + '</h4>' +
+            (reporterPhone ? '<p>Phone: ' + reporterPhone + '</p>' : '<p>No phone on record</p>') +
+            '<div class="party-actions">' + (reporterActions || '<span style="color:#64748b;">No contact options</span>') + '</div>' +
+            '</div>';
+
+        // Target box (only if relevant)
+        if (d.target_type !== 'Bug') {
+            html += '<div class="party-box">' +
+                '<h4>🎯 Reported Person / Target: ' + (d.target_name || 'Unknown') + '</h4>' +
+                (targetPhone ? '<p>Phone: ' + targetPhone + '</p>' : '<p>No phone on record</p>') +
+                '<div class="party-actions">' + (targetActions || '<span style="color:#64748b;">No contact options</span>') + '</div>' +
+                '</div>';
+        }
+
+        html += '<div class="detail-actions" style="margin-top:20px;">' +
+            resolveBtn +
             '<button class="btn-secondary" onclick="loadDisputes()">← Back to list</button>' +
             '</div></div>';
 
@@ -486,11 +549,11 @@
     }
 
     async function resolveDispute(disputeId) {
-        if (!confirm('Mark as resolved?')) return;
+        if (!confirm('Mark this dispute as resolved?')) return;
         var res = await supabaseClient.from('disputes').update({ status: 'Resolved' }).eq('id', disputeId);
         if (res.error) alert('Error: ' + res.error.message);
         else {
-            alert('Resolved.');
+            alert('Dispute marked as resolved.');
             loadDisputes();
             loadStats();
         }
