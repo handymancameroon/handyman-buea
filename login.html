@@ -12,8 +12,8 @@
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .custom-category-field { display: none; margin-top: 8px; }
-        .custom-category-field.active { display: block; }
+        .custom-category-field, .custom-town-field { display: none; margin-top: 8px; }
+        .custom-category-field.active, .custom-town-field.active { display: block; }
         .photo-upload-box {
             border: 2px dashed var(--border);
             border-radius: 12px;
@@ -57,7 +57,6 @@
             display: block;
         }
         .auth-box { max-width: 520px; }
-        .town-select { width: 100%; }
     </style>
 </head>
 <body>
@@ -121,6 +120,7 @@
                             <label>Password *</label>
                             <input type="password" id="regPassword" required placeholder="Min 6 characters" minlength="6">
                         </div>
+
                         <div class="form-group">
                             <label>I am a: *</label>
                             <select id="regType" onchange="toggleFields()">
@@ -129,9 +129,10 @@
                             </select>
                         </div>
 
+                        <!-- TOWN SELECTOR (for both Client & Worker) -->
                         <div class="form-group">
-                            <label>Town / City where you operate *</label>
-                            <select id="regTown" class="town-select" required>
+                            <label>Town / City *</label>
+                            <select id="regTown" required onchange="handleTownChange()">
                                 <option value="">Select town</option>
                                 <option value="Buea">Buea</option>
                                 <option value="Limbe">Limbe</option>
@@ -140,17 +141,22 @@
                                 <option value="Bamenda">Bamenda</option>
                                 <option value="Bafoussam">Bafoussam</option>
                                 <option value="Kribi">Kribi</option>
+                                <option value="Kumba">Kumba</option>
                                 <option value="Garoua">Garoua</option>
                                 <option value="Maroua">Maroua</option>
                                 <option value="Ngaoundéré">Ngaoundéré</option>
                                 <option value="Bertoua">Bertoua</option>
                                 <option value="Ebolowa">Ebolowa</option>
-                                <option value="Kumba">Kumba</option>
                                 <option value="Dschang">Dschang</option>
                                 <option value="Nkongsamba">Nkongsamba</option>
                                 <option value="Edéa">Edéa</option>
-                                <option value="Other">Other</option>
+                                <option value="Mutengene">Mutengene</option>
+                                <option value="Tiko">Tiko</option>
+                                <option value="Other">Other (specify below)</option>
                             </select>
+                            <div id="customTownField" class="custom-town-field">
+                                <input type="text" id="customTown" placeholder="Enter your town">
+                            </div>
                         </div>
 
                         <div class="form-group">
@@ -184,6 +190,7 @@
                             </div>
                         </div>
 
+                        <!-- WORKER FIELDS -->
                         <div id="workerFields" class="worker-fields">
                             <div class="form-group">
                                 <label>Description of Services *</label>
@@ -204,6 +211,7 @@
                             </div>
                         </div>
 
+                        <!-- CLIENT FIELDS -->
                         <div id="clientFields" class="client-fields">
                             <div class="form-group">
                                 <label>Job Title *</label>
@@ -214,8 +222,8 @@
                                 <textarea id="cJobDesc" rows="3" placeholder="Describe what you need..."></textarea>
                             </div>
                             <div class="form-group">
-                                <label>Exact Location / Quarter *</label>
-                                <input type="text" id="cLocation" placeholder="e.g. Molyko, near University">
+                                <label>Area / Quarter (optional)</label>
+                                <input type="text" id="cArea" placeholder="e.g. Molyko, Bonanjo, Nkwen">
                             </div>
                             <div class="form-group">
                                 <label>Budget (optional)</label>
@@ -255,9 +263,8 @@
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(tab + 'Tab').classList.add('active');
-            if (event && event.target) {
-                event.target.classList.add('active');
-            } else {
+            if (event && event.target) event.target.classList.add('active');
+            else {
                 document.querySelectorAll('.tab-btn').forEach(b => {
                     if (b.textContent.toLowerCase().includes(tab)) b.classList.add('active');
                 });
@@ -275,14 +282,12 @@
                 document.getElementById('wDescription').required = true;
                 document.getElementById('cJobTitle').required = false;
                 document.getElementById('cJobDesc').required = false;
-                document.getElementById('cLocation').required = false;
             } else {
                 workerFields.classList.remove('active');
                 clientFields.classList.add('active');
                 document.getElementById('wDescription').required = false;
                 document.getElementById('cJobTitle').required = true;
                 document.getElementById('cJobDesc').required = true;
-                document.getElementById('cLocation').required = true;
             }
         }
 
@@ -297,6 +302,27 @@
                 field.classList.remove('active');
                 input.required = false;
             }
+        }
+
+        function handleTownChange() {
+            const town = document.getElementById('regTown').value;
+            const field = document.getElementById('customTownField');
+            const input = document.getElementById('customTown');
+            if (town === 'Other') {
+                field.classList.add('active');
+                input.required = true;
+            } else {
+                field.classList.remove('active');
+                input.required = false;
+            }
+        }
+
+        function getSelectedTown() {
+            const town = document.getElementById('regTown').value;
+            if (town === 'Other') {
+                return document.getElementById('customTown').value.trim() || 'Cameroon';
+            }
+            return town || 'Cameroon';
         }
 
         function setupAvatarPreview() {
@@ -348,7 +374,7 @@
         async function handleLogin(e) {
             e.preventDefault();
             if (!supabaseClient) {
-                showMessage('Cannot connect. Please refresh the page.', 'error');
+                showMessage('Cannot connect. Please refresh.', 'error');
                 return;
             }
             const email = document.getElementById('loginEmail').value.trim();
@@ -365,7 +391,7 @@
         async function handleRegister(e) {
             e.preventDefault();
             if (!supabaseClient) {
-                showMessage('Cannot connect. Please refresh the page.', 'error');
+                showMessage('Cannot connect. Please refresh.', 'error');
                 return;
             }
 
@@ -379,7 +405,7 @@
                 const fullName = document.getElementById('regName').value.trim();
                 const phone = document.getElementById('regPhone').value.trim();
                 const isWorker = document.getElementById('regType').value === 'worker';
-                const town = document.getElementById('regTown').value || 'Buea';
+                const selectedTown = getSelectedTown();
 
                 let category = document.getElementById('serviceCategory').value;
                 if (category === 'Others') {
@@ -411,6 +437,7 @@
                 const userId = data.user.id;
                 currentUser = data.user;
 
+                // Upload profile photo
                 let photoUrl = null;
                 const photoFile = document.getElementById('regPhotoFile').files[0];
                 if (photoFile) {
@@ -423,7 +450,7 @@
                     full_name: fullName,
                     phone: phone,
                     is_worker: isWorker,
-                    location: town,
+                    location: selectedTown,
                     avatar_url: photoUrl,
                     portfolio: []
                 };
@@ -470,34 +497,41 @@
                         await supabaseClient.from('profiles').update({ portfolio: portfolioUrls }).eq('id', userId);
                     }
                 } else {
-                    // Client registration – optional job post
-                    const jobTitle = document.getElementById('cJobTitle').value.trim();
-                    if (jobTitle) {
-                        showMessage('Uploading reference photos...', 'success');
-                        const portfolioFiles = document.getElementById('cPortfolio').files;
-                        const portfolioUrls = await uploadMultipleFiles(portfolioFiles, 'portfolio', userId, 2);
+                    // Client path – create first job
+                    showMessage('Uploading reference photos...', 'success');
+                    const portfolioFiles = document.getElementById('cPortfolio').files;
+                    const portfolioUrls = await uploadMultipleFiles(portfolioFiles, 'portfolio', userId, 2);
 
-                        if (portfolioUrls.length > 0) {
-                            await supabaseClient.from('profiles')
-                                .update({ portfolio: portfolioUrls })
-                                .eq('id', userId);
+                    if (portfolioUrls.length > 0) {
+                        await supabaseClient.from('profiles')
+                            .update({ portfolio: portfolioUrls })
+                            .eq('id', userId);
+                    }
+
+                    const area = document.getElementById('cArea').value.trim();
+                    const fullLocation = area ? (area + ', ' + selectedTown) : selectedTown;
+
+                    const jobData = {
+                        client_id: userId,
+                        title: document.getElementById('cJobTitle').value.trim(),
+                        description: document.getElementById('cJobDesc').value.trim(),
+                        category: category,
+                        location: fullLocation,
+                        budget: document.getElementById('cBudget').value.trim() || 'Not specified',
+                        status: 'Open'
+                    };
+
+                    if (portfolioUrls.length > 0) {
+                        jobData.images = portfolioUrls;
+                    }
+
+                    const { error: jobError } = await supabaseClient.from('job_posts').insert([jobData]);
+                    if (jobError) {
+                        // Fallback without images column if it fails
+                        if (jobData.images) {
+                            delete jobData.images;
+                            await supabaseClient.from('job_posts').insert([jobData]);
                         }
-
-                        const jobData = {
-                            client_id: userId,
-                            title: jobTitle,
-                            description: document.getElementById('cJobDesc').value.trim(),
-                            category: category,
-                            location: (document.getElementById('cLocation').value.trim() || '') + ', ' + town,
-                            budget: document.getElementById('cBudget').value.trim() || 'Not specified',
-                            status: 'Open'
-                        };
-
-                        if (portfolioUrls.length > 0) {
-                            jobData.images = portfolioUrls;
-                        }
-
-                        await supabaseClient.from('job_posts').insert([jobData]);
                     }
                 }
 
