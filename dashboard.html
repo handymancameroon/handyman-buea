@@ -10,6 +10,7 @@
         .job-row, .dispute-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px; background: #fff; flex-wrap: wrap; }
         .photo-upload-box { text-align: center; margin: 16px 0; }
         .photo-upload-box img { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin-bottom: 12px; border: 3px solid var(--border); }
+        .admin-only-box { background: #eff6ff; border: 2px solid #2563eb; border-radius: 12px; padding: 20px; margin-bottom: 24px; text-align: center; display: none; }
     </style>
 </head>
 <body>
@@ -32,7 +33,13 @@
         <div class="container">
             <h1>My Dashboard</h1>
 
-            <!-- Profile Photo -->
+            <!-- ADMIN ONLY — not shown to clients or workers -->
+            <div class="admin-only-box" id="adminOnlyBox">
+                <h2 style="margin-bottom:12px;">⚙️ Administrator</h2>
+                <p style="margin-bottom:16px;color:var(--text-light);">You have admin access. Open the full control panel:</p>
+                <a href="admin.html" class="btn-primary">Open Admin Panel</a>
+            </div>
+
             <div class="dashboard-section">
                 <h2>📷 My Profile Photo</h2>
                 <div class="photo-upload-box" id="photoSection">
@@ -40,25 +47,21 @@
                 </div>
             </div>
 
-            <!-- My Posted Jobs (Clients) -->
             <div class="dashboard-section">
                 <h2>📋 My Posted Jobs</h2>
                 <div id="myJobsList"><p class="loading">Loading your jobs...</p></div>
             </div>
 
-            <!-- Jobs in my category (Workers) -->
             <div class="dashboard-section" id="categoryJobsSection" style="display:none;">
                 <h2>🛠️ Open Jobs in My Category</h2>
                 <div id="categoryJobsList"><p class="loading">Loading jobs...</p></div>
             </div>
 
-            <!-- Worker Profile -->
             <div class="dashboard-section">
                 <h2>🔧 My Worker Profile</h2>
                 <div id="myWorkerProfile"><p class="loading">Loading profile...</p></div>
             </div>
 
-            <!-- Disputes -->
             <div class="dashboard-section">
                 <h2>🚩 My Disputes / Reports</h2>
                 <div id="myDisputesList"><p class="loading">Loading disputes...</p></div>
@@ -78,13 +81,17 @@
                 window.location.href = 'login.html';
                 return;
             }
+            // Show Admin box only for admin
+            if (isAdmin()) {
+                var box = document.getElementById('adminOnlyBox');
+                if (box) box.style.display = 'block';
+            }
             loadPhotoSection();
             loadMyJobs();
             loadMyWorkerProfile();
             loadMyDisputes();
         });
 
-        // ===== PHOTO =====
         async function loadPhotoSection() {
             const container = document.getElementById('photoSection');
             const { data: profile } = await supabaseClient
@@ -120,7 +127,6 @@
             loadMyWorkerProfile();
         }
 
-        // ===== MY POSTED JOBS =====
         async function loadMyJobs() {
             const container = document.getElementById('myJobsList');
             try {
@@ -165,7 +171,6 @@
             loadMyJobs();
         }
 
-        // ===== WORKER PROFILE + CATEGORY JOBS =====
         async function loadMyWorkerProfile() {
             const container = document.getElementById('myWorkerProfile');
             const catSection = document.getElementById('categoryJobsSection');
@@ -197,7 +202,7 @@
                         <h3>${p.full_name || 'Your Name'}</h3>
                         <p style="color:var(--primary);font-weight:600;">${worker.category}</p>
                     </div>
-                    <p><strong>📍 Location:</strong> ${p.location || 'Buea'}</p>
+                    <p><strong>📍 Location:</strong> ${p.location || 'Cameroon'}</p>
                     <p><strong>📞 Phone:</strong> ${p.phone || 'Not set'}</p>
                     <p><strong>⭐ Rating:</strong> ${worker.rating || 0}/5 (${worker.review_count || 0} reviews)</p>
                     <p><strong>🛠️ Experience:</strong> ${worker.experience_years || 0} years</p>
@@ -265,7 +270,6 @@
             }).join('');
         }
 
-        // ===== DISPUTES =====
         async function loadMyDisputes() {
             const container = document.getElementById('myDisputesList');
             try {
