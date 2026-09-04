@@ -16,7 +16,7 @@
                 <a href="jobs.html">Find Jobs</a>
                 <a href="login.html" class="btn-secondary">Join as Worker</a>
                 <a href="post-job.html" class="btn-secondary">Post a Job</a>
-                <a href="login.html" class="btn-primary" id="authBtn">Login</a>
+                <a href="login.html" class="btn-secondary" id="authBtn">Login</a>
             </nav>
             <button class="menu-toggle" id="menuToggle">☰</button>
         </div>
@@ -26,13 +26,13 @@
         <div class="container">
             <div class="report-box">
                 <h2>🚩 Report an Issue</h2>
-                <p>Help us keep Handy Man Buea safe and trustworthy.</p>
-                
+                <p>Help us keep Handy Man safe and trustworthy across Cameroon.</p>
+
                 <div class="target-info" id="targetInfo">
                     <h4 id="targetName">Loading...</h4>
                     <p id="targetType">Loading...</p>
                 </div>
-                
+
                 <form id="reportForm" onsubmit="handleReport(event)">
                     <div class="form-group">
                         <label>Reason *</label>
@@ -52,7 +52,7 @@
                     </div>
                     <button type="submit" class="btn-primary full">Submit Report</button>
                 </form>
-                
+
                 <p id="reportMessage" class="message"></p>
             </div>
         </div>
@@ -63,35 +63,35 @@
     <script src="app.js"></script>
     <script>
         let reportTarget = { type: '', id: '', name: '' };
-        
+
         document.addEventListener('DOMContentLoaded', async () => {
             await checkAuth();
-            
+
             const params = new URLSearchParams(window.location.search);
             reportTarget.type = params.get('type') || 'worker';
             reportTarget.id = params.get('id') || '';
             reportTarget.name = decodeURIComponent(params.get('name') || 'Unknown');
-            
+
             document.getElementById('targetName').textContent = reportTarget.name;
-            document.getElementById('targetType').textContent = reportTarget.type === 'worker' 
-                ? 'Reporting a worker profile' 
+            document.getElementById('targetType').textContent = reportTarget.type === 'worker'
+                ? 'Reporting a worker profile'
                 : 'Reporting a job posting';
         });
-        
+
         async function handleReport(e) {
             e.preventDefault();
-            
+
             const reason = document.getElementById('reportReason').value;
             const details = document.getElementById('reportDetails').value;
-            
+
             let reporterName = 'Anonymous';
             let reporterId = null;
-            
+
             if (currentUser) {
                 reporterId = currentUser.id;
-                reporterName = currentUser.user_metadata?.full_name || currentUser.email || 'User';
+                reporterName = (currentProfile && currentProfile.full_name) || currentUser.email || 'User';
             }
-            
+
             const reportData = {
                 reporter_id: reporterId,
                 reporter_name: reporterName,
@@ -102,18 +102,18 @@
                 details: details,
                 status: 'Open'
             };
-            
+
             const { error } = await supabaseClient.from('disputes').insert([reportData]);
-            
+
             if (error) {
                 showReportMessage('Error submitting report: ' + error.message, 'error');
                 return;
             }
-            
+
             showReportMessage('Report submitted successfully. Our team will review it shortly.', 'success');
             document.getElementById('reportForm').reset();
         }
-        
+
         function showReportMessage(msg, type) {
             const el = document.getElementById('reportMessage');
             el.textContent = msg;
