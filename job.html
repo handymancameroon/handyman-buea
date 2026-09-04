@@ -27,6 +27,9 @@
         .portfolio-img:hover { transform: scale(1.03); border-color: var(--primary); }
         .img-error { background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: var(--text-light); font-size: 0.85rem; }
         .report-section { margin-top: 20px; text-align: center; }
+        .rate-form { background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-top: 24px; }
+        .rate-form select, .rate-form textarea { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); margin: 8px 0; font-family: inherit; }
+        .rate-form textarea { min-height: 90px; resize: vertical; }
     </style>
 </head>
 <body>
@@ -57,10 +60,11 @@
     <script>
         let currentJob = null;
         let currentJobId = null;
+        let clientId = null;
 
         document.addEventListener('DOMContentLoaded', async () => {
             await checkAuth();
-            setTimeout(async () => { await loadJobDetail(); }, 100);
+            setTimeout(async () => { await loadJobDetail(); }, 200);
         });
 
         async function loadJobDetail() {
@@ -74,20 +78,24 @@
 
             try {
                 const { data: job, error } = await supabaseClient
-                    .from('job_posts').select('*, profiles(full_name, phone, avatar_url, location, portfolio)').eq('id', id).single();
+                    .from('job_posts')
+                    .select('*, profiles(full_name, phone, avatar_url, location, portfolio)')
+                    .eq('id', id)
+                    .single();
 
                 if (error || !job) { container.innerHTML = '<p class="error">Job not found.</p>'; return; }
 
                 currentJob = job;
+                clientId = job.client_id;
                 const p = job.profiles || {};
                 const phoneNum = (p.phone || '').replace(/\D/g, '');
-                const whatsappLink = phoneNum ? `https://wa.me/237${phoneNum}` : '#';
+                let local = phoneNum;
+                if (local.indexOf('237') === 0) local = local.substring(3);
+                const whatsappLink = local ? `https://wa.me/237${local}` : '#';
                 const callLink = p.phone ? `tel:${p.phone}` : '#';
                 const postedDate = new Date(job.created_at).toLocaleDateString('en-GB');
 
-                const { data: { user } } = await supabaseClient.auth.getUser();
-                const isOwner = user && user.id === job.client_id;
-
+                const isOwner = currentUser && currentUser.id === job.client_id;
                 const isOpen = job.status === 'Open';
                 const statusBannerClass = isOpen ? 'status-open' : 'status-closed';
                 const statusText = isOpen ? '🟢 OPEN — Workers Can Apply' : '🔴 CLOSED — No Longer Accepting Applications';
@@ -111,6 +119,55 @@
                                     <img src="${url}" class="portfolio-img" onerror="this.onerror=null;this.src='https://via.placeholder.com/180?text=Image+Not+Found';this.classList.add('img-error');" onclick="window.open('${url}', '_blank')" alt="Reference ${i+1}">
                                 `).join('')}
                             </div>
+                        </div>
+                    `;
+                }
+
+                // Load reviews for this client (we store client ratings using worker_id = client_id + review_type)
+                let clientReviewsHtml = '<p>No ratings for this client yet.</p>';
+                try {
+                    const { data: clientReviews } = await supabaseClient
+                        .from('reviews')
+                        .select('*')
+                        .eq('worker_id', job.client_id)
+                        .order('created_at', { ascending: false });
+                    if (clientReviews && clientReviews.length > 0) {
+                        clientReviewsHtml = clientReviews.map(r => `
+                            <div class="review">
+                                <div class="review-header">
+                                    <strong>Reviewer</strong>
+                                    <span>${'⭐'.repeat(r.rating || 0)} (${r.rating}/5)</span>
+                                </div>
+                                <p>${r.comment || 'No comment'}</p>
+                            </div>
+                        `).join('');
+                    }
+                } catch (e) {}
+
+                // Rating form for the client
+                let rateClientHtml = '';
+                if (currentUser && currentUser.id !== job.client_id) {
+                    rateClientHtml = `
+                        <div class="rate-form" id="rateClientForm">
+                            <h4>⭐ Rate this Client</h4>
+                            <label>Your Rating</label>
+                            <select id="clientRatingValue">
+                                <option value="5">⭐⭐⭐⭐⭐ 5 Stars - Excellent</option>
+                                <option value="4">⭐⭐⭐⭐ 4 Stars - Very Good</option>
+                                <option value="3">⭐⭐⭐ 3 Stars - Good</option>
+                                <option value="2">⭐⭐ 2 Stars - Fair</option>
+                                <option value="1">⭐ 1 Star - Poor</option>
+                            </select>
+                            <label>Your Comment (optional)</label>
+                            <textarea id="clientRatingComment" placeholder="How was working with this client?"></textarea>
+                            <button class="btn-primary" onclick="submitClientReview()" style="margin-top:12px;">Submit Rating & Comment</button>
+                            <p id="clientRateMessage" class="message" style="display:none;"></p>
+                        </div>
+                    `;
+                } else if (!currentUser) {
+                    rateClientHtml = `
+                        <div class="rate-form">
+                            <p>Please <a href="login.html">login</a> to rate this client.</p>
                         </div>
                     `;
                 }
@@ -152,26 +209,9 @@
                     contactSection = `<p style="color: var(--text-light); font-weight: 600;">This job is closed.</p>`;
                 }
 
-                let workerTips = '';
-                if (isOpen && !isOwner) {
-                    workerTips = `
-                        <div class="tips-box">
-                            <h4>💡 Tips for Workers</h4>
-                            <ul>
-                                <li>Confirm details, pricing, and timing before starting.</li>
-                                <li>Ask for the exact location in the town listed.</li>
-                                <li>Discuss payment method upfront.</li>
-                                <li>Be professional and arrive on time.</li>
-                                <li>Bring your own tools unless told otherwise.</li>
-                            </ul>
-                        </div>
-                    `;
-                }
-
-                const safeTitle = (job.title || '').replace(/'/g, "\\'");
-
                 container.innerHTML = `
                     <div class="status-banner ${statusBannerClass}">${statusText}</div>
+                    
                     <div class="job-detail-header">
                         <div style="width: 100%;">
                             <h1>${job.title}</h1>
@@ -183,12 +223,16 @@
                             </div>
                         </div>
                     </div>
+                    
                     ${ownerSection}
+                    
                     <div class="job-description">
                         <h3>Job Description</h3>
-                        <p>${job.description || ''}</p>
+                        <p>${job.description}</p>
                     </div>
+                    
                     ${portfolioHtml}
+                    
                     <div class="client-info">
                         <h3>Client Information</h3>
                         <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
@@ -200,10 +244,15 @@
                         </div>
                         ${contactSection}
                         <div class="report-section">
-                            <button onclick="reportJob('${id}', '${safeTitle}')" class="btn-report">🚩 Report this job</button>
+                            <button onclick="reportJob('${id}', '${(job.title || '').replace(/'/g, "\\'")}')" class="btn-report">🚩 Report this job</button>
                         </div>
                     </div>
-                    ${workerTips}
+
+                    <div class="profile-section" style="margin-top:24px;">
+                        <h3>⭐ Ratings for this Client</h3>
+                        <div id="clientReviewsList">${clientReviewsHtml}</div>
+                        ${rateClientHtml}
+                    </div>
                 `;
 
             } catch (err) {
@@ -212,8 +261,63 @@
             }
         }
 
+        async function submitClientReview() {
+            if (!currentUser) {
+                alert('Please login first.');
+                window.location.href = 'login.html';
+                return;
+            }
+            if (!clientId) {
+                alert('Client ID missing.');
+                return;
+            }
+
+            const rating = parseInt(document.getElementById('clientRatingValue').value, 10);
+            const comment = document.getElementById('clientRatingComment').value.trim();
+            const msg = document.getElementById('clientRateMessage');
+
+            if (!rating || rating < 1 || rating > 5) {
+                alert('Please select a valid rating.');
+                return;
+            }
+
+            try {
+                let { error } = await supabaseClient.from('reviews').insert([{
+                    worker_id: clientId,          // we reuse worker_id column for the person being rated
+                    reviewer_id: currentUser.id,
+                    rating: rating,
+                    comment: comment || null,
+                    review_type: 'client'
+                }]);
+
+                if (error) {
+                    // Fallback
+                    const { error: error2 } = await supabaseClient.from('reviews').insert([{
+                        worker_id: clientId,
+                        rating: rating,
+                        comment: comment || null
+                    }]);
+                    if (error2) {
+                        msg.textContent = 'Error: ' + error2.message;
+                        msg.className = 'message error';
+                        msg.style.display = 'block';
+                        return;
+                    }
+                }
+
+                msg.textContent = 'Thank you! Your rating of the client has been submitted.';
+                msg.className = 'message success';
+                msg.style.display = 'block';
+
+                setTimeout(() => loadJobDetail(), 1500);
+            } catch (err) {
+                console.error(err);
+                alert('Something went wrong. Please try again.');
+            }
+        }
+
         function reportJob(jobId, title) {
-            window.location.href = 'report.html?type=job&id=' + jobId + '&name=' + encodeURIComponent(title);
+            window.location.href = `report.html?type=job&id=${jobId}&name=${encodeURIComponent(title)}`;
         }
     </script>
 </body>
