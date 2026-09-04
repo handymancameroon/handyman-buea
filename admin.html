@@ -16,30 +16,9 @@
         .broadcast-box textarea { width: 100%; min-height: 100px; padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin: 10px 0; }
         .stat-card.today { border-left: 4px solid #22c55e; }
         .deleted-user { opacity: 0.65; background: #fef2f2 !important; }
-        .admin-page { padding: 40px 20px; }
-        .admin-stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 16px;
-            margin-bottom: 32px;
-        }
-        .stat-card {
-            background: var(--card);
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-        .stat-card h3 { font-size: 1.75rem; margin-bottom: 4px; color: var(--primary); }
-        .stat-card p { color: var(--text-light); font-size: 0.9rem; }
-        .admin-section {
-            background: var(--card);
-            padding: 24px;
-            border-radius: 12px;
-            margin-bottom: 24px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        .admin-section h2 { margin-bottom: 16px; }
+        .dispute-detail-box { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+        .dispute-detail-box p { margin-bottom: 8px; }
+        .detail-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
     </style>
 </head>
 <body>
@@ -88,10 +67,6 @@
 
             <div class="admin-section">
                 <h2>👥 All Users (Clients & Workers)</h2>
-                <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 12px;">
-                    <strong>Delete</strong> disables the account: the user cannot log in and is hidden from the public site.
-                    Use the filter <strong>Deleted Accounts</strong> and <strong>Restore</strong> to bring them back.
-                </p>
                 <div class="admin-filter-bar">
                     <select id="userFilter" onchange="loadAllUsers()">
                         <option value="all">All Users</option>
@@ -120,7 +95,7 @@
             </div>
 
             <div class="admin-section">
-                <h2>👷 All Workers (Quick Delete / Restore)</h2>
+                <h2>👷 All Workers (Quick Delete)</h2>
                 <div id="allWorkersList"><p class="loading">Loading workers...</p></div>
             </div>
 
@@ -236,6 +211,7 @@
             if (filter === 'workers') query = query.eq('is_worker', true).eq('is_deleted', false);
             if (filter === 'clients') query = query.eq('is_worker', false).eq('is_deleted', false);
             if (filter === 'deleted') query = query.eq('is_deleted', true);
+            if (filter === 'all') query = query.eq('is_deleted', false);
 
             var res = await query;
             if (res.error) {
@@ -297,11 +273,9 @@
         else alert('Notification sent to ' + userName);
     }
 
-    // ========== DELETE (disables account — user cannot log in) ==========
+    // ========== SOFT DELETE (deactivates account — user cannot log in) ==========
     async function deleteUser(userId, name) {
-        if (!confirm('Delete (disable) account for "' + name + '"?\n\n• They will not be able to log in\n• They will be hidden from the public site\n• You can Restore them later from "Deleted Accounts"')) {
-            return;
-        }
+        if (!confirm('Delete (deactivate) ' + name + '?\n\nThey will NOT be able to log in or use the account.\nYou can restore them later from the "Deleted Accounts" filter.')) return;
 
         var res = await supabaseClient
             .from('profiles')
@@ -312,29 +286,16 @@
             .eq('id', userId);
 
         if (res.error) {
-            alert('Error deleting account: ' + res.error.message +
-                '\n\nIf it says a column does not exist, run the SQL for is_deleted in Supabase first.');
+            alert('Error: ' + res.error.message);
             return;
         }
 
-        // Hide worker profile from public listings
         await supabaseClient
             .from('worker_details')
             .update({ availability: 'Deleted' })
             .eq('id', userId);
 
-        // Close their open jobs so they stop receiving contact
-        try {
-            await supabaseClient
-                .from('job_posts')
-                .update({ status: 'Taken' })
-                .eq('client_id', userId)
-                .eq('status', 'Open');
-        } catch (e) {
-            console.log('Close jobs skipped:', e);
-        }
-
-        alert('"' + name + '" has been deleted from the app.\nThey cannot log in until you Restore them.');
+        alert(name + ' has been deleted (deactivated). They can no longer use this account. You can restore them anytime.');
         loadAllUsers();
         loadAllWorkers();
         loadStats();
@@ -342,9 +303,7 @@
 
     // ========== RESTORE ==========
     async function restoreUser(userId, name) {
-        if (!confirm('Restore account for "' + name + '"?\nThey will be able to log in again and appear on the site.')) {
-            return;
-        }
+        if (!confirm('Restore ' + name + '? They will be able to log in again.')) return;
 
         var res = await supabaseClient
             .from('profiles')
@@ -355,7 +314,7 @@
             .eq('id', userId);
 
         if (res.error) {
-            alert('Error restoring account: ' + res.error.message);
+            alert('Error: ' + res.error.message);
             return;
         }
 
@@ -364,7 +323,7 @@
             .update({ availability: 'Available' })
             .eq('id', userId);
 
-        alert('"' + name + '" has been restored successfully!');
+        alert(name + ' restored successfully!');
         loadAllUsers();
         loadAllWorkers();
         loadStats();
@@ -450,19 +409,80 @@
             }
             setHtml('disputesList', res.data.map(function (d) {
                 var date = new Date(d.created_at).toLocaleDateString('en-GB');
-                var btn = d.status === 'Open'
-                    ? '<button class="btn-small" onclick="resolveDispute(\'' + d.id + '\')">Resolve</button>'
-                    : '';
-                return '<div class="dispute-row"><div class="dispute-info"><h4>' + (d.reason || '') +
-                    '</h4><p><strong>Target:</strong> ' + (d.target_name || '') + ' (' + (d.target_type || '') +
-                    ')</p><p><strong>Reporter:</strong> ' + (d.reporter_name || 'Anonymous') +
-                    '</p><p><strong>Details:</strong> ' + (d.details || '') +
-                    '</p><p style="font-size:0.8rem;">' + date + '</p></div><div>' +
-                    '<span>' + (d.status || '') + '</span> ' + btn + '</div></div>';
+                var statusClass = d.status === 'Open' ? 'status-available' : 'status-closed';
+                var preview = (d.details || '').substring(0, 100);
+                if ((d.details || '').length > 100) preview += '...';
+                return '<div class="dispute-row" style="cursor:pointer;" onclick="openDisputeDetail(\'' + d.id + '\')">' +
+                    '<div class="dispute-info">' +
+                    '<h4>' + (d.reason || 'Report') + '</h4>' +
+                    '<p><strong>Target:</strong> ' + (d.target_name || '') + ' (' + (d.target_type || '') + ')</p>' +
+                    '<p><strong>Reporter:</strong> ' + (d.reporter_name || 'Anonymous') + '</p>' +
+                    '<p style="font-size:0.85rem;">' + preview + '</p>' +
+                    '<p style="font-size:0.8rem;">' + date + ' • <span class="status-badge ' + statusClass + '">' + (d.status || '') + '</span></p>' +
+                    '</div>' +
+                    '<div><button class="btn-small" onclick="event.stopPropagation(); openDisputeDetail(\'' + d.id + '\')">Open</button></div>' +
+                    '</div>';
             }).join(''));
         } catch (err) {
             setHtml('disputesList', '<p class="empty-dashboard">Error loading disputes.</p>');
         }
+    }
+
+    async function openDisputeDetail(disputeId) {
+        var { data: d, error } = await supabaseClient.from('disputes').select('*').eq('id', disputeId).single();
+        if (error || !d) {
+            alert('Could not load dispute.');
+            return;
+        }
+
+        var date = new Date(d.created_at).toLocaleString('en-GB');
+        var reporterId = d.reporter_id || '';
+        var targetId = d.target_id || '';
+        var safeReporter = (d.reporter_name || 'Reporter').replace(/'/g, "\\'");
+        var safeTarget = (d.target_name || 'User').replace(/'/g, "\\'");
+
+        var msgReporterBtn = reporterId
+            ? '<button class="btn-primary" onclick="messageUser(\'' + reporterId + '\',\'' + safeReporter + '\')">Message Reporter</button>'
+            : '';
+        var msgTargetBtn = (targetId && d.target_type !== 'Bug' && d.target_type !== 'job')
+            ? '<button class="btn-primary" onclick="messageUser(\'' + targetId + '\',\'' + safeTarget + '\')">Message Reported Person</button>'
+            : '';
+        var resolveBtn = d.status === 'Open'
+            ? '<button class="btn-small" onclick="resolveDispute(\'' + d.id + '\')">Mark Resolved</button>'
+            : '';
+
+        var html = '<div class="dispute-detail-box">' +
+            '<h3>🚩 Dispute Detail</h3>' +
+            '<p><strong>Reason:</strong> ' + (d.reason || '') + '</p>' +
+            '<p><strong>Target:</strong> ' + (d.target_name || '') + ' (' + (d.target_type || '') + ') — ID: ' + (targetId || 'n/a') + '</p>' +
+            '<p><strong>Reporter:</strong> ' + (d.reporter_name || 'Anonymous') + ' — ID: ' + (reporterId || 'n/a') + '</p>' +
+            '<p><strong>Status:</strong> ' + (d.status || '') + '</p>' +
+            '<p><strong>Date:</strong> ' + date + '</p>' +
+            '<p style="margin-top:12px;"><strong>Full details:</strong></p>' +
+            '<p style="background:#f8fafc;padding:12px;border-radius:8px;white-space:pre-wrap;">' + (d.details || 'No details') + '</p>' +
+            '<div class="detail-actions">' +
+            msgReporterBtn + msgTargetBtn + resolveBtn +
+            '<button class="btn-secondary" onclick="loadDisputes()">← Back to list</button>' +
+            '</div></div>';
+
+        setHtml('disputesList', html);
+    }
+
+    async function messageUser(userId, userName) {
+        if (!userId || userId === 'null' || userId === 'undefined') {
+            alert('No user ID available for this person.');
+            return;
+        }
+        var message = prompt('Write a message for ' + userName + ':');
+        if (!message || !message.trim()) return;
+        var res = await supabaseClient.from('notifications').insert([{
+            user_id: userId,
+            title: 'Message from Admin (Dispute)',
+            message: message.trim(),
+            read: false
+        }]);
+        if (res.error) alert('Error: ' + res.error.message);
+        else alert('Notification sent to ' + userName);
     }
 
     async function resolveDispute(disputeId) {
@@ -538,12 +558,8 @@
     }
 
     async function deleteJob(jobId, title) {
-        if (!confirm('Permanently delete job "' + title + '"?')) return;
-        var res = await supabaseClient.from('job_posts').delete().eq('id', jobId);
-        if (res.error) {
-            alert('Error: ' + res.error.message);
-            return;
-        }
+        if (!confirm('Delete "' + title + '"?')) return;
+        await supabaseClient.from('job_posts').delete().eq('id', jobId);
         alert('Job deleted.');
         loadAllJobs();
         loadStats();
