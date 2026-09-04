@@ -1,7 +1,7 @@
 /**
- * Handy Man Buea — Core Application Logic
+ * Handy Man Cameroon — Core Application Logic
  * Version: 1.2
- * Date: 3 September 2026
+ * Date: 4 September 2026
  *
  * SECURITY NOTES:
  * - Supabase credentials are loaded from config.js (not hardcoded here).
@@ -12,9 +12,6 @@
  * - All write operations are protected by Row Level Security (RLS).
  */
 
-// ============================================================================
-// CONFIGURATION (loaded from config.js — see config.template.js)
-// ============================================================================
 const CONFIG = (typeof window !== 'undefined' && window.HANDYMAN_CONFIG) ? window.HANDYMAN_CONFIG : {};
 const SUPABASE_URL = CONFIG.SUPABASE_URL || '';
 const SUPABASE_KEY = CONFIG.SUPABASE_ANON_KEY || '';
@@ -45,10 +42,22 @@ const FALLBACK_CATEGORIES = [
     {name: 'Others', icon: '✨', description: 'Other services not listed above'}
 ];
 
-// ============================================================================
-// SUPABASE INITIALIZATION
-// ============================================================================
-window.supabaseReady = new Promise(function(resolve) {
+/** Major towns / cities across Cameroon */
+const CAMEROON_TOWNS = [
+    'Buea', 'Limbe', 'Douala', 'Yaoundé', 'Bamenda', 'Bafoussam', 'Kribi',
+    'Garoua', 'Maroua', 'Ngaoundéré', 'Bertoua', 'Ebolowa', 'Kumba',
+    'Nkongsamba', 'Dschang', 'Foumban', 'Edéa', 'Sangmélima', 'Bafia',
+    'Mbalmayo', 'Tiko', 'Mutengene', 'Other (specify in details)'
+];
+
+function getTownOptionsHtml(selected) {
+    var sel = selected || 'Buea';
+    return CAMEROON_TOWNS.map(function (t) {
+        return '<option value="' + t + '"' + (t === sel ? ' selected' : '') + '>' + t + '</option>';
+    }).join('');
+}
+
+window.supabaseReady = new Promise(function (resolve) {
     window._resolveSupabaseReady = resolve;
 });
 
@@ -65,17 +74,14 @@ if (typeof window !== 'undefined' && typeof window.supabase !== 'undefined' && t
         console.error('[HandyMan] Supabase init failed:', e);
     }
 } else {
-    console.warn('[HandyMan] Supabase JS library not loaded.');
+    console.warn('[HandyMan] Supabase JS library not loaded. Check that the CDN script is included.');
 }
 
 if (window._resolveSupabaseReady) {
     window._resolveSupabaseReady(supabaseClient);
 }
 
-// ============================================================================
-// APP INITIALIZATION
-// ============================================================================
-document.addEventListener('DOMContentLoaded', async function() {
+document.addEventListener('DOMContentLoaded', async function () {
     try {
         injectNavExtras();
         injectShareButton();
@@ -92,9 +98,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             initCarousel();
         }
 
-        const menuToggle = document.getElementById('menuToggle');
+        var menuToggle = document.getElementById('menuToggle');
         if (menuToggle) {
-            menuToggle.addEventListener('click', function() {
+            menuToggle.addEventListener('click', function () {
                 document.getElementById('nav').classList.toggle('active');
             });
         }
@@ -106,28 +112,25 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 });
 
-// ============================================================================
-// FILE UPLOAD HELPERS
-// ============================================================================
 async function uploadFile(file, folder, userId) {
     if (!supabaseClient || !file) return null;
     try {
-        const uid = userId || (currentUser && currentUser.id) || 'anonymous';
-        const fileExt = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
-        const safeExt = fileExt || 'jpg';
-        const fileName = Date.now() + '_' + Math.random().toString(36).substring(2, 11) + '.' + safeExt;
-        const filePath = folder + '/' + uid + '/' + fileName;
+        var uid = userId || (currentUser && currentUser.id) || 'anonymous';
+        var fileExt = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+        var safeExt = fileExt || 'jpg';
+        var fileName = Date.now() + '_' + Math.random().toString(36).substring(2, 11) + '.' + safeExt;
+        var filePath = folder + '/' + uid + '/' + fileName;
 
-        const { error: uploadError } = await supabaseClient.storage
+        var uploadRes = await supabaseClient.storage
             .from('handyman-files')
             .upload(filePath, file, { cacheControl: '3600', upsert: false });
 
-        if (uploadError) {
-            console.error('[HandyMan] Upload error:', uploadError);
+        if (uploadRes.error) {
+            console.error('[HandyMan] Upload error:', uploadRes.error);
             return null;
         }
 
-        const { data } = supabaseClient.storage.from('handyman-files').getPublicUrl(filePath);
+        var data = supabaseClient.storage.from('handyman-files').getPublicUrl(filePath).data;
         return data && data.publicUrl ? data.publicUrl : null;
     } catch (err) {
         console.error('[HandyMan] Upload exception:', err);
@@ -136,8 +139,8 @@ async function uploadFile(file, folder, userId) {
 }
 
 async function uploadMultipleFiles(fileList, folder, userId, maxCount) {
-    const urls = [];
-    const files = Array.from(fileList || []).slice(0, maxCount || 2);
+    var urls = [];
+    var files = Array.from(fileList || []).slice(0, maxCount || 2);
     for (var i = 0; i < files.length; i++) {
         var f = files[i];
         if (!f.type || !f.type.startsWith('image/')) continue;
@@ -147,9 +150,10 @@ async function uploadMultipleFiles(fileList, folder, userId, maxCount) {
     return urls;
 }
 
-// ============================================================================
-// NAVIGATION & UI INJECTION
-// ============================================================================
+/**
+ * Nav extras: My Jobs + notifications only.
+ * Admin link is NOT injected on public pages — only on dashboard for admins.
+ */
 function injectNavExtras() {
     var nav = document.getElementById('nav');
     if (!nav || nav.querySelector('.nav-bell')) return;
@@ -158,25 +162,17 @@ function injectNavExtras() {
     dashLink.href = 'dashboard.html';
     dashLink.className = 'btn-secondary';
     dashLink.id = 'navDashboard';
-    dashLink.textContent = 'My Dashboard';   // ← Changed from "My Jobs"
+    dashLink.textContent = 'My Jobs';
     dashLink.style.display = 'none';
     var authBtn = nav.querySelector('#authBtn');
     if (authBtn) nav.insertBefore(dashLink, authBtn);
-
-    var adminLink = document.createElement('a');
-    adminLink.href = 'admin.html';
-    adminLink.className = 'btn-secondary';
-    adminLink.id = 'navAdmin';
-    adminLink.textContent = '⚙️ Admin';
-    adminLink.style.display = 'none';
-    if (authBtn) nav.insertBefore(adminLink, authBtn);
 
     var bellContainer = document.createElement('div');
     bellContainer.className = 'nav-bell';
     bellContainer.id = 'navBell';
     bellContainer.innerHTML = '🔔<span class="bell-count" id="bellCount" style="display:none;">0</span>';
     bellContainer.style.display = 'none';
-    bellContainer.onclick = function(e) {
+    bellContainer.onclick = function (e) {
         e.stopPropagation();
         toggleNotifications();
     };
@@ -188,7 +184,7 @@ function injectNavExtras() {
     dropdown.innerHTML = '<div class="notification-header">🔔 Notifications</div><div class="notification-list" id="notificationList"><p class="notification-empty">Loading...</p></div>';
     document.body.appendChild(dropdown);
 
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
         var d = document.getElementById('notificationDropdown');
         var b = document.getElementById('navBell');
         if (d && b && !d.contains(e.target) && !b.contains(e.target)) {
@@ -203,16 +199,16 @@ function injectShareButton() {
     fab.id = 'shareFab';
     fab.className = 'share-fab';
     fab.innerHTML = '🔗';
-    fab.title = 'Share Handy Man Buea';
+    fab.title = 'Share Handy Man';
     fab.onclick = openShareModal;
     document.body.appendChild(fab);
 
     var modal = document.createElement('div');
     modal.id = 'shareModal';
     modal.className = 'share-modal';
-    modal.innerHTML = '<div class="share-modal-content"><div class="share-modal-header"><h3>🔗 Share Handy Man Buea</h3><button class="share-close" onclick="closeShareModal()">✕</button></div><div class="share-message-box"><p id="shareText">🔧 Find trusted local workers in Buea, Cameroon! Need a plumber, electrician, cleaner, or any skilled worker? Handy Man Buea connects you with verified professionals fast. Check it out: https://handyman-buea.vercel.app/</p><button class="btn-small" onclick="copyShareText()" style="margin-top:12px;">📋 Copy Message</button></div><div class="share-buttons"><a href="#" id="shareWhatsApp" target="_blank" class="btn-whatsapp share-btn">📱 WhatsApp</a><a href="#" id="shareFacebook" target="_blank" class="btn-primary share-btn" style="background:#1877f2;">📘 Facebook</a><a href="#" id="shareTwitter" target="_blank" class="btn-primary share-btn" style="background:#1da1f2;">🐦 Twitter</a></div></div>';
+    modal.innerHTML = '<div class="share-modal-content"><div class="share-modal-header"><h3>🔗 Share Handy Man</h3><button class="share-close" onclick="closeShareModal()">✕</button></div><div class="share-message-box"><p id="shareText">🔧 Find trusted local workers across Cameroon! Need a plumber, electrician, cleaner, or any skilled worker? Handy Man connects you with professionals fast. Check it out: https://handyman-buea.vercel.app/</p><button class="btn-small" onclick="copyShareText()" style="margin-top:12px;">📋 Copy Message</button></div><div class="share-buttons"><a href="#" id="shareWhatsApp" target="_blank" class="btn-whatsapp share-btn">📱 WhatsApp</a><a href="#" id="shareFacebook" target="_blank" class="btn-primary share-btn" style="background:#1877f2;">📘 Facebook</a><a href="#" id="shareTwitter" target="_blank" class="btn-primary share-btn" style="background:#1da1f2;">🐦 Twitter</a></div></div>';
     document.body.appendChild(modal);
-    modal.addEventListener('click', function(e) {
+    modal.addEventListener('click', function (e) {
         if (e.target === modal) closeShareModal();
     });
 }
@@ -220,7 +216,7 @@ function injectShareButton() {
 function openShareModal() {
     var modal = document.getElementById('shareModal');
     if (!modal) return;
-    var text = encodeURIComponent('🔧 Find trusted local workers in Buea, Cameroon! Need a plumber, electrician, cleaner, or any skilled worker? Handy Man Buea connects you with verified professionals fast. Check it out: https://handyman-buea.vercel.app/');
+    var text = encodeURIComponent('🔧 Find trusted local workers across Cameroon! Need a plumber, electrician, cleaner, or any skilled worker? Handy Man connects you with professionals fast. Check it out: https://handyman-buea.vercel.app/');
     var url = encodeURIComponent('https://handyman-buea.vercel.app/');
     document.getElementById('shareWhatsApp').href = 'https://wa.me/?text=' + text;
     document.getElementById('shareFacebook').href = 'https://www.facebook.com/sharer/sharer.php?u=' + url;
@@ -236,9 +232,9 @@ function closeShareModal() {
 function copyShareText() {
     var text = document.getElementById('shareText').textContent;
     if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(function() {
+        navigator.clipboard.writeText(text).then(function () {
             alert('Message copied!');
-        }).catch(function() {
+        }).catch(function () {
             fallbackCopy(text);
         });
     } else {
@@ -256,19 +252,16 @@ function fallbackCopy(text) {
     alert('Message copied!');
 }
 
-// ============================================================================
-// ANALYTICS
-// ============================================================================
 async function trackVisitor() {
     if (!supabaseClient || sessionStorage.getItem('visitorTracked')) return;
     try {
         var today = new Date().toISOString().slice(0, 10);
-
-        var { data: stats } = await supabaseClient
+        var statsRes = await supabaseClient
             .from('site_stats')
             .select('total_visitors, visitors_today, visitors_today_date')
             .eq('id', 1)
             .single();
+        var stats = statsRes.data;
 
         if (stats) {
             var visitorsToday = stats.visitors_today || 0;
@@ -290,7 +283,7 @@ async function trackVisitor() {
                 visited_at: new Date().toISOString(),
                 visit_date: today
             }]);
-        } catch (e) { /* table may not exist yet */ }
+        } catch (e) { /* optional table */ }
 
         sessionStorage.setItem('visitorTracked', 'true');
     } catch (e) {
@@ -298,20 +291,35 @@ async function trackVisitor() {
     }
 }
 
-// ============================================================================
-// AUTHENTICATION
-// ============================================================================
 async function checkAuth() {
     try {
         if (!supabaseClient) return;
-        var { data: { user } } = await supabaseClient.auth.getUser();
-        currentUser = user;
+        var userRes = await supabaseClient.auth.getUser();
+        var user = userRes.data && userRes.data.user;
+        currentUser = user || null;
+
         if (user) {
-            var { data: profile } = await supabaseClient
+            var profileRes = await supabaseClient
                 .from('profiles')
-                .select('is_admin, full_name, phone, avatar_url')
+                .select('is_admin, full_name, phone, avatar_url, is_deleted')
                 .eq('id', user.id)
                 .single();
+            var profile = profileRes.data;
+
+            // Block deleted accounts from using the site
+            if (profile && profile.is_deleted === true) {
+                await supabaseClient.auth.signOut();
+                currentUser = null;
+                currentProfile = null;
+                stopNotificationPolling();
+                updateAuthUI();
+                if (!window.location.pathname.endsWith('login.html')) {
+                    alert('This account has been disabled by the administrator.');
+                    window.location.href = 'login.html';
+                }
+                return;
+            }
+
             currentProfile = profile;
             loadNotifications();
             startNotificationPolling();
@@ -324,6 +332,11 @@ async function checkAuth() {
 
 function isAdmin() {
     if (currentProfile && currentProfile.is_admin === true) return true;
+    var adminEmail = (CONFIG && CONFIG.ADMIN_EMAIL) || 'internationalpimerchant@gmail.com';
+    if (currentUser && currentUser.email &&
+        currentUser.email.toLowerCase() === String(adminEmail).toLowerCase()) {
+        return true;
+    }
     return false;
 }
 
@@ -331,59 +344,50 @@ function updateAuthUI() {
     var authBtn = document.getElementById('authBtn');
     var dashLink = document.getElementById('navDashboard');
     var bell = document.getElementById('navBell');
-    var adminLink = document.getElementById('navAdmin');
     if (!authBtn) return;
-
-    // Always use the same style (no permanent blue highlight)
-    authBtn.className = 'btn-secondary';
 
     if (currentUser && supabaseClient) {
         authBtn.textContent = 'Logout';
         authBtn.href = '#';
-        authBtn.onclick = async function(e) {
+        authBtn.className = 'btn-secondary';
+        authBtn.onclick = async function (e) {
             e.preventDefault();
             try {
                 await supabaseClient.auth.signOut();
                 stopNotificationPolling();
-            } catch (e) {
-                console.error('[HandyMan] Logout error:', e);
+            } catch (err) {
+                console.error('[HandyMan] Logout error:', err);
             }
             window.location.reload();
         };
         if (dashLink) dashLink.style.display = 'inline-block';
         if (bell) bell.style.display = 'inline-flex';
-        if (adminLink) {
-            adminLink.style.display = isAdmin() ? 'inline-block' : 'none';
-        }
     } else {
         authBtn.textContent = 'Login';
         authBtn.href = 'login.html';
+        authBtn.className = 'btn-secondary';
         authBtn.onclick = null;
         if (dashLink) dashLink.style.display = 'none';
         if (bell) bell.style.display = 'none';
-        if (adminLink) adminLink.style.display = 'none';
     }
 }
 
-// ============================================================================
-// NOTIFICATIONS
-// ============================================================================
 async function loadNotifications() {
     if (!supabaseClient || !currentUser) return;
     try {
-        var { data: notifications, error } = await supabaseClient
+        var res = await supabaseClient
             .from('notifications')
             .select('*')
             .eq('user_id', currentUser.id)
             .eq('read', false)
             .order('created_at', { ascending: false })
             .limit(20);
-        if (error) {
-            console.error('[HandyMan] Notification load error:', error);
+        if (res.error) {
+            console.error('[HandyMan] Notification load error:', res.error);
             return;
         }
-        renderNotificationBell(notifications ? notifications.length : 0);
-        renderNotificationList(notifications || []);
+        renderNotificationBell(res.data ? res.data.length : 0);
+        renderNotificationList(res.data || []);
     } catch (err) {
         console.error('[HandyMan] Notification error:', err);
     }
@@ -414,7 +418,7 @@ function renderNotificationList(notifications) {
         list.innerHTML = '<p class="notification-empty">No new notifications</p>';
         return;
     }
-    list.innerHTML = notifications.map(function(n) {
+    list.innerHTML = notifications.map(function (n) {
         return '<div class="notification-item ' + (n.read ? 'read' : 'unread') + '" onclick="handleNotificationClick(\'' + n.id + '\', \'' + (n.job_id || '') + '\')">' +
             '<p class="notification-msg">' + escapeHtml(n.message) + '</p>' +
             '<span class="notification-time">' + timeAgo(n.created_at) + '</span>' +
@@ -433,7 +437,7 @@ async function handleNotificationClick(notificationId, jobId) {
 function startNotificationPolling() {
     if (notificationPollingInterval) return;
     loadNotifications();
-    notificationPollingInterval = setInterval(function() {
+    notificationPollingInterval = setInterval(function () {
         if (currentUser) loadNotifications();
     }, 30000);
 }
@@ -445,9 +449,6 @@ function stopNotificationPolling() {
     }
 }
 
-// ============================================================================
-// CATEGORIES
-// ============================================================================
 async function loadCategories() {
     var grid = document.getElementById('categoryGrid');
     if (!grid) return;
@@ -456,12 +457,12 @@ async function loadCategories() {
         return;
     }
     try {
-        var { data: categories, error } = await supabaseClient.from('categories').select('*').limit(11);
-        if (error || !categories || categories.length === 0) {
+        var res = await supabaseClient.from('categories').select('*').limit(11);
+        if (res.error || !res.data || res.data.length === 0) {
             renderCategories(FALLBACK_CATEGORIES);
             return;
         }
-        renderCategories(categories);
+        renderCategories(res.data);
     } catch (err) {
         renderCategories(FALLBACK_CATEGORIES);
     }
@@ -470,7 +471,7 @@ async function loadCategories() {
 function renderCategories(categories) {
     var grid = document.getElementById('categoryGrid');
     if (!grid) return;
-    grid.innerHTML = categories.map(function(cat) {
+    grid.innerHTML = categories.map(function (cat) {
         return '<div class="category-card" onclick="searchByCategory(\'' + cat.name + '\')">' +
             '<div class="category-icon">' + (cat.icon || '🔧') + '</div>' +
             '<h3>' + cat.name + '</h3>' +
@@ -479,9 +480,6 @@ function renderCategories(categories) {
     }).join('');
 }
 
-// ============================================================================
-// FEATURED WORKERS
-// ============================================================================
 async function loadFeaturedWorkers() {
     var grid = document.getElementById('workerGrid');
     if (!grid) return;
@@ -490,27 +488,43 @@ async function loadFeaturedWorkers() {
         return;
     }
     try {
-        var { data: workers, error } = await supabaseClient
+        var res = await supabaseClient
             .from('worker_details')
-            .select('*, profiles(full_name, avatar_url, location)')
+            .select('*, profiles!inner(full_name, avatar_url, location, is_deleted)')
             .eq('availability', 'Available')
+            .eq('profiles.is_deleted', false)
             .order('rating', { ascending: false })
             .limit(6);
-        if (error || !workers || workers.length === 0) {
-            grid.innerHTML = '<p class="empty">No workers yet.</p>';
+
+        if (res.error || !res.data || res.data.length === 0) {
+            // Fallback without inner join if schema differs
+            var res2 = await supabaseClient
+                .from('worker_details')
+                .select('*, profiles(full_name, avatar_url, location, is_deleted)')
+                .eq('availability', 'Available')
+                .order('rating', { ascending: false })
+                .limit(12);
+            var list = (res2.data || []).filter(function (w) {
+                return !(w.profiles && w.profiles.is_deleted === true);
+            }).slice(0, 6);
+            if (list.length === 0) {
+                grid.innerHTML = '<p class="empty">No workers yet.</p>';
+                return;
+            }
+            renderWorkers(list, grid);
             return;
         }
-        renderWorkers(workers, grid);
+        renderWorkers(res.data, grid);
     } catch (err) {
         grid.innerHTML = '<p class="empty">No workers yet.</p>';
     }
 }
 
 function renderWorkers(workers, container) {
-    container.innerHTML = workers.map(function(w) {
+    container.innerHTML = workers.map(function (w) {
         var avatar = w.profiles && w.profiles.avatar_url ? w.profiles.avatar_url : 'https://via.placeholder.com/80?text=No+Photo';
         var name = w.profiles && w.profiles.full_name ? w.profiles.full_name : 'Unknown';
-        var location = w.profiles && w.profiles.location ? w.profiles.location : 'Buea';
+        var location = w.profiles && w.profiles.location ? w.profiles.location : 'Cameroon';
         return '<div class="worker-card" onclick="viewWorker(\'' + w.id + '\')">' +
             '<div class="worker-avatar">' +
             '<img src="' + avatar + '" alt="' + name + '" onerror="this.src=\'https://via.placeholder.com/80?text=No+Photo\'">' +
@@ -524,39 +538,33 @@ function renderWorkers(workers, container) {
     }).join('');
 }
 
-// ============================================================================
-// CAROUSEL
-// ============================================================================
 function initCarousel() {
     var slides = document.querySelectorAll('.carousel-slide');
     var dotsContainer = document.getElementById('carouselDots');
     if (!slides.length || !dotsContainer) return;
     dotsContainer.innerHTML = '';
-    slides.forEach(function(_, i) {
+    slides.forEach(function (_, i) {
         var dot = document.createElement('div');
         dot.className = 'carousel-dot' + (i === 0 ? ' active' : '');
-        dot.onclick = function() { goToSlide(i); };
+        dot.onclick = function () { goToSlide(i); };
         dotsContainer.appendChild(dot);
     });
     var current = 0;
-    setInterval(function() {
+    setInterval(function () {
         goToSlide((current + 1) % slides.length);
     }, 5000);
     function goToSlide(index) {
-        slides.forEach(function(s, i) {
+        slides.forEach(function (s, i) {
             s.classList.toggle('active', i === index);
         });
         var dots = dotsContainer.querySelectorAll('.carousel-dot');
-        dots.forEach(function(d, i) {
+        dots.forEach(function (d, i) {
             d.classList.toggle('active', i === index);
         });
         current = index;
     }
 }
 
-// ============================================================================
-// NAVIGATION HELPERS
-// ============================================================================
 function searchWorkers() {
     var query = document.getElementById('searchInput');
     if (query && query.value) {
@@ -576,9 +584,6 @@ function viewJob(id) {
     window.location.href = 'job.html?id=' + id;
 }
 
-// ============================================================================
-// UTILITY FUNCTIONS
-// ============================================================================
 function escapeHtml(text) {
     if (!text) return '';
     var div = document.createElement('div');
@@ -597,4 +602,15 @@ function timeAgo(dateString) {
     if (hours < 24) return hours + 'h ago';
     var days = Math.floor(hours / 24);
     return days + 'd ago';
+}
+
+function buildContactLinks(phone) {
+    var digits = (phone || '').replace(/\D/g, '');
+    var local = digits;
+    if (local.startsWith('237')) local = local.slice(3);
+    if (local.length < 8) return { wa: '#', call: '#' };
+    return {
+        wa: 'https://wa.me/237' + local,
+        call: 'tel:+237' + local
+    };
 }
