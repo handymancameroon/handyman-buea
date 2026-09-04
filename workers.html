@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Find Workers - Handy Man</title>
+    <title>Find Workers in Cameroon - Handy Man</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -26,7 +26,7 @@
         <div class="container">
             <h1>Find Workers in Cameroon</h1>
             <div class="search-filters">
-                <input type="text" id="searchQuery" placeholder="Search by name or skill...">
+                <input type="text" id="searchQuery" placeholder="Search by name, skill or town...">
                 <select id="categoryFilter">
                     <option value="">All Categories</option>
                     <option value="Plumbing">Plumbing</option>
@@ -41,6 +41,25 @@
                     <option value="Catering">Catering</option>
                     <option value="Others">Others</option>
                 </select>
+                <select id="townFilter">
+                    <option value="">All Towns</option>
+                    <option value="Buea">Buea</option>
+                    <option value="Limbe">Limbe</option>
+                    <option value="Douala">Douala</option>
+                    <option value="Yaoundé">Yaoundé</option>
+                    <option value="Bamenda">Bamenda</option>
+                    <option value="Bafoussam">Bafoussam</option>
+                    <option value="Kribi">Kribi</option>
+                    <option value="Garoua">Garoua</option>
+                    <option value="Maroua">Maroua</option>
+                    <option value="Ngaoundéré">Ngaoundéré</option>
+                    <option value="Bertoua">Bertoua</option>
+                    <option value="Ebolowa">Ebolowa</option>
+                    <option value="Kumba">Kumba</option>
+                    <option value="Dschang">Dschang</option>
+                    <option value="Nkongsamba">Nkongsamba</option>
+                    <option value="Edéa">Edéa</option>
+                </select>
                 <button onclick="performSearch()" class="btn-primary">Search</button>
             </div>
             <div class="worker-grid" id="searchResults">
@@ -53,20 +72,21 @@
     <script src="config.js"></script>
     <script src="app.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkAuth();
+            const params = new URLSearchParams(window.location.search);
+            const q = params.get('q');
+            const cat = params.get('category');
+            if (q) document.getElementById('searchQuery').value = q;
+            if (cat) document.getElementById('categoryFilter').value = cat;
             performSearch();
-            var q = document.getElementById('searchQuery');
-            if (q) {
-                q.addEventListener('keyup', function (e) {
-                    if (e.key === 'Enter') performSearch();
-                });
-            }
         });
 
         async function performSearch() {
-            const container = document.getElementById('searchResults');
-            const queryText = (document.getElementById('searchQuery').value || '').toLowerCase().trim();
+            const query = (document.getElementById('searchQuery').value || '').toLowerCase().trim();
             const category = document.getElementById('categoryFilter').value;
+            const town = document.getElementById('townFilter').value;
+            const container = document.getElementById('searchResults');
 
             container.innerHTML = '<p class="loading">Searching...</p>';
 
@@ -80,52 +100,43 @@
                 .select('*, profiles(full_name, avatar_url, location, phone, is_deleted)')
                 .eq('availability', 'Available');
 
-            if (category) {
-                dbQuery = dbQuery.eq('category', category);
-            }
+            if (category) dbQuery = dbQuery.eq('category', category);
 
             const { data: workers, error } = await dbQuery;
 
             if (error) {
-                container.innerHTML = '<p class="error">Error loading workers: ' + error.message + '</p>';
+                container.innerHTML = '<p class="error">Error loading workers.</p>';
                 return;
             }
 
-            // Hide soft-deleted accounts
-            let list = (workers || []).filter(function (w) {
+            let filtered = (workers || []).filter(function (w) {
                 return !(w.profiles && w.profiles.is_deleted === true);
             });
 
-            if (queryText) {
-                list = list.filter(function (w) {
-                    const name = ((w.profiles && w.profiles.full_name) || '').toLowerCase();
-                    const cat = (w.category || '').toLowerCase();
-                    const desc = (w.description || '').toLowerCase();
-                    const loc = ((w.profiles && w.profiles.location) || '').toLowerCase();
-                    return name.indexOf(queryText) !== -1 ||
-                        cat.indexOf(queryText) !== -1 ||
-                        desc.indexOf(queryText) !== -1 ||
-                        loc.indexOf(queryText) !== -1;
+            if (town) {
+                filtered = filtered.filter(function (w) {
+                    var loc = ((w.profiles && w.profiles.location) || '').toLowerCase();
+                    return loc.indexOf(town.toLowerCase()) !== -1;
                 });
             }
 
-            if (!list.length) {
-                container.innerHTML = '<p class="empty">No workers found. Try another search.</p>';
+            if (query) {
+                filtered = filtered.filter(function (w) {
+                    var name = ((w.profiles && w.profiles.full_name) || '').toLowerCase();
+                    var cat = (w.category || '').toLowerCase();
+                    var desc = (w.description || '').toLowerCase();
+                    var loc = ((w.profiles && w.profiles.location) || '').toLowerCase();
+                    return name.indexOf(query) !== -1 || cat.indexOf(query) !== -1 ||
+                        desc.indexOf(query) !== -1 || loc.indexOf(query) !== -1;
+                });
+            }
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<p class="empty">No workers found. Try a different search.</p>';
                 return;
             }
 
-            if (typeof renderWorkers === 'function') {
-                renderWorkers(list, container);
-            } else {
-                container.innerHTML = list.map(function (w) {
-                    const p = w.profiles || {};
-                    return '<div class="worker-card">' +
-                        '<img src="' + (p.avatar_url || 'https://via.placeholder.com/80') + '" alt="">' +
-                        '<h3>' + (p.full_name || 'Worker') + '</h3>' +
-                        '<p>' + (w.category || '') + ' • ' + (p.location || 'Cameroon') + '</p>' +
-                        '<a href="worker.html?id=' + w.id + '" class="btn-primary">View Profile</a></div>';
-                }).join('');
-            }
+            renderWorkers(filtered, container);
         }
     </script>
 </body>
