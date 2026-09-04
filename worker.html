@@ -45,7 +45,7 @@
 
         document.addEventListener('DOMContentLoaded', async () => {
             await checkAuth();
-            setTimeout(async () => { await loadWorkerProfile(); }, 150);
+            setTimeout(async () => { await loadWorkerProfile(); }, 200);
         });
 
         async function loadWorkerProfile() {
@@ -140,6 +140,7 @@
                     reviewsHtml = '<p>No reviews yet. Be the first to rate this worker!</p>';
                 }
 
+                // Rating form – always visible when logged in and not viewing own profile
                 let rateFormHtml = '';
                 if (currentUser && currentUser.id !== id) {
                     rateFormHtml = `
@@ -153,16 +154,16 @@
                                 <option value="2">⭐⭐ 2 Stars - Fair</option>
                                 <option value="1">⭐ 1 Star - Poor</option>
                             </select>
-                            <label>Your Review (optional)</label>
+                            <label>Your Review / Comment (optional)</label>
                             <textarea id="ratingComment" placeholder="Tell others about your experience with this worker..."></textarea>
-                            <button class="btn-primary" onclick="submitWorkerReview()" style="margin-top:12px;">Submit Review</button>
+                            <button class="btn-primary" onclick="submitWorkerReview()" style="margin-top:12px;">Submit Rating & Comment</button>
                             <p id="rateMessage" class="message" style="display:none;"></p>
                         </div>
                     `;
                 } else if (!currentUser) {
                     rateFormHtml = `
                         <div class="rate-form">
-                            <p>Please <a href="login.html">login</a> to leave a rating.</p>
+                            <p>Please <a href="login.html">login</a> to leave a rating and comment.</p>
                         </div>
                     `;
                 }
@@ -239,7 +240,8 @@
             }
 
             try {
-                const { error } = await supabaseClient.from('reviews').insert([{
+                // Try with extra columns first
+                let { error } = await supabaseClient.from('reviews').insert([{
                     worker_id: currentWorkerId,
                     reviewer_id: currentUser.id,
                     rating: rating,
@@ -248,7 +250,7 @@
                 }]);
 
                 if (error) {
-                    // Fallback if reviewer_id / review_type columns do not exist yet
+                    // Fallback to basic columns
                     const { error: error2 } = await supabaseClient.from('reviews').insert([{
                         worker_id: currentWorkerId,
                         rating: rating,
@@ -262,6 +264,7 @@
                     }
                 }
 
+                // Recalculate average
                 const { data: allReviews } = await supabaseClient
                     .from('reviews')
                     .select('rating')
@@ -280,7 +283,7 @@
                         .eq('id', currentWorkerId);
                 }
 
-                msg.textContent = 'Thank you! Your review has been submitted.';
+                msg.textContent = 'Thank you! Your rating and comment have been submitted.';
                 msg.className = 'message success';
                 msg.style.display = 'block';
 
