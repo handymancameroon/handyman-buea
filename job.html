@@ -3,175 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Post a Job - Handy Man</title>
+    <title>Job Details - Handy Man</title>
     <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <header class="header">
-        <div class="container">
-            <a href="index.html" class="logo">🔧 Handy Man</a>
-            <nav class="nav" id="nav">
-                <a href="index.html">Home</a>
-                <a href="workers.html">Find Workers</a>
-                <a href="jobs.html">Find Jobs</a>
-                <a href="login.html" class="btn-secondary">Join as Worker</a>
-                <a href="post-job.html" class="btn-secondary">Post a Job</a>
-                <a href="login.html" class="btn-secondary" id="authBtn">Login</a>
-            </nav>
-            <button class="menu-toggle" id="menuToggle">☰</button>
-        </div>
-    </header>
-
-    <main class="auth-page">
-        <div class="container">
-            <div class="auth-box" id="postJobBox">
-                <h2>Post a Job</h2>
-                <p>Describe what you need. Workers across Cameroon can contact you.</p>
-
-                <form id="jobForm" onsubmit="handlePostJob(event)">
-                    <div class="form-group">
-                        <label>Job Title *</label>
-                        <input type="text" id="jTitle" required placeholder="e.g. Fix leaking kitchen pipe">
-                    </div>
-                    <div class="form-group">
-                        <label>Service Category *</label>
-                        <select id="jCategory" required>
-                            <option value="">Select category</option>
-                            <option value="Plumbing">Plumbing</option>
-                            <option value="Electrical">Electrical</option>
-                            <option value="Carpentry">Carpentry</option>
-                            <option value="Cleaning">Cleaning</option>
-                            <option value="Painting">Painting</option>
-                            <option value="Masonry">Masonry</option>
-                            <option value="Auto Mechanics">Auto Mechanics</option>
-                            <option value="Phone/Laptop Repair">Phone/Laptop Repair</option>
-                            <option value="Hairdressing">Hairdressing</option>
-                            <option value="Catering">Catering</option>
-                            <option value="Others">Others</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Description *</label>
-                        <textarea id="jDescription" required rows="4" placeholder="Describe the job in detail..."></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>Town / Location *</label>
-                        <select id="jTown" required>
-                            <option value="">Select town</option>
-                            <option value="Buea">Buea</option>
-                            <option value="Limbe">Limbe</option>
-                            <option value="Douala">Douala</option>
-                            <option value="Yaoundé">Yaoundé</option>
-                            <option value="Bamenda">Bamenda</option>
-                            <option value="Bafoussam">Bafoussam</option>
-                            <option value="Kribi">Kribi</option>
-                            <option value="Garoua">Garoua</option>
-                            <option value="Maroua">Maroua</option>
-                            <option value="Ngaoundéré">Ngaoundéré</option>
-                            <option value="Bertoua">Bertoua</option>
-                            <option value="Ebolowa">Ebolowa</option>
-                            <option value="Kumba">Kumba</option>
-                            <option value="Dschang">Dschang</option>
-                            <option value="Nkongsamba">Nkongsamba</option>
-                            <option value="Edéa">Edéa</option>
-                            <option value="Other">Other</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Area / Quarter (optional)</label>
-                        <input type="text" id="jArea" placeholder="e.g. Molyko, Bonanjo, Nkwen">
-                    </div>
-                    <div class="form-group">
-                        <label>Budget (optional)</label>
-                        <input type="text" id="jBudget" placeholder="e.g. 10,000 FCFA or Negotiable">
-                    </div>
-                    <button type="submit" class="btn-primary full">Post Job</button>
-                </form>
-
-                <p id="jobMessage" class="message"></p>
-            </div>
-        </div>
-    </main>
-
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="config.js"></script>
-    <script src="app.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            await checkAuth();
-            if (!currentUser) {
-                document.getElementById('postJobBox').innerHTML = `
-                    <h2>Login Required</h2>
-                    <p>You need to be logged in to post a job.</p>
-                    <a href="login.html" class="btn-primary full" style="margin-top: 20px; display: inline-block;">Go to Login</a>
-                `;
-            }
-        });
-
-        async function handlePostJob(e) {
-            e.preventDefault();
-
-            const { data: { user } } = await supabaseClient.auth.getUser();
-            if (!user) {
-                showJobMessage('Please login first.', 'error');
-                return;
-            }
-
-            const town = document.getElementById('jTown').value;
-            const area = document.getElementById('jArea').value.trim();
-            const location = area ? (area + ', ' + town) : town;
-
-            const jobData = {
-                client_id: user.id,
-                title: document.getElementById('jTitle').value,
-                category: document.getElementById('jCategory').value,
-                description: document.getElementById('jDescription').value,
-                location: location || 'Cameroon',
-                budget: document.getElementById('jBudget').value || 'Not specified',
-                status: 'Open'
-            };
-
-            const { data: insertedJob, error } = await supabaseClient
-                .from('job_posts')
-                .insert([jobData])
-                .select()
-                .single();
-
-            if (error) {
-                showJobMessage('Error: ' + error.message, 'error');
-                return;
-            }
-
-            try {
-                const { data: workersInCategory } = await supabaseClient
-                    .from('worker_details')
-                    .select('id')
-                    .eq('category', jobData.category)
-                    .eq('availability', 'Available');
-
-                if (workersInCategory && workersInCategory.length > 0) {
-                    const notifications = workersInCategory.map(w => ({
-                        user_id: w.id,
-                        title: 'New job in your category',
-                        message: 'New ' + jobData.category + ' job: "' + jobData.title + '" in ' + jobData.location,
-                        job_id: insertedJob.id,
-                        read: false
-                    }));
-                    await supabaseClient.from('notifications').insert(notifications);
-                }
-            } catch (notifyErr) {
-                console.log('Notification creation skipped:', notifyErr.message);
-            }
-
-            showJobMessage('Job posted successfully! Workers have been notified. Redirecting...', 'success');
-            setTimeout(() => window.location.href = 'jobs.html', 1500);
-        }
-
-        function showJobMessage(msg, type) {
-            const el = document.getElementById('jobMessage');
-            el.textContent = msg;
-            el.className = 'message ' + type;
-        }
-    </script>
-</body>
-</html>
+    <style>
+        .status-banner { padding: 16px 24px; border-radius: 12px; text-align: center; margin-bottom: 24px; font-weight: 700; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; }
+        .status-open { background: #dcfce7; color: #166534; border: 2px solid #86efac; }
+        .status-closed { background: #fee2e2; color: #991b1b; border: 2px solid #fca5a5; }
+        .client-contact-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 20px; margin-top: 16px; }
+        .client-contact-box p { margin-bottom: 12px; font-size: 1rem; }
+        .client-contact-box .phone-display { font-size: 1.25rem; font-weight: 700; color: var(--primary); margin-bottom: 16px; }
+        .client-avatar-small { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; margin-bottom: 12px; }
+        .contact-buttons { display: flex; gap: 12px; flex-wrap: wrap; }
+        .contact-buttons a { flex: 1; min-width: 140px; text-align: center; }
+        .tips-box { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 20px; margin-top: 16px; }
+        .tips-box h4 { color: #1e40af; margin-bottom: 12px; font-size: 1rem; }
+        .tips-box ul { margin: 0; padding-left: 20px; color: var(--text-light); font-size: 0.9rem; line-height: 1.7; }
+        .tips-box li { margin-bottom: 6px; }
+        .owner-notice { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; }
+        .owner-notice p { margin: 0; color: #92400e; font-size: 0.95rem; }
+        .owner-notice a { color: var(--primary); font-weight: 600; }
+        .portfolio-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 12px; }
+        .portfolio-img { width: 100%; height: 180px; object-fit: cover; border-radius: 10
