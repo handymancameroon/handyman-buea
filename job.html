@@ -3,31 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Job Details - Handy Man</title>
+    <title>Post a Job - Handy Man</title>
     <link rel="stylesheet" href="style.css">
-    <style>
-        .status-banner { padding: 16px 24px; border-radius: 12px; text-align: center; margin-bottom: 24px; font-weight: 700; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; }
-        .status-open { background: #dcfce7; color: #166534; border: 2px solid #86efac; }
-        .status-closed { background: #fee2e2; color: #991b1b; border: 2px solid #fca5a5; }
-        .client-contact-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 20px; margin-top: 16px; }
-        .client-contact-box p { margin-bottom: 12px; font-size: 1rem; }
-        .client-contact-box .phone-display { font-size: 1.25rem; font-weight: 700; color: var(--primary); margin-bottom: 16px; }
-        .client-avatar-small { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; margin-bottom: 12px; }
-        .contact-buttons { display: flex; gap: 12px; flex-wrap: wrap; }
-        .contact-buttons a { flex: 1; min-width: 140px; text-align: center; }
-        .tips-box { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 20px; margin-top: 16px; }
-        .tips-box h4 { color: #1e40af; margin-bottom: 12px; font-size: 1rem; }
-        .tips-box ul { margin: 0; padding-left: 20px; color: var(--text-light); font-size: 0.9rem; line-height: 1.7; }
-        .tips-box li { margin-bottom: 6px; }
-        .owner-notice { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; }
-        .owner-notice p { margin: 0; color: #92400e; font-size: 0.95rem; }
-        .owner-notice a { color: var(--primary); font-weight: 600; }
-        .portfolio-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 12px; }
-        .portfolio-img { width: 100%; height: 180px; object-fit: cover; border-radius: 10px; cursor: pointer; transition: transform 0.2s; border: 2px solid var(--border); }
-        .portfolio-img:hover { transform: scale(1.03); border-color: var(--primary); }
-        .img-error { background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: var(--text-light); font-size: 0.85rem; }
-        .report-section { margin-top: 20px; text-align: center; }
-    </style>
 </head>
 <body>
     <header class="header">
@@ -39,15 +16,80 @@
                 <a href="jobs.html">Find Jobs</a>
                 <a href="login.html" class="btn-secondary">Join as Worker</a>
                 <a href="post-job.html" class="btn-secondary">Post a Job</a>
-                <a href="login.html" class="btn-primary" id="authBtn">Login</a>
+                <a href="login.html" class="btn-secondary" id="authBtn">Login</a>
             </nav>
             <button class="menu-toggle" id="menuToggle">☰</button>
         </div>
     </header>
 
-    <main class="job-detail-page">
-        <div class="container" id="jobContainer">
-            <p class="loading">Loading job...</p>
+    <main class="auth-page">
+        <div class="container">
+            <div class="auth-box" id="postJobBox">
+                <h2>Post a Job</h2>
+                <p>Describe what you need. Workers across Cameroon can contact you.</p>
+
+                <form id="jobForm" onsubmit="handlePostJob(event)">
+                    <div class="form-group">
+                        <label>Job Title *</label>
+                        <input type="text" id="jTitle" required placeholder="e.g. Fix leaking kitchen pipe">
+                    </div>
+                    <div class="form-group">
+                        <label>Service Category *</label>
+                        <select id="jCategory" required>
+                            <option value="">Select category</option>
+                            <option value="Plumbing">Plumbing</option>
+                            <option value="Electrical">Electrical</option>
+                            <option value="Carpentry">Carpentry</option>
+                            <option value="Cleaning">Cleaning</option>
+                            <option value="Painting">Painting</option>
+                            <option value="Masonry">Masonry</option>
+                            <option value="Auto Mechanics">Auto Mechanics</option>
+                            <option value="Phone/Laptop Repair">Phone/Laptop Repair</option>
+                            <option value="Hairdressing">Hairdressing</option>
+                            <option value="Catering">Catering</option>
+                            <option value="Others">Others</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Description *</label>
+                        <textarea id="jDescription" required rows="4" placeholder="Describe the job in detail..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Town / Location *</label>
+                        <select id="jTown" required>
+                            <option value="">Select town</option>
+                            <option value="Buea">Buea</option>
+                            <option value="Limbe">Limbe</option>
+                            <option value="Douala">Douala</option>
+                            <option value="Yaoundé">Yaoundé</option>
+                            <option value="Bamenda">Bamenda</option>
+                            <option value="Bafoussam">Bafoussam</option>
+                            <option value="Kribi">Kribi</option>
+                            <option value="Garoua">Garoua</option>
+                            <option value="Maroua">Maroua</option>
+                            <option value="Ngaoundéré">Ngaoundéré</option>
+                            <option value="Bertoua">Bertoua</option>
+                            <option value="Ebolowa">Ebolowa</option>
+                            <option value="Kumba">Kumba</option>
+                            <option value="Dschang">Dschang</option>
+                            <option value="Nkongsamba">Nkongsamba</option>
+                            <option value="Edéa">Edéa</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Area / Quarter (optional)</label>
+                        <input type="text" id="jArea" placeholder="e.g. Molyko, Bonanjo, Nkwen">
+                    </div>
+                    <div class="form-group">
+                        <label>Budget (optional)</label>
+                        <input type="text" id="jBudget" placeholder="e.g. 10,000 FCFA or Negotiable">
+                    </div>
+                    <button type="submit" class="btn-primary full">Post Job</button>
+                </form>
+
+                <p id="jobMessage" class="message"></p>
+            </div>
         </div>
     </main>
 
@@ -55,177 +97,80 @@
     <script src="config.js"></script>
     <script src="app.js"></script>
     <script>
-        let currentJob = null;
-        let currentJobId = null;
-        
         document.addEventListener('DOMContentLoaded', async () => {
-            setTimeout(async () => { await loadJobDetail(); }, 100);
-        });
-        
-        async function loadJobDetail() {
-            const params = new URLSearchParams(window.location.search);
-            const id = params.get('id');
-            const container = document.getElementById('jobContainer');
-            currentJobId = id;
-            
-            if (!id) { container.innerHTML = '<p class="error">Job not found.</p>'; return; }
-            if (!supabaseClient) { container.innerHTML = '<p class="error">Cannot connect to database.</p>'; return; }
-            
-            try {
-                const { data: job, error } = await supabaseClient
-                    .from('job_posts').select('*, profiles(full_name, phone, avatar_url, location, portfolio)').eq('id', id).single();
-                
-                if (error || !job) { container.innerHTML = '<p class="error">Job not found.</p>'; return; }
-                
-                currentJob = job;
-                const p = job.profiles || {};
-                const phoneNum = (p.phone || '').replace(/\D/g, '');
-                const whatsappLink = phoneNum ? `https://wa.me/237${phoneNum}` : '#';
-                const callLink = p.phone ? `tel:${p.phone}` : '#';
-                const postedDate = new Date(job.created_at).toLocaleDateString('en-GB');
-                
-                const { data: { user } } = await supabaseClient.auth.getUser();
-                const isOwner = user && user.id === job.client_id;
-                
-                const isOpen = job.status === 'Open';
-                const statusBannerClass = isOpen ? 'status-open' : 'status-closed';
-                const statusText = isOpen ? '🟢 OPEN — Workers Can Apply' : '🔴 CLOSED — No Longer Accepting Applications';
-                
-                const avatarUrl = p.avatar_url || 'https://via.placeholder.com/60?text=No+Photo';
-                
-                let portfolio = [];
-                if (p.portfolio && Array.isArray(p.portfolio) && p.portfolio.length > 0) {
-                    portfolio = p.portfolio;
-                }
-                
-                let portfolioHtml = '';
-                if (portfolio.length > 0) {
-                    portfolioHtml = `
-                        <div class="profile-section">
-                            <h3>📸 Reference Photos (${portfolio.length})</h3>
-                            <div class="portfolio-grid">
-                                ${portfolio.map((url, i) => `
-                                    <img src="${url}" class="portfolio-img" onerror="this.onerror=null;this.src='https://via.placeholder.com/180?text=Image+Not+Found';this.classList.add('img-error');" onclick="window.open('${url}', '_blank')" alt="Reference ${i+1}">
-                                `).join('')}
-                            </div>
-                        </div>
-                    `;
-                }
-                
-                let ownerSection = '';
-                if (isOwner) {
-                    if (isOpen) {
-                        ownerSection = `
-                            <div class="owner-notice">
-                                <p>💡 <strong>This is your job.</strong> Close it from your <a href="dashboard.html">Dashboard</a> when done.</p>
-                            </div>
-                            <div class="tips-box">
-                                <h4>💡 Tips for Job Posters</h4>
-                                <ul>
-                                    <li>Respond to worker inquiries quickly.</li>
-                                    <li>Be clear about budget and timeline.</li>
-                                    <li>Ask for references before hiring.</li>
-                                    <li>Agree on payment terms upfront.</li>
-                                    <li>Close the job on your Dashboard when done.</li>
-                                    <li>Leave a review after completion.</li>
-                                </ul>
-                            </div>
-                        `;
-                    } else {
-                        ownerSection = `
-                            <div class="owner-notice">
-                                <p>✅ <strong>This job is closed.</strong> <a href="post-job.html">Post a new job</a> if you need more help.</p>
-                            </div>
-                        `;
-                    }
-                }
-                
-                let contactSection = '';
-                if (isOpen) {
-                    if (p.phone) {
-                        contactSection = `
-                            <div class="client-contact-box">
-                                <p style="color: var(--text-light); margin-bottom: 8px;">📞 Contact the client:</p>
-                                <p class="phone-display">📱 ${p.phone}</p>
-                                <div class="contact-buttons">
-                                    <a href="${whatsappLink}" target="_blank" class="btn-whatsapp">💬 WhatsApp</a>
-                                    <a href="${callLink}" class="btn-primary">📞 Call Now</a>
-                                </div>
-                            </div>
-                        `;
-                    } else {
-                        contactSection = `<p style="color: var(--text-light);">No phone number provided.</p>`;
-                    }
-                } else {
-                    contactSection = `<p style="color: var(--text-light); font-weight: 600;">This job is closed.</p>`;
-                }
-                
-                let workerTips = '';
-                if (isOpen && !isOwner) {
-                    workerTips = `
-                        <div class="tips-box">
-                            <h4>💡 Tips for Workers</h4>
-                            <ul>
-                                <li>Confirm details, pricing, and timing before starting.</li>
-                                <li>Ask for the exact location in Buea.</li>
-                                <li>Discuss payment method upfront.</li>
-                                <li>Be professional and arrive on time.</li>
-                                <li>Bring your own tools unless told otherwise.</li>
-                            </ul>
-                        </div>
-                    `;
-                }
-                
-                container.innerHTML = `
-                    <div class="status-banner ${statusBannerClass}">${statusText}</div>
-                    
-                    <div class="job-detail-header">
-                        <div style="width: 100%;">
-                            <h1>${job.title}</h1>
-                            <p class="job-detail-category">${job.category || 'General'}</p>
-                            <div class="job-meta">
-                                <span>📍 ${job.location || 'Buea'}</span>
-                                <span>💰 ${job.budget || 'Not specified'}</span>
-                                <span>📅 Posted ${postedDate}</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    ${ownerSection}
-                    
-                    <div class="job-description">
-                        <h3>Job Description</h3>
-                        <p>${job.description}</p>
-                    </div>
-                    
-                    ${portfolioHtml}
-                    
-                    <div class="client-info">
-                        <h3>Client Information</h3>
-                        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
-                            <img src="${avatarUrl}" class="client-avatar-small" onerror="this.onerror=null;this.src='https://via.placeholder.com/60?text=No+Photo'" alt="${p.full_name || 'Client'}">
-                            <div>
-                                <p style="font-size: 1.1rem; font-weight: 600; margin-bottom: 4px;">${p.full_name || 'Anonymous'}</p>
-                                <p style="color: var(--text-light); font-size: 0.9rem;">📍 ${p.location || 'Buea'}</p>
-                            </div>
-                        </div>
-                        ${contactSection}
-                        <div class="report-section">
-                            <button onclick="reportJob('${id}', '${job.title}')" class="btn-report">🚩 Report this job</button>
-                        </div>
-                    </div>
-                    
-                    ${workerTips}
+            await checkAuth();
+            if (!currentUser) {
+                document.getElementById('postJobBox').innerHTML = `
+                    <h2>Login Required</h2>
+                    <p>You need to be logged in to post a job.</p>
+                    <a href="login.html" class="btn-primary full" style="margin-top: 20px; display: inline-block;">Go to Login</a>
                 `;
-                
-            } catch (err) {
-                console.error('Job load error:', err);
-                container.innerHTML = '<p class="error">Error loading job. Please try again.</p>';
             }
+        });
+
+        async function handlePostJob(e) {
+            e.preventDefault();
+
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (!user) {
+                showJobMessage('Please login first.', 'error');
+                return;
+            }
+
+            const town = document.getElementById('jTown').value;
+            const area = document.getElementById('jArea').value.trim();
+            const location = area ? (area + ', ' + town) : town;
+
+            const jobData = {
+                client_id: user.id,
+                title: document.getElementById('jTitle').value,
+                category: document.getElementById('jCategory').value,
+                description: document.getElementById('jDescription').value,
+                location: location || 'Cameroon',
+                budget: document.getElementById('jBudget').value || 'Not specified',
+                status: 'Open'
+            };
+
+            const { data: insertedJob, error } = await supabaseClient
+                .from('job_posts')
+                .insert([jobData])
+                .select()
+                .single();
+
+            if (error) {
+                showJobMessage('Error: ' + error.message, 'error');
+                return;
+            }
+
+            try {
+                const { data: workersInCategory } = await supabaseClient
+                    .from('worker_details')
+                    .select('id')
+                    .eq('category', jobData.category)
+                    .eq('availability', 'Available');
+
+                if (workersInCategory && workersInCategory.length > 0) {
+                    const notifications = workersInCategory.map(w => ({
+                        user_id: w.id,
+                        title: 'New job in your category',
+                        message: 'New ' + jobData.category + ' job: "' + jobData.title + '" in ' + jobData.location,
+                        job_id: insertedJob.id,
+                        read: false
+                    }));
+                    await supabaseClient.from('notifications').insert(notifications);
+                }
+            } catch (notifyErr) {
+                console.log('Notification creation skipped:', notifyErr.message);
+            }
+
+            showJobMessage('Job posted successfully! Workers have been notified. Redirecting...', 'success');
+            setTimeout(() => window.location.href = 'jobs.html', 1500);
         }
-        
-        function reportJob(jobId, title) {
-            window.location.href = `report.html?type=job&id=${jobId}&name=${encodeURIComponent(title)}`;
+
+        function showJobMessage(msg, type) {
+            const el = document.getElementById('jobMessage');
+            el.textContent = msg;
+            el.className = 'message ' + type;
         }
     </script>
 </body>
