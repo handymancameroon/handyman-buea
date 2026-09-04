@@ -23,4 +23,198 @@
         .owner-notice p { margin: 0; color: #92400e; font-size: 0.95rem; }
         .owner-notice a { color: var(--primary); font-weight: 600; }
         .portfolio-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 12px; }
-        .portfolio-img { width: 100%; height: 180px; object-fit: cover; border-radius: 10
+        .portfolio-img { width: 100%; height: 180px; object-fit: cover; border-radius: 10px; cursor: pointer; transition: transform 0.2s; border: 2px solid var(--border); }
+        .portfolio-img:hover { transform: scale(1.03); border-color: var(--primary); }
+        .img-error { background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: var(--text-light); font-size: 0.85rem; }
+        .report-section { margin-top: 20px; text-align: center; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <a href="index.html" class="logo">🔧 Handy Man</a>
+            <nav class="nav" id="nav">
+                <a href="index.html">Home</a>
+                <a href="workers.html">Find Workers</a>
+                <a href="jobs.html">Find Jobs</a>
+                <a href="login.html" class="btn-secondary">Join as Worker</a>
+                <a href="post-job.html" class="btn-secondary">Post a Job</a>
+                <a href="login.html" class="btn-secondary" id="authBtn">Login</a>
+            </nav>
+            <button class="menu-toggle" id="menuToggle">☰</button>
+        </div>
+    </header>
+
+    <main class="job-detail-page">
+        <div class="container" id="jobContainer">
+            <p class="loading">Loading job...</p>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+    <script>
+        let currentJob = null;
+        let currentJobId = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkAuth();
+            setTimeout(async () => { await loadJobDetail(); }, 100);
+        });
+
+        async function loadJobDetail() {
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get('id');
+            const container = document.getElementById('jobContainer');
+            currentJobId = id;
+
+            if (!id) { container.innerHTML = '<p class="error">Job not found.</p>'; return; }
+            if (!supabaseClient) { container.innerHTML = '<p class="error">Cannot connect to database.</p>'; return; }
+
+            try {
+                const { data: job, error } = await supabaseClient
+                    .from('job_posts').select('*, profiles(full_name, phone, avatar_url, location, portfolio)').eq('id', id).single();
+
+                if (error || !job) { container.innerHTML = '<p class="error">Job not found.</p>'; return; }
+
+                currentJob = job;
+                const p = job.profiles || {};
+                const phoneNum = (p.phone || '').replace(/\D/g, '');
+                const whatsappLink = phoneNum ? `https://wa.me/237${phoneNum}` : '#';
+                const callLink = p.phone ? `tel:${p.phone}` : '#';
+                const postedDate = new Date(job.created_at).toLocaleDateString('en-GB');
+
+                const { data: { user } } = await supabaseClient.auth.getUser();
+                const isOwner = user && user.id === job.client_id;
+
+                const isOpen = job.status === 'Open';
+                const statusBannerClass = isOpen ? 'status-open' : 'status-closed';
+                const statusText = isOpen ? '🟢 OPEN — Workers Can Apply' : '🔴 CLOSED — No Longer Accepting Applications';
+
+                const avatarUrl = p.avatar_url || 'https://via.placeholder.com/60?text=No+Photo';
+
+                let portfolio = [];
+                if (job.images && Array.isArray(job.images) && job.images.length > 0) {
+                    portfolio = job.images;
+                } else if (p.portfolio && Array.isArray(p.portfolio) && p.portfolio.length > 0) {
+                    portfolio = p.portfolio;
+                }
+
+                let portfolioHtml = '';
+                if (portfolio.length > 0) {
+                    portfolioHtml = `
+                        <div class="profile-section">
+                            <h3>📸 Reference Photos (${portfolio.length})</h3>
+                            <div class="portfolio-grid">
+                                ${portfolio.map((url, i) => `
+                                    <img src="${url}" class="portfolio-img" onerror="this.onerror=null;this.src='https://via.placeholder.com/180?text=Image+Not+Found';this.classList.add('img-error');" onclick="window.open('${url}', '_blank')" alt="Reference ${i+1}">
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                let ownerSection = '';
+                if (isOwner) {
+                    if (isOpen) {
+                        ownerSection = `
+                            <div class="owner-notice">
+                                <p>💡 <strong>This is your job.</strong> Close it from your <a href="dashboard.html">Dashboard</a> when done.</p>
+                            </div>
+                        `;
+                    } else {
+                        ownerSection = `
+                            <div class="owner-notice">
+                                <p>✅ <strong>This job is closed.</strong> <a href="post-job.html">Post a new job</a> if you need more help.</p>
+                            </div>
+                        `;
+                    }
+                }
+
+                let contactSection = '';
+                if (isOpen) {
+                    if (p.phone) {
+                        contactSection = `
+                            <div class="client-contact-box">
+                                <p style="color: var(--text-light); margin-bottom: 8px;">📞 Contact the client:</p>
+                                <p class="phone-display">📱 ${p.phone}</p>
+                                <div class="contact-buttons">
+                                    <a href="${whatsappLink}" target="_blank" class="btn-whatsapp">💬 WhatsApp</a>
+                                    <a href="${callLink}" class="btn-primary">📞 Call Now</a>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        contactSection = `<p style="color: var(--text-light);">No phone number provided.</p>`;
+                    }
+                } else {
+                    contactSection = `<p style="color: var(--text-light); font-weight: 600;">This job is closed.</p>`;
+                }
+
+                let workerTips = '';
+                if (isOpen && !isOwner) {
+                    workerTips = `
+                        <div class="tips-box">
+                            <h4>💡 Tips for Workers</h4>
+                            <ul>
+                                <li>Confirm details, pricing, and timing before starting.</li>
+                                <li>Ask for the exact location in the town listed.</li>
+                                <li>Discuss payment method upfront.</li>
+                                <li>Be professional and arrive on time.</li>
+                                <li>Bring your own tools unless told otherwise.</li>
+                            </ul>
+                        </div>
+                    `;
+                }
+
+                const safeTitle = (job.title || '').replace(/'/g, "\\'");
+
+                container.innerHTML = `
+                    <div class="status-banner ${statusBannerClass}">${statusText}</div>
+                    <div class="job-detail-header">
+                        <div style="width: 100%;">
+                            <h1>${job.title}</h1>
+                            <p class="job-detail-category">${job.category || 'General'}</p>
+                            <div class="job-meta">
+                                <span>📍 ${job.location || 'Cameroon'}</span>
+                                <span>💰 ${job.budget || 'Not specified'}</span>
+                                <span>📅 Posted ${postedDate}</span>
+                            </div>
+                        </div>
+                    </div>
+                    ${ownerSection}
+                    <div class="job-description">
+                        <h3>Job Description</h3>
+                        <p>${job.description || ''}</p>
+                    </div>
+                    ${portfolioHtml}
+                    <div class="client-info">
+                        <h3>Client Information</h3>
+                        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
+                            <img src="${avatarUrl}" class="client-avatar-small" onerror="this.onerror=null;this.src='https://via.placeholder.com/60?text=No+Photo'" alt="${p.full_name || 'Client'}">
+                            <div>
+                                <p style="font-size: 1.1rem; font-weight: 600; margin-bottom: 4px;">${p.full_name || 'Anonymous'}</p>
+                                <p style="color: var(--text-light); font-size: 0.9rem;">📍 ${p.location || 'Cameroon'}</p>
+                            </div>
+                        </div>
+                        ${contactSection}
+                        <div class="report-section">
+                            <button onclick="reportJob('${id}', '${safeTitle}')" class="btn-report">🚩 Report this job</button>
+                        </div>
+                    </div>
+                    ${workerTips}
+                `;
+
+            } catch (err) {
+                console.error('Job load error:', err);
+                container.innerHTML = '<p class="error">Error loading job. Please try again.</p>';
+            }
+        }
+
+        function reportJob(jobId, title) {
+            window.location.href = 'report.html?type=job&id=' + jobId + '&name=' + encodeURIComponent(title);
+        }
+    </script>
+</body>
+</html>
