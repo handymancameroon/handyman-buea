@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Post a Job - Handy Man</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .custom-town-field { display: none; margin-top: 8px; }
+        .custom-town-field.active { display: block; }
+        .upload-hint { color: var(--text-light); font-size: 0.8rem; margin-top: 6px; display: block; }
+    </style>
 </head>
 <body>
     <header class="header">
@@ -16,7 +21,7 @@
                 <a href="jobs.html">Find Jobs</a>
                 <a href="login.html" class="btn-secondary">Join as Worker</a>
                 <a href="post-job.html" class="btn-secondary">Post a Job</a>
-                <a href="login.html" class="btn-primary" id="authBtn">Login</a>
+                <a href="login.html" class="btn-secondary" id="authBtn">Login</a>
             </nav>
             <button class="menu-toggle" id="menuToggle">☰</button>
         </div>
@@ -47,16 +52,47 @@
                             <option value="Phone/Laptop Repair">Phone/Laptop Repair</option>
                             <option value="Hairdressing">Hairdressing</option>
                             <option value="Catering">Catering</option>
+                            <option value="Others">Others</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label>Description *</label>
                         <textarea id="jDescription" required rows="4" placeholder="Describe the job in detail..."></textarea>
                     </div>
+
+                    <!-- TOWN SELECTOR -->
                     <div class="form-group">
-                        <label>Location *</label>
-                        <input type="text" id="jLocation" required placeholder="e.g. Molyko, Buea" value="Buea">
+                        <label>Town / City *</label>
+                        <select id="jTown" required onchange="handleJobTownChange()">
+                            <option value="">Select town</option>
+                            <option value="Buea">Buea</option>
+                            <option value="Limbe">Limbe</option>
+                            <option value="Douala">Douala</option>
+                            <option value="Yaoundé">Yaoundé</option>
+                            <option value="Bamenda">Bamenda</option>
+                            <option value="Kumba">Kumba</option>
+                            <option value="Kribi">Kribi</option>
+                            <option value="Bafoussam">Bafoussam</option>
+                            <option value="Garoua">Garoua</option>
+                            <option value="Maroua">Maroua</option>
+                            <option value="Ngaoundéré">Ngaoundéré</option>
+                            <option value="Bertoua">Bertoua</option>
+                            <option value="Ebolowa">Ebolowa</option>
+                            <option value="Mutengene">Mutengene</option>
+                            <option value="Tiko">Tiko</option>
+                            <option value="Other">Other (specify below)</option>
+                        </select>
+                        <div id="jCustomTownField" class="custom-town-field">
+                            <input type="text" id="jCustomTown" placeholder="Enter your town">
+                        </div>
                     </div>
+
+                    <div class="form-group">
+                        <label>More precise location (optional)</label>
+                        <input type="text" id="jLocationDetail" placeholder="e.g. Molyko, opposite Total">
+                        <small class="upload-hint">Quarter or landmark (optional).</small>
+                    </div>
+
                     <div class="form-group">
                         <label>Budget (optional)</label>
                         <input type="text" id="jBudget" placeholder="e.g. 10,000 FCFA or Negotiable">
@@ -84,6 +120,27 @@
                 `;
             }
         });
+
+        function handleJobTownChange() {
+            const town = document.getElementById('jTown').value;
+            const field = document.getElementById('jCustomTownField');
+            const input = document.getElementById('jCustomTown');
+            if (town === 'Other') {
+                field.classList.add('active');
+                input.required = true;
+            } else {
+                field.classList.remove('active');
+                input.required = false;
+            }
+        }
+
+        function getJobTown() {
+            const town = document.getElementById('jTown').value;
+            if (town === 'Other') {
+                return document.getElementById('jCustomTown').value.trim() || 'Cameroon';
+            }
+            return town || 'Cameroon';
+        }
         
         async function handlePostJob(e) {
             e.preventDefault();
@@ -93,14 +150,20 @@
                 showJobMessage('Please login first.', 'error');
                 return;
             }
+
+            let fullLocation = getJobTown();
+            const detail = document.getElementById('jLocationDetail').value.trim();
+            if (detail) {
+                fullLocation = detail + ', ' + fullLocation;
+            }
             
             const jobData = {
                 client_id: user.id,
-                title: document.getElementById('jTitle').value,
+                title: document.getElementById('jTitle').value.trim(),
                 category: document.getElementById('jCategory').value,
-                description: document.getElementById('jDescription').value,
-                location: document.getElementById('jLocation').value,
-                budget: document.getElementById('jBudget').value,
+                description: document.getElementById('jDescription').value.trim(),
+                location: fullLocation,
+                budget: document.getElementById('jBudget').value.trim() || 'Negotiable',
                 status: 'Open'
             };
             
@@ -125,9 +188,10 @@
                 if (workersInCategory && workersInCategory.length > 0) {
                     const notifications = workersInCategory.map(w => ({
                         user_id: w.id,
-                        type: 'new_job',
+                        title: 'New Job Available',
                         message: `New ${jobData.category} job posted: "${jobData.title}" in ${jobData.location}`,
-                        job_id: insertedJob.id
+                        job_id: insertedJob.id,
+                        read: false
                     }));
                     
                     await supabaseClient.from('notifications').insert(notifications);
