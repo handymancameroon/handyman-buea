@@ -3,8 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Report Issue - Handy Man</title>
+    <title>Worker Profile - Handy Man</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .portfolio-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 12px; }
+        .portfolio-img { width: 100%; height: 180px; object-fit: cover; border-radius: 10px; cursor: pointer; transition: transform 0.2s; border: 2px solid var(--border); }
+        .portfolio-img:hover { transform: scale(1.03); border-color: var(--primary); }
+        .img-error { background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: var(--text-light); font-size: 0.85rem; }
+        .rate-form { background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-top: 24px; }
+        .rate-form select, .rate-form textarea { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); margin: 8px 0; font-family: inherit; }
+        .rate-form textarea { min-height: 90px; resize: vertical; }
+    </style>
 </head>
 <body>
     <header class="header">
@@ -22,39 +31,9 @@
         </div>
     </header>
 
-    <main class="report-page">
-        <div class="container">
-            <div class="report-box">
-                <h2>🚩 Report an Issue</h2>
-                <p>Help us keep Handy Man safe and trustworthy across Cameroon.</p>
-
-                <div class="target-info" id="targetInfo">
-                    <h4 id="targetName">Loading...</h4>
-                    <p id="targetType">Loading...</p>
-                </div>
-
-                <form id="reportForm" onsubmit="handleReport(event)">
-                    <div class="form-group">
-                        <label>Reason *</label>
-                        <select id="reportReason" required>
-                            <option value="">Select a reason</option>
-                            <option value="Fake profile">Fake profile or identity</option>
-                            <option value="Inappropriate behavior">Inappropriate behavior</option>
-                            <option value="Scam or fraud">Scam or fraud</option>
-                            <option value="Job not as described">Job not as described</option>
-                            <option value="Payment issue">Payment issue</option>
-                            <option value="Other">Other</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Details *</label>
-                        <textarea id="reportDetails" required rows="4" placeholder="Please describe the issue in detail..."></textarea>
-                    </div>
-                    <button type="submit" class="btn-primary full">Submit Report</button>
-                </form>
-
-                <p id="reportMessage" class="message"></p>
-            </div>
+    <main class="profile-page">
+        <div class="container" id="profileContainer">
+            <p class="loading">Loading profile...</p>
         </div>
     </main>
 
@@ -62,62 +41,261 @@
     <script src="config.js"></script>
     <script src="app.js"></script>
     <script>
-        let reportTarget = { type: '', id: '', name: '' };
+        let currentWorkerId = null;
 
         document.addEventListener('DOMContentLoaded', async () => {
             await checkAuth();
-
-            const params = new URLSearchParams(window.location.search);
-            reportTarget.type = params.get('type') || 'worker';
-            reportTarget.id = params.get('id') || '';
-            reportTarget.name = decodeURIComponent(params.get('name') || 'Unknown');
-
-            document.getElementById('targetName').textContent = reportTarget.name;
-            document.getElementById('targetType').textContent = reportTarget.type === 'worker'
-                ? 'Reporting a worker profile'
-                : 'Reporting a job posting';
+            setTimeout(async () => { await loadWorkerProfile(); }, 150);
         });
 
-        async function handleReport(e) {
-            e.preventDefault();
+        async function loadWorkerProfile() {
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get('id');
+            const container = document.getElementById('profileContainer');
+            currentWorkerId = id;
 
-            const reason = document.getElementById('reportReason').value;
-            const details = document.getElementById('reportDetails').value;
-
-            let reporterName = 'Anonymous';
-            let reporterId = null;
-
-            if (currentUser) {
-                reporterId = currentUser.id;
-                reporterName = (currentProfile && currentProfile.full_name) || currentUser.email || 'User';
+            if (!id) {
+                container.innerHTML = '<p class="error">Worker not found.</p>';
+                return;
             }
-
-            const reportData = {
-                reporter_id: reporterId,
-                reporter_name: reporterName,
-                target_type: reportTarget.type,
-                target_id: reportTarget.id,
-                target_name: reportTarget.name,
-                reason: reason,
-                details: details,
-                status: 'Open'
-            };
-
-            const { error } = await supabaseClient.from('disputes').insert([reportData]);
-
-            if (error) {
-                showReportMessage('Error submitting report: ' + error.message, 'error');
+            if (!supabaseClient) {
+                container.innerHTML = '<p class="error">Cannot connect to database.</p>';
                 return;
             }
 
-            showReportMessage('Report submitted successfully. Our team will review it shortly.', 'success');
-            document.getElementById('reportForm').reset();
+            try {
+                const { data: worker, error: workerError } = await supabaseClient
+                    .from('worker_details')
+                    .select('*')
+                    .eq('id', id)
+                    .single();
+
+                if (workerError || !worker) {
+                    container.innerHTML = '<p class="error">Worker not found.</p>';
+                    return;
+                }
+
+                const { data: profile } = await supabaseClient
+                    .from('profiles')
+                    .select('full_name, avatar_url, location, phone, portfolio, is_deleted')
+                    .eq('id', id)
+                    .single();
+
+                if (profile && profile.is_deleted === true) {
+                    container.innerHTML = '<p class="error">This worker profile is no longer available.</p>';
+                    return;
+                }
+
+                const { data: reviews } = await supabaseClient
+                    .from('reviews')
+                    .select('*')
+                    .eq('worker_id', id)
+                    .order('created_at', { ascending: false });
+
+                const p = profile || {};
+                const phoneNum = (worker.whatsapp_number || p.phone || '').replace(/\D/g, '');
+                let localPhone = phoneNum;
+                if (localPhone.indexOf('237') === 0) localPhone = localPhone.substring(3);
+                const whatsappLink = localPhone ? ('https://wa.me/237' + localPhone) : '#';
+                const callLink = p.phone ? ('tel:' + p.phone) : '#';
+
+                const avatarUrl = p.avatar_url || 'https://via.placeholder.com/120?text=No+Photo';
+
+                let portfolio = [];
+                if (worker.portfolio && Array.isArray(worker.portfolio) && worker.portfolio.length > 0) {
+                    portfolio = worker.portfolio;
+                } else if (p.portfolio && Array.isArray(p.portfolio) && p.portfolio.length > 0) {
+                    portfolio = p.portfolio;
+                }
+
+                let portfolioHtml = '';
+                if (portfolio.length > 0) {
+                    portfolioHtml = `
+                        <div class="profile-section">
+                            <h3>📸 Portfolio (${portfolio.length} photo${portfolio.length > 1 ? 's' : ''})</h3>
+                            <div class="portfolio-grid">
+                                ${portfolio.map((url, i) => `
+                                    <img src="${url}" class="portfolio-img"
+                                         onerror="this.onerror=null;this.src='https://via.placeholder.com/180?text=Image+Not+Found';this.classList.add('img-error');"
+                                         onclick="window.open('${url}', '_blank')"
+                                         alt="Portfolio ${i+1}">
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                let reviewsHtml = '';
+                if (reviews && reviews.length > 0) {
+                    reviewsHtml = reviews.map(r => `
+                        <div class="review">
+                            <div class="review-header">
+                                <strong>Client</strong>
+                                <span>${'⭐'.repeat(r.rating || 0)} (${r.rating}/5)</span>
+                            </div>
+                            <p>${r.comment || 'No comment'}</p>
+                        </div>
+                    `).join('');
+                } else {
+                    reviewsHtml = '<p>No reviews yet. Be the first to rate this worker!</p>';
+                }
+
+                let rateFormHtml = '';
+                if (currentUser && currentUser.id !== id) {
+                    rateFormHtml = `
+                        <div class="rate-form" id="rateForm">
+                            <h4>⭐ Leave a Rating for this Worker</h4>
+                            <label>Your Rating</label>
+                            <select id="ratingValue">
+                                <option value="5">⭐⭐⭐⭐⭐ 5 Stars - Excellent</option>
+                                <option value="4">⭐⭐⭐⭐ 4 Stars - Very Good</option>
+                                <option value="3">⭐⭐⭐ 3 Stars - Good</option>
+                                <option value="2">⭐⭐ 2 Stars - Fair</option>
+                                <option value="1">⭐ 1 Star - Poor</option>
+                            </select>
+                            <label>Your Review (optional)</label>
+                            <textarea id="ratingComment" placeholder="Tell others about your experience with this worker..."></textarea>
+                            <button class="btn-primary" onclick="submitWorkerReview()" style="margin-top:12px;">Submit Review</button>
+                            <p id="rateMessage" class="message" style="display:none;"></p>
+                        </div>
+                    `;
+                } else if (!currentUser) {
+                    rateFormHtml = `
+                        <div class="rate-form">
+                            <p>Please <a href="login.html">login</a> to leave a rating.</p>
+                        </div>
+                    `;
+                }
+
+                const safeName = (p.full_name || 'Unknown').replace(/'/g, "\\'");
+
+                container.innerHTML = `
+                    <div class="profile-header">
+                        <img src="${avatarUrl}" class="profile-avatar"
+                             onerror="this.onerror=null;this.src='https://via.placeholder.com/120?text=No+Photo'"
+                             alt="${p.full_name || 'Worker'}">
+                        <div class="profile-info">
+                            <h1>${p.full_name || 'Unknown'}</h1>
+                            <span class="badge">${worker.verified ? '✓ Verified' : 'New'}</span>
+                            <p class="profile-category">${worker.category || 'General'}</p>
+                            <p class="profile-location">📍 ${p.location || 'Cameroon'}</p>
+                            <div class="profile-rating">
+                                ${'⭐'.repeat(Math.round(worker.rating || 0))}
+                                <span>${worker.rating || 0}/5 (${worker.review_count || 0} reviews)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="profile-body">
+                        <div class="profile-section">
+                            <h3>About</h3>
+                            <p>${worker.description || 'No description yet.'}</p>
+                            <p style="margin-top:12px;"><strong>Experience:</strong> ${worker.experience_years || 0} years</p>
+                            <p><strong>Availability:</strong> ${worker.availability || 'Available'}</p>
+                        </div>
+
+                        <div class="profile-section">
+                            <h3>Contact</h3>
+                            ${p.phone ? `<p>📞 ${p.phone}</p>` : ''}
+                            <a href="${whatsappLink}" target="_blank" class="btn-whatsapp">💬 WhatsApp</a>
+                            ${p.phone ? `<a href="${callLink}" class="btn-primary" style="margin-left:8px;">📞 Call Now</a>` : ''}
+                            <div style="margin-top: 16px;">
+                                <button onclick="reportWorker('${id}', '${safeName}')" class="btn-report">🚩 Report this worker</button>
+                            </div>
+                        </div>
+
+                        ${portfolioHtml}
+
+                        <div class="profile-section">
+                            <h3>⭐ Reviews (${reviews ? reviews.length : 0})</h3>
+                            <div id="reviewsList">
+                                ${reviewsHtml}
+                            </div>
+                            ${rateFormHtml}
+                        </div>
+                    </div>
+                `;
+
+            } catch (err) {
+                console.error('Profile load error:', err);
+                container.innerHTML = '<p class="error">Error loading profile. Please try again.</p>';
+            }
         }
 
-        function showReportMessage(msg, type) {
-            const el = document.getElementById('reportMessage');
-            el.textContent = msg;
-            el.className = 'message ' + type;
+        async function submitWorkerReview() {
+            if (!currentUser) {
+                alert('Please login first to leave a review.');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const rating = parseInt(document.getElementById('ratingValue').value, 10);
+            const comment = document.getElementById('ratingComment').value.trim();
+            const msg = document.getElementById('rateMessage');
+
+            if (!rating || rating < 1 || rating > 5) {
+                alert('Please select a valid rating.');
+                return;
+            }
+
+            try {
+                const { error } = await supabaseClient.from('reviews').insert([{
+                    worker_id: currentWorkerId,
+                    reviewer_id: currentUser.id,
+                    rating: rating,
+                    comment: comment || null,
+                    review_type: 'worker'
+                }]);
+
+                if (error) {
+                    // Fallback if reviewer_id / review_type columns do not exist yet
+                    const { error: error2 } = await supabaseClient.from('reviews').insert([{
+                        worker_id: currentWorkerId,
+                        rating: rating,
+                        comment: comment || null
+                    }]);
+                    if (error2) {
+                        msg.textContent = 'Error: ' + error2.message;
+                        msg.className = 'message error';
+                        msg.style.display = 'block';
+                        return;
+                    }
+                }
+
+                const { data: allReviews } = await supabaseClient
+                    .from('reviews')
+                    .select('rating')
+                    .eq('worker_id', currentWorkerId);
+
+                if (allReviews && allReviews.length > 0) {
+                    const total = allReviews.reduce((sum, r) => sum + (r.rating || 0), 0);
+                    const avg = Math.round((total / allReviews.length) * 10) / 10;
+
+                    await supabaseClient
+                        .from('worker_details')
+                        .update({
+                            rating: avg,
+                            review_count: allReviews.length
+                        })
+                        .eq('id', currentWorkerId);
+                }
+
+                msg.textContent = 'Thank you! Your review has been submitted.';
+                msg.className = 'message success';
+                msg.style.display = 'block';
+
+                setTimeout(() => {
+                    loadWorkerProfile();
+                }, 1500);
+
+            } catch (err) {
+                console.error('Review error:', err);
+                alert('Something went wrong. Please try again.');
+            }
+        }
+
+        function reportWorker(workerId, workerName) {
+            window.location.href = 'report.html?type=worker&id=' + workerId + '&name=' + encodeURIComponent(workerName);
         }
     </script>
 </body>
