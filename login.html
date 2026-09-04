@@ -3,61 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Handy Man</title>
+    <title>Post a Job - Handy Man</title>
     <link rel="stylesheet" href="style.css">
-    <style>
-        .worker-fields, .client-fields { display: none; animation: fadeIn 0.3s ease; }
-        .worker-fields.active, .client-fields.active { display: block; }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .custom-category-field, .custom-town-field { display: none; margin-top: 8px; }
-        .custom-category-field.active, .custom-town-field.active { display: block; }
-        .photo-upload-box {
-            border: 2px dashed var(--border);
-            border-radius: 12px;
-            padding: 16px;
-            text-align: center;
-            background: #f8fafc;
-        }
-        .photo-upload-box input[type="file"] {
-            width: 100%;
-            margin-top: 8px;
-            font-size: 0.9rem;
-        }
-        .avatar-preview {
-            width: 96px;
-            height: 96px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin: 12px auto 0;
-            display: none;
-            border: 3px solid var(--primary);
-        }
-        .avatar-preview.show { display: block; }
-        .file-preview {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-top: 12px;
-            justify-content: center;
-        }
-        .file-preview-item {
-            width: 80px;
-            height: 80px;
-            object-fit: cover;
-            border-radius: 8px;
-            border: 2px solid var(--border);
-        }
-        .upload-hint {
-            color: var(--text-light);
-            font-size: 0.8rem;
-            margin-top: 6px;
-            display: block;
-        }
-        .auth-box { max-width: 520px; }
-    </style>
 </head>
 <body>
     <header class="header">
@@ -77,168 +24,71 @@
 
     <main class="auth-page">
         <div class="container">
-            <div class="auth-box">
-                <div class="auth-tabs">
-                    <button type="button" class="tab-btn active" onclick="showTab('login')">Login</button>
-                    <button type="button" class="tab-btn" onclick="showTab('register')">Register</button>
-                </div>
+            <div class="auth-box" id="postJobBox">
+                <h2>Post a Job</h2>
+                <p>Describe what you need. Workers across Cameroon can contact you.</p>
 
-                <div id="loginTab" class="tab-content active">
-                    <h2>Welcome Back</h2>
-                    <form id="loginForm" onsubmit="handleLogin(event)">
-                        <div class="form-group">
-                            <label>Email</label>
-                            <input type="email" id="loginEmail" required placeholder="your@email.com">
-                        </div>
-                        <div class="form-group">
-                            <label>Password</label>
-                            <input type="password" id="loginPassword" required placeholder="••••••••">
-                        </div>
-                        <button type="submit" class="btn-primary full">Login</button>
-                    </form>
-                </div>
+                <form id="jobForm" onsubmit="handlePostJob(event)">
+                    <div class="form-group">
+                        <label>Job Title *</label>
+                        <input type="text" id="jTitle" required placeholder="e.g. Fix leaking kitchen pipe">
+                    </div>
+                    <div class="form-group">
+                        <label>Service Category *</label>
+                        <select id="jCategory" required>
+                            <option value="">Select category</option>
+                            <option value="Plumbing">Plumbing</option>
+                            <option value="Electrical">Electrical</option>
+                            <option value="Carpentry">Carpentry</option>
+                            <option value="Cleaning">Cleaning</option>
+                            <option value="Painting">Painting</option>
+                            <option value="Masonry">Masonry</option>
+                            <option value="Auto Mechanics">Auto Mechanics</option>
+                            <option value="Phone/Laptop Repair">Phone/Laptop Repair</option>
+                            <option value="Hairdressing">Hairdressing</option>
+                            <option value="Catering">Catering</option>
+                            <option value="Others">Others</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Description *</label>
+                        <textarea id="jDescription" required rows="4" placeholder="Describe the job in detail..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Town / Location *</label>
+                        <select id="jTown" required>
+                            <option value="">Select town</option>
+                            <option value="Buea">Buea</option>
+                            <option value="Limbe">Limbe</option>
+                            <option value="Douala">Douala</option>
+                            <option value="Yaoundé">Yaoundé</option>
+                            <option value="Bamenda">Bamenda</option>
+                            <option value="Bafoussam">Bafoussam</option>
+                            <option value="Kribi">Kribi</option>
+                            <option value="Garoua">Garoua</option>
+                            <option value="Maroua">Maroua</option>
+                            <option value="Ngaoundéré">Ngaoundéré</option>
+                            <option value="Bertoua">Bertoua</option>
+                            <option value="Ebolowa">Ebolowa</option>
+                            <option value="Kumba">Kumba</option>
+                            <option value="Dschang">Dschang</option>
+                            <option value="Nkongsamba">Nkongsamba</option>
+                            <option value="Edéa">Edéa</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Area / Quarter (optional)</label>
+                        <input type="text" id="jArea" placeholder="e.g. Molyko, Bonanjo, Nkwen">
+                    </div>
+                    <div class="form-group">
+                        <label>Budget (optional)</label>
+                        <input type="text" id="jBudget" placeholder="e.g. 10,000 FCFA or Negotiable">
+                    </div>
+                    <button type="submit" class="btn-primary full">Post Job</button>
+                </form>
 
-                <div id="registerTab" class="tab-content">
-                    <h2>Create Account</h2>
-                    <form id="registerForm" onsubmit="handleRegister(event)">
-                        <div class="form-group">
-                            <label>Full Name *</label>
-                            <input type="text" id="regName" required placeholder="John Doe">
-                        </div>
-                        <div class="form-group">
-                            <label>Email *</label>
-                            <input type="email" id="regEmail" required placeholder="your@email.com">
-                        </div>
-                        <div class="form-group">
-                            <label>Phone Number (WhatsApp) *</label>
-                            <input type="tel" id="regPhone" required placeholder="6XX XXX XXX">
-                            <small class="upload-hint">Used for calls and WhatsApp contact.</small>
-                        </div>
-                        <div class="form-group">
-                            <label>Password *</label>
-                            <input type="password" id="regPassword" required placeholder="Min 6 characters" minlength="6">
-                        </div>
-                        <div class="form-group">
-                            <label>I am a: *</label>
-                            <select id="regType" onchange="toggleFields()">
-                                <option value="client">Looking for services (Client)</option>
-                                <option value="worker">Offering services (Worker)</option>
-                            </select>
-                        </div>
-
-                        <!-- TOWN / CITY SELECTOR (for both Clients and Workers) -->
-                        <div class="form-group">
-                            <label>Town / City *</label>
-                            <select id="regTown" required onchange="handleTownChange()">
-                                <option value="">Select your town</option>
-                                <option value="Buea">Buea</option>
-                                <option value="Limbe">Limbe</option>
-                                <option value="Douala">Douala</option>
-                                <option value="Yaoundé">Yaoundé</option>
-                                <option value="Bamenda">Bamenda</option>
-                                <option value="Kumba">Kumba</option>
-                                <option value="Kribi">Kribi</option>
-                                <option value="Bafoussam">Bafoussam</option>
-                                <option value="Garoua">Garoua</option>
-                                <option value="Maroua">Maroua</option>
-                                <option value="Ngaoundéré">Ngaoundéré</option>
-                                <option value="Bertoua">Bertoua</option>
-                                <option value="Ebolowa">Ebolowa</option>
-                                <option value="Mutengene">Mutengene</option>
-                                <option value="Tiko">Tiko</option>
-                                <option value="Other">Other (specify below)</option>
-                            </select>
-                            <div id="customTownField" class="custom-town-field">
-                                <input type="text" id="customTown" placeholder="Enter your town or quarter">
-                            </div>
-                            <small class="upload-hint">Select the main town where you live or offer services.</small>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Profile Photo (optional)</label>
-                            <div class="photo-upload-box">
-                                <p style="margin-bottom: 8px; font-size: 0.9rem;">📷 Take a photo or choose from gallery</p>
-                                <input type="file" id="regPhotoFile" accept="image/*" capture="environment">
-                                <img id="regAvatarPreview" class="avatar-preview" alt="Preview">
-                                <small class="upload-hint">JPEG or PNG. On phones you can use the camera.</small>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Service Category *</label>
-                            <select id="serviceCategory" required onchange="handleCategoryChange()">
-                                <option value="">Select category</option>
-                                <option value="Plumbing">Plumbing</option>
-                                <option value="Electrical">Electrical</option>
-                                <option value="Carpentry">Carpentry</option>
-                                <option value="Cleaning">Cleaning</option>
-                                <option value="Painting">Painting</option>
-                                <option value="Masonry">Masonry</option>
-                                <option value="Auto Mechanics">Auto Mechanics</option>
-                                <option value="Phone/Laptop Repair">Phone/Laptop Repair</option>
-                                <option value="Hairdressing">Hairdressing</option>
-                                <option value="Catering">Catering</option>
-                                <option value="Others">Others (specify below)</option>
-                            </select>
-                            <div id="customCategoryField" class="custom-category-field">
-                                <input type="text" id="customCategory" placeholder="Enter your skill or category">
-                            </div>
-                        </div>
-
-                        <div id="workerFields" class="worker-fields">
-                            <div class="form-group">
-                                <label>Description of Services *</label>
-                                <textarea id="wDescription" rows="3" placeholder="Describe what you do, your skills, and experience..."></textarea>
-                            </div>
-                            <div class="form-group">
-                                <label>Years of Experience</label>
-                                <input type="number" id="wExperience" min="0" value="0">
-                            </div>
-                            <div class="form-group">
-                                <label>Portfolio Photos (optional, max 2)</label>
-                                <div class="photo-upload-box">
-                                    <p style="margin-bottom: 8px; font-size: 0.9rem;">📸 Photos of your past work</p>
-                                    <input type="file" id="wPortfolio" accept="image/*" multiple>
-                                    <small class="upload-hint">Select up to 2 images.</small>
-                                    <div class="file-preview" id="wPortfolioPreview"></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div id="clientFields" class="client-fields">
-                            <div class="form-group">
-                                <label>Job Title *</label>
-                                <input type="text" id="cJobTitle" placeholder="e.g. Fix leaking pipe">
-                            </div>
-                            <div class="form-group">
-                                <label>Job Description *</label>
-                                <textarea id="cJobDesc" rows="3" placeholder="Describe what you need..."></textarea>
-                            </div>
-                            <div class="form-group">
-                                <label>More precise location (optional)</label>
-                                <input type="text" id="cLocationDetail" placeholder="e.g. Molyko, opposite Total">
-                                <small class="upload-hint">You can add quarter or landmark. Town is already selected above.</small>
-                            </div>
-                            <div class="form-group">
-                                <label>Budget (optional)</label>
-                                <input type="text" id="cBudget" placeholder="e.g. 10,000 FCFA">
-                            </div>
-                            <div class="form-group">
-                                <label>Reference Photos (optional, max 2)</label>
-                                <div class="photo-upload-box">
-                                    <p style="margin-bottom: 8px; font-size: 0.9rem;">📷 Photos of the work needed</p>
-                                    <input type="file" id="cPortfolio" accept="image/*" multiple>
-                                    <small class="upload-hint">Not required. Max 2 images.</small>
-                                    <div class="file-preview" id="cPortfolioPreview"></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <button type="submit" class="btn-primary full" id="regSubmitBtn">Create Account</button>
-                    </form>
-                </div>
-
-                <p id="authMessage" class="message"></p>
+                <p id="jobMessage" class="message"></p>
             </div>
         </div>
     </main>
@@ -247,308 +97,80 @@
     <script src="config.js"></script>
     <script src="app.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            toggleFields();
-            setupFilePreviews();
-            setupAvatarPreview();
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkAuth();
+            if (!currentUser) {
+                document.getElementById('postJobBox').innerHTML = `
+                    <h2>Login Required</h2>
+                    <p>You need to be logged in to post a job.</p>
+                    <a href="login.html" class="btn-primary full" style="margin-top: 20px; display: inline-block;">Go to Login</a>
+                `;
+            }
         });
 
-        function showTab(tab) {
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(tab + 'Tab').classList.add('active');
-            if (event && event.target) event.target.classList.add('active');
-            else {
-                document.querySelectorAll('.tab-btn').forEach(b => {
-                    if (b.textContent.toLowerCase().includes(tab)) b.classList.add('active');
-                });
-            }
-        }
-
-        function toggleFields() {
-            const type = document.getElementById('regType').value;
-            const workerFields = document.getElementById('workerFields');
-            const clientFields = document.getElementById('clientFields');
-
-            if (type === 'worker') {
-                workerFields.classList.add('active');
-                clientFields.classList.remove('active');
-                document.getElementById('wDescription').required = true;
-                document.getElementById('cJobTitle').required = false;
-                document.getElementById('cJobDesc').required = false;
-            } else {
-                workerFields.classList.remove('active');
-                clientFields.classList.add('active');
-                document.getElementById('wDescription').required = false;
-                document.getElementById('cJobTitle').required = true;
-                document.getElementById('cJobDesc').required = true;
-            }
-        }
-
-        function handleCategoryChange() {
-            const cat = document.getElementById('serviceCategory').value;
-            const field = document.getElementById('customCategoryField');
-            const input = document.getElementById('customCategory');
-            if (cat === 'Others') {
-                field.classList.add('active');
-                input.required = true;
-            } else {
-                field.classList.remove('active');
-                input.required = false;
-            }
-        }
-
-        function handleTownChange() {
-            const town = document.getElementById('regTown').value;
-            const field = document.getElementById('customTownField');
-            const input = document.getElementById('customTown');
-            if (town === 'Other') {
-                field.classList.add('active');
-                input.required = true;
-            } else {
-                field.classList.remove('active');
-                input.required = false;
-            }
-        }
-
-        function getSelectedTown() {
-            const town = document.getElementById('regTown').value;
-            if (town === 'Other') {
-                return document.getElementById('customTown').value.trim() || 'Cameroon';
-            }
-            return town || 'Cameroon';
-        }
-
-        function setupAvatarPreview() {
-            const input = document.getElementById('regPhotoFile');
-            const preview = document.getElementById('regAvatarPreview');
-            if (!input || !preview) return;
-            input.addEventListener('change', function () {
-                const file = this.files && this.files[0];
-                if (file && file.type.startsWith('image/')) {
-                    preview.src = URL.createObjectURL(file);
-                    preview.classList.add('show');
-                } else {
-                    preview.classList.remove('show');
-                    preview.src = '';
-                }
-            });
-        }
-
-        function setupFilePreviews() {
-            ['wPortfolio', 'cPortfolio'].forEach(id => {
-                const input = document.getElementById(id);
-                if (!input) return;
-                input.addEventListener('change', function () {
-                    const preview = document.getElementById(id + 'Preview');
-                    if (!preview) return;
-                    preview.innerHTML = '';
-                    const files = Array.from(this.files || []).slice(0, 2);
-                    if (this.files && this.files.length > 2) {
-                        alert('Maximum 2 photos. Only the first 2 will be used.');
-                    }
-                    files.forEach(file => {
-                        if (file.type.startsWith('image/')) {
-                            const img = document.createElement('img');
-                            img.className = 'file-preview-item';
-                            img.src = URL.createObjectURL(file);
-                            preview.appendChild(img);
-                        }
-                    });
-                });
-            });
-        }
-
-        function showMessage(msg, type) {
-            const el = document.getElementById('authMessage');
-            el.textContent = msg;
-            el.className = 'message ' + type;
-        }
-
-        async function handleLogin(e) {
+        async function handlePostJob(e) {
             e.preventDefault();
-            if (!supabaseClient) {
-                showMessage('Cannot connect. Please refresh.', 'error');
+
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (!user) {
+                showJobMessage('Please login first.', 'error');
                 return;
             }
-            const email = document.getElementById('loginEmail').value.trim();
-            const password = document.getElementById('loginPassword').value;
-            const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+            const town = document.getElementById('jTown').value;
+            const area = document.getElementById('jArea').value.trim();
+            const location = area ? (area + ', ' + town) : town;
+
+            const jobData = {
+                client_id: user.id,
+                title: document.getElementById('jTitle').value,
+                category: document.getElementById('jCategory').value,
+                description: document.getElementById('jDescription').value,
+                location: location || 'Cameroon',
+                budget: document.getElementById('jBudget').value || 'Not specified',
+                status: 'Open'
+            };
+
+            const { data: insertedJob, error } = await supabaseClient
+                .from('job_posts')
+                .insert([jobData])
+                .select()
+                .single();
+
             if (error) {
-                showMessage(error.message, 'error');
-            } else {
-                showMessage('Login successful! Redirecting...', 'success');
-                setTimeout(() => window.location.href = 'index.html', 1000);
-            }
-        }
-
-        async function handleRegister(e) {
-            e.preventDefault();
-            if (!supabaseClient) {
-                showMessage('Cannot connect. Please refresh.', 'error');
+                showJobMessage('Error: ' + error.message, 'error');
                 return;
             }
-
-            const btn = document.getElementById('regSubmitBtn');
-            btn.disabled = true;
-            btn.textContent = 'Creating account...';
 
             try {
-                const email = document.getElementById('regEmail').value.trim();
-                const password = document.getElementById('regPassword').value;
-                const fullName = document.getElementById('regName').value.trim();
-                const phone = document.getElementById('regPhone').value.trim();
-                const isWorker = document.getElementById('regType').value === 'worker';
-                const selectedTown = getSelectedTown();
+                const { data: workersInCategory } = await supabaseClient
+                    .from('worker_details')
+                    .select('id')
+                    .eq('category', jobData.category)
+                    .eq('availability', 'Available');
 
-                let category = document.getElementById('serviceCategory').value;
-                if (category === 'Others') {
-                    category = document.getElementById('customCategory').value.trim() || 'Others';
+                if (workersInCategory && workersInCategory.length > 0) {
+                    const notifications = workersInCategory.map(w => ({
+                        user_id: w.id,
+                        title: 'New job in your category',
+                        message: 'New ' + jobData.category + ' job: "' + jobData.title + '" in ' + jobData.location,
+                        job_id: insertedJob.id,
+                        read: false
+                    }));
+                    await supabaseClient.from('notifications').insert(notifications);
                 }
-
-                const { data, error } = await supabaseClient.auth.signUp({
-                    email,
-                    password,
-                    options: {
-                        data: { full_name: fullName, phone: phone, is_worker: isWorker }
-                    }
-                });
-
-                if (error) {
-                    showMessage(error.message, 'error');
-                    btn.disabled = false;
-                    btn.textContent = 'Create Account';
-                    return;
-                }
-
-                if (!data.user) {
-                    showMessage('Account created. Please check your email to confirm, then login.', 'success');
-                    btn.disabled = false;
-                    btn.textContent = 'Create Account';
-                    return;
-                }
-
-                const userId = data.user.id;
-                currentUser = data.user;
-
-                let photoUrl = null;
-                const photoFile = document.getElementById('regPhotoFile').files[0];
-                if (photoFile) {
-                    showMessage('Uploading profile photo...', 'success');
-                    photoUrl = await uploadFile(photoFile, 'profiles', userId);
-                }
-
-                const profileData = {
-                    id: userId,
-                    full_name: fullName,
-                    phone: phone,
-                    is_worker: isWorker,
-                    location: selectedTown,
-                    avatar_url: photoUrl,
-                    portfolio: []
-                };
-
-                const { error: profileError } = await supabaseClient
-                    .from('profiles')
-                    .upsert([profileData], { onConflict: 'id' });
-
-                if (profileError) {
-                    showMessage('Account created but profile error: ' + profileError.message, 'warning');
-                    btn.disabled = false;
-                    btn.textContent = 'Create Account';
-                    return;
-                }
-
-                if (isWorker) {
-                    showMessage('Uploading portfolio...', 'success');
-                    const portfolioFiles = document.getElementById('wPortfolio').files;
-                    const portfolioUrls = await uploadMultipleFiles(portfolioFiles, 'portfolio', userId, 2);
-
-                    const workerDetails = {
-                        id: userId,
-                        category: category,
-                        description: document.getElementById('wDescription').value.trim(),
-                        experience_years: parseInt(document.getElementById('wExperience').value, 10) || 0,
-                        contact_phone: phone,
-                        whatsapp_number: phone,
-                        availability: 'Available',
-                        portfolio: portfolioUrls
-                    };
-
-                    const { error: workerError } = await supabaseClient
-                        .from('worker_details')
-                        .upsert([workerDetails], { onConflict: 'id' });
-
-                    if (workerError) {
-                        showMessage('Account created but worker profile error: ' + workerError.message, 'warning');
-                        btn.disabled = false;
-                        btn.textContent = 'Create Account';
-                        return;
-                    }
-
-                    if (portfolioUrls.length > 0) {
-                        await supabaseClient.from('profiles').update({ portfolio: portfolioUrls }).eq('id', userId);
-                    }
-                } else {
-                    showMessage('Uploading reference photos...', 'success');
-                    const portfolioFiles = document.getElementById('cPortfolio').files;
-                    const portfolioUrls = await uploadMultipleFiles(portfolioFiles, 'portfolio', userId, 2);
-
-                    if (portfolioUrls.length > 0) {
-                        await supabaseClient.from('profiles')
-                            .update({ portfolio: portfolioUrls })
-                            .eq('id', userId);
-                    }
-
-                    // Build full location: Town + optional detail
-                    let fullLocation = selectedTown;
-                    const detail = document.getElementById('cLocationDetail').value.trim();
-                    if (detail) {
-                        fullLocation = detail + ', ' + selectedTown;
-                    }
-
-                    const jobData = {
-                        client_id: userId,
-                        title: document.getElementById('cJobTitle').value.trim(),
-                        description: document.getElementById('cJobDesc').value.trim(),
-                        category: category,
-                        location: fullLocation,
-                        budget: document.getElementById('cBudget').value.trim() || 'Not specified',
-                        status: 'Open'
-                    };
-
-                    if (portfolioUrls.length > 0) {
-                        jobData.images = portfolioUrls;
-                    }
-
-                    const { error: jobError } = await supabaseClient.from('job_posts').insert([jobData]);
-                    if (jobError) {
-                        if (jobData.images) {
-                            delete jobData.images;
-                            const { error: jobError2 } = await supabaseClient.from('job_posts').insert([jobData]);
-                            if (jobError2) {
-                                showMessage('Account created but job post error: ' + jobError2.message, 'warning');
-                                btn.disabled = false;
-                                btn.textContent = 'Create Account';
-                                return;
-                            }
-                        } else {
-                            showMessage('Account created but job post error: ' + jobError.message, 'warning');
-                            btn.disabled = false;
-                            btn.textContent = 'Create Account';
-                            return;
-                        }
-                    }
-                }
-
-                showMessage('Account created successfully! Redirecting...', 'success');
-                setTimeout(() => window.location.href = 'index.html', 1500);
-            } catch (err) {
-                console.error(err);
-                showMessage('Unexpected error: ' + (err.message || 'Please try again'), 'error');
-                btn.disabled = false;
-                btn.textContent = 'Create Account';
+            } catch (notifyErr) {
+                console.log('Notification creation skipped:', notifyErr.message);
             }
+
+            showJobMessage('Job posted successfully! Workers have been notified. Redirecting...', 'success');
+            setTimeout(() => window.location.href = 'jobs.html', 1500);
+        }
+
+        function showJobMessage(msg, type) {
+            const el = document.getElementById('jobMessage');
+            el.textContent = msg;
+            el.className = 'message ' + type;
         }
     </script>
 </body>
