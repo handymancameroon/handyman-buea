@@ -1,7 +1,7 @@
 /**
  * Handy Man Buea — Core Application Logic
  * Version: 1.2
- * Date: 3 September 2026
+ * Date: 4 September 2026
  *
  * SECURITY NOTES:
  * - Supabase credentials are loaded from config.js (not hardcoded here).
@@ -10,19 +10,30 @@
  * - Admin privileges are verified server-side via RLS policies.
  *   The client-side isAdmin() check is ONLY for UI display purposes.
  * - All write operations are protected by Row Level Security (RLS).
+ *   See README.md for the complete RLS policy setup.
  */
 
 // ============================================================================
 // CONFIGURATION (loaded from config.js — see config.template.js)
 // ============================================================================
+// config.js MUST define:
+//   window.HANDYMAN_CONFIG = {
+//     SUPABASE_URL: 'https://your-project.supabase.co',
+//     SUPABASE_ANON_KEY: 'your-anon-key',
+//     ADMIN_EMAIL: 'your-admin@example.com'
+//   };
+// ============================================================================
+
 const CONFIG = (typeof window !== 'undefined' && window.HANDYMAN_CONFIG) ? window.HANDYMAN_CONFIG : {};
 const SUPABASE_URL = CONFIG.SUPABASE_URL || '';
 const SUPABASE_KEY = CONFIG.SUPABASE_ANON_KEY || '';
 
+// Validate configuration on load
 if (!SUPABASE_URL || !SUPABASE_KEY) {
     console.error(
         '[HandyMan] CRITICAL: Missing Supabase configuration. ' +
-        'Please create config.js from config.template.js and include it BEFORE app.js.'
+        'Please create config.js from config.template.js and include it BEFORE app.js. ' +
+        'See README.md → Getting Started → Supabase Setup for details.'
     );
 }
 
@@ -31,6 +42,7 @@ var currentUser = null;
 var currentProfile = null;
 var notificationPollingInterval = null;
 
+// Fallback categories (shown if Supabase is unavailable)
 const FALLBACK_CATEGORIES = [
     {name: 'Plumbing', icon: '🔧', description: 'Leak repairs, installations, toilets, water heaters'},
     {name: 'Electrical', icon: '⚡', description: 'Wiring, sockets, lighting, electrical repairs'},
@@ -45,9 +57,17 @@ const FALLBACK_CATEGORIES = [
     {name: 'Others', icon: '✨', description: 'Other services not listed above'}
 ];
 
+// Major towns in Cameroon (used by registration pages)
+const CAMEROON_TOWNS = [
+    'Buea', 'Limbe', 'Douala', 'Yaoundé', 'Bamenda', 'Bafoussam',
+    'Kribi', 'Garoua', 'Maroua', 'Ngaoundéré', 'Bertoua', 'Ebolowa',
+    'Kumba', 'Dschang', 'Nkongsamba', 'Edéa', 'Other'
+];
+
 // ============================================================================
 // SUPABASE INITIALIZATION
 // ============================================================================
+
 window.supabaseReady = new Promise(function(resolve) {
     window._resolveSupabaseReady = resolve;
 });
@@ -65,7 +85,7 @@ if (typeof window !== 'undefined' && typeof window.supabase !== 'undefined' && t
         console.error('[HandyMan] Supabase init failed:', e);
     }
 } else {
-    console.warn('[HandyMan] Supabase JS library not loaded.');
+    console.warn('[HandyMan] Supabase JS library not loaded. Check that the CDN script is included.');
 }
 
 if (window._resolveSupabaseReady) {
@@ -75,6 +95,7 @@ if (window._resolveSupabaseReady) {
 // ============================================================================
 // APP INITIALIZATION
 // ============================================================================
+
 document.addEventListener('DOMContentLoaded', async function() {
     try {
         injectNavExtras();
@@ -109,6 +130,14 @@ document.addEventListener('DOMContentLoaded', async function() {
 // ============================================================================
 // FILE UPLOAD HELPERS
 // ============================================================================
+
+/**
+ * Upload a single file to Supabase Storage.
+ * @param {File} file — The file to upload
+ * @param {string} folder — Storage folder name (e.g., 'profiles', 'portfolio')
+ * @param {string} userId — User ID for the file path
+ * @returns {Promise<string|null>} — Public URL of the uploaded file, or null on failure
+ */
 async function uploadFile(file, folder, userId) {
     if (!supabaseClient || !file) return null;
     try {
@@ -135,6 +164,14 @@ async function uploadFile(file, folder, userId) {
     }
 }
 
+/**
+ * Upload multiple image files, up to a maximum count.
+ * @param {FileList} fileList — Input file list
+ * @param {string} folder — Storage folder
+ * @param {string} userId — User ID
+ * @param {number} maxCount — Maximum number of files to upload
+ * @returns {Promise<string[]>} — Array of public URLs
+ */
 async function uploadMultipleFiles(fileList, folder, userId, maxCount) {
     const urls = [];
     const files = Array.from(fileList || []).slice(0, maxCount || 2);
@@ -150,6 +187,7 @@ async function uploadMultipleFiles(fileList, folder, userId, maxCount) {
 // ============================================================================
 // NAVIGATION & UI INJECTION
 // ============================================================================
+
 function injectNavExtras() {
     var nav = document.getElementById('nav');
     if (!nav || nav.querySelector('.nav-bell')) return;
@@ -158,11 +196,12 @@ function injectNavExtras() {
     dashLink.href = 'dashboard.html';
     dashLink.className = 'btn-secondary';
     dashLink.id = 'navDashboard';
-    dashLink.textContent = 'My Dashboard';   // ← Changed from "My Jobs"
+    dashLink.textContent = 'My Jobs';
     dashLink.style.display = 'none';
     var authBtn = nav.querySelector('#authBtn');
     if (authBtn) nav.insertBefore(dashLink, authBtn);
 
+    // Admin link is injected but ONLY shown after login AND only for real admins
     var adminLink = document.createElement('a');
     adminLink.href = 'admin.html';
     adminLink.className = 'btn-secondary';
@@ -203,14 +242,14 @@ function injectShareButton() {
     fab.id = 'shareFab';
     fab.className = 'share-fab';
     fab.innerHTML = '🔗';
-    fab.title = 'Share Handy Man Buea';
+    fab.title = 'Share Handy Man';
     fab.onclick = openShareModal;
     document.body.appendChild(fab);
 
     var modal = document.createElement('div');
     modal.id = 'shareModal';
     modal.className = 'share-modal';
-    modal.innerHTML = '<div class="share-modal-content"><div class="share-modal-header"><h3>🔗 Share Handy Man Buea</h3><button class="share-close" onclick="closeShareModal()">✕</button></div><div class="share-message-box"><p id="shareText">🔧 Find trusted local workers in Buea, Cameroon! Need a plumber, electrician, cleaner, or any skilled worker? Handy Man Buea connects you with verified professionals fast. Check it out: https://handyman-buea.vercel.app/</p><button class="btn-small" onclick="copyShareText()" style="margin-top:12px;">📋 Copy Message</button></div><div class="share-buttons"><a href="#" id="shareWhatsApp" target="_blank" class="btn-whatsapp share-btn">📱 WhatsApp</a><a href="#" id="shareFacebook" target="_blank" class="btn-primary share-btn" style="background:#1877f2;">📘 Facebook</a><a href="#" id="shareTwitter" target="_blank" class="btn-primary share-btn" style="background:#1da1f2;">🐦 Twitter</a></div></div>';
+    modal.innerHTML = '<div class="share-modal-content"><div class="share-modal-header"><h3>🔗 Share Handy Man</h3><button class="share-close" onclick="closeShareModal()">✕</button></div><div class="share-message-box"><p id="shareText">🔧 Find trusted local workers in Cameroon! Need a plumber, electrician, cleaner, or any skilled worker? Handy Man connects you with verified professionals fast. Check it out: https://handyman-buea.vercel.app/</p><button class="btn-small" onclick="copyShareText()" style="margin-top:12px;">📋 Copy Message</button></div><div class="share-buttons"><a href="#" id="shareWhatsApp" target="_blank" class="btn-whatsapp share-btn">📱 WhatsApp</a><a href="#" id="shareFacebook" target="_blank" class="btn-primary share-btn" style="background:#1877f2;">📘 Facebook</a><a href="#" id="shareTwitter" target="_blank" class="btn-primary share-btn" style="background:#1da1f2;">🐦 Twitter</a></div></div>';
     document.body.appendChild(modal);
     modal.addEventListener('click', function(e) {
         if (e.target === modal) closeShareModal();
@@ -220,7 +259,7 @@ function injectShareButton() {
 function openShareModal() {
     var modal = document.getElementById('shareModal');
     if (!modal) return;
-    var text = encodeURIComponent('🔧 Find trusted local workers in Buea, Cameroon! Need a plumber, electrician, cleaner, or any skilled worker? Handy Man Buea connects you with verified professionals fast. Check it out: https://handyman-buea.vercel.app/');
+    var text = encodeURIComponent('🔧 Find trusted local workers in Cameroon! Need a plumber, electrician, cleaner, or any skilled worker? Handy Man connects you with verified professionals fast. Check it out: https://handyman-buea.vercel.app/');
     var url = encodeURIComponent('https://handyman-buea.vercel.app/');
     document.getElementById('shareWhatsApp').href = 'https://wa.me/?text=' + text;
     document.getElementById('shareFacebook').href = 'https://www.facebook.com/sharer/sharer.php?u=' + url;
@@ -259,6 +298,7 @@ function fallbackCopy(text) {
 // ============================================================================
 // ANALYTICS
 // ============================================================================
+
 async function trackVisitor() {
     if (!supabaseClient || sessionStorage.getItem('visitorTracked')) return;
     try {
@@ -290,7 +330,9 @@ async function trackVisitor() {
                 visited_at: new Date().toISOString(),
                 visit_date: today
             }]);
-        } catch (e) { /* table may not exist yet */ }
+        } catch (e) {
+            /* table may not exist yet — non-critical */
+        }
 
         sessionStorage.setItem('visitorTracked', 'true');
     } catch (e) {
@@ -301,6 +343,7 @@ async function trackVisitor() {
 // ============================================================================
 // AUTHENTICATION
 // ============================================================================
+
 async function checkAuth() {
     try {
         if (!supabaseClient) return;
@@ -309,9 +352,26 @@ async function checkAuth() {
         if (user) {
             var { data: profile } = await supabaseClient
                 .from('profiles')
-                .select('is_admin, full_name, phone, avatar_url')
+                .select('is_admin, full_name, phone, avatar_url, is_deleted, location, is_worker')
                 .eq('id', user.id)
                 .single();
+
+            // Soft-deleted accounts cannot use the site
+            if (profile && profile.is_deleted === true) {
+                try {
+                    await supabaseClient.auth.signOut();
+                } catch (e) {}
+                currentUser = null;
+                currentProfile = null;
+                stopNotificationPolling();
+                alert('This account has been deactivated by the administrator. Contact support if you believe this is a mistake.');
+                if (window.location.pathname.indexOf('login.html') === -1) {
+                    window.location.href = 'login.html';
+                }
+                updateAuthUI();
+                return;
+            }
+
             currentProfile = profile;
             loadNotifications();
             startNotificationPolling();
@@ -322,8 +382,20 @@ async function checkAuth() {
     }
 }
 
+/**
+ * Check if the current user is an admin.
+ * SECURITY: This is a CLIENT-SIDE convenience check for UI purposes ONLY.
+ * The real security is enforced by Supabase RLS policies on the server.
+ * Never trust client-side checks for sensitive operations.
+ */
 function isAdmin() {
     if (currentProfile && currentProfile.is_admin === true) return true;
+    // Also allow configured admin email as fallback
+    var adminEmail = (CONFIG && CONFIG.ADMIN_EMAIL) || '';
+    if (currentUser && currentUser.email && adminEmail &&
+        currentUser.email.toLowerCase() === adminEmail.toLowerCase()) {
+        return true;
+    }
     return false;
 }
 
@@ -334,7 +406,7 @@ function updateAuthUI() {
     var adminLink = document.getElementById('navAdmin');
     if (!authBtn) return;
 
-    // Always use the same style (no permanent blue highlight)
+    // Always keep Login/Logout button style consistent (secondary)
     authBtn.className = 'btn-secondary';
 
     if (currentUser && supabaseClient) {
@@ -352,6 +424,7 @@ function updateAuthUI() {
         };
         if (dashLink) dashLink.style.display = 'inline-block';
         if (bell) bell.style.display = 'inline-flex';
+        // Admin button ONLY visible to real admins after login
         if (adminLink) {
             adminLink.style.display = isAdmin() ? 'inline-block' : 'none';
         }
@@ -368,6 +441,7 @@ function updateAuthUI() {
 // ============================================================================
 // NOTIFICATIONS
 // ============================================================================
+
 async function loadNotifications() {
     if (!supabaseClient || !currentUser) return;
     try {
@@ -448,6 +522,7 @@ function stopNotificationPolling() {
 // ============================================================================
 // CATEGORIES
 // ============================================================================
+
 async function loadCategories() {
     var grid = document.getElementById('categoryGrid');
     if (!grid) return;
@@ -482,6 +557,7 @@ function renderCategories(categories) {
 // ============================================================================
 // FEATURED WORKERS
 // ============================================================================
+
 async function loadFeaturedWorkers() {
     var grid = document.getElementById('workerGrid');
     if (!grid) return;
@@ -492,14 +568,26 @@ async function loadFeaturedWorkers() {
     try {
         var { data: workers, error } = await supabaseClient
             .from('worker_details')
-            .select('*, profiles(full_name, avatar_url, location)')
+            .select('*, profiles(full_name, avatar_url, location, is_deleted)')
             .eq('availability', 'Available')
             .order('rating', { ascending: false })
-            .limit(6);
+            .limit(12);
+
         if (error || !workers || workers.length === 0) {
             grid.innerHTML = '<p class="empty">No workers yet.</p>';
             return;
         }
+
+        // Hide soft-deleted accounts
+        workers = workers.filter(function(w) {
+            return !(w.profiles && w.profiles.is_deleted === true);
+        }).slice(0, 6);
+
+        if (workers.length === 0) {
+            grid.innerHTML = '<p class="empty">No workers yet.</p>';
+            return;
+        }
+
         renderWorkers(workers, grid);
     } catch (err) {
         grid.innerHTML = '<p class="empty">No workers yet.</p>';
@@ -510,7 +598,7 @@ function renderWorkers(workers, container) {
     container.innerHTML = workers.map(function(w) {
         var avatar = w.profiles && w.profiles.avatar_url ? w.profiles.avatar_url : 'https://via.placeholder.com/80?text=No+Photo';
         var name = w.profiles && w.profiles.full_name ? w.profiles.full_name : 'Unknown';
-        var location = w.profiles && w.profiles.location ? w.profiles.location : 'Buea';
+        var location = w.profiles && w.profiles.location ? w.profiles.location : 'Cameroon';
         return '<div class="worker-card" onclick="viewWorker(\'' + w.id + '\')">' +
             '<div class="worker-avatar">' +
             '<img src="' + avatar + '" alt="' + name + '" onerror="this.src=\'https://via.placeholder.com/80?text=No+Photo\'">' +
@@ -527,6 +615,7 @@ function renderWorkers(workers, container) {
 // ============================================================================
 // CAROUSEL
 // ============================================================================
+
 function initCarousel() {
     var slides = document.querySelectorAll('.carousel-slide');
     var dotsContainer = document.getElementById('carouselDots');
@@ -557,6 +646,7 @@ function initCarousel() {
 // ============================================================================
 // NAVIGATION HELPERS
 // ============================================================================
+
 function searchWorkers() {
     var query = document.getElementById('searchInput');
     if (query && query.value) {
@@ -579,6 +669,7 @@ function viewJob(id) {
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
+
 function escapeHtml(text) {
     if (!text) return '';
     var div = document.createElement('div');
@@ -597,4 +688,20 @@ function timeAgo(dateString) {
     if (hours < 24) return hours + 'h ago';
     var days = Math.floor(hours / 24);
     return days + 'd ago';
+}
+
+/**
+ * Build WhatsApp and telephone links for Cameroon phone numbers.
+ * @param {string} phone — Raw phone number string
+ * @returns {Object} — { wa: string, call: string }
+ */
+function buildContactLinks(phone) {
+    var digits = (phone || '').replace(/\D/g, '');
+    var local = digits;
+    if (local.startsWith('237')) local = local.slice(3);
+    if (local.length < 8) return { wa: '#', call: '#' };
+    return {
+        wa: 'https://wa.me/237' + local,
+        call: 'tel:+237' + local
+    };
 }
