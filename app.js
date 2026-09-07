@@ -1,7 +1,7 @@
 /**
  * Handy Man Buea — Core Application Logic
- * Version: 1.2
- * Date: 4 September 2026
+ * Version: 1.3 (Batch 1)
+ * Date: 7 September 2026
  *
  * SECURITY NOTES:
  * - Supabase credentials are loaded from config.js (not hardcoded here).
@@ -43,6 +43,13 @@ const FALLBACK_CATEGORIES = [
     {name: 'Hairdressing', icon: '💇', description: 'Hair styling, barbing, braiding'},
     {name: 'Catering', icon: '🍲', description: 'Event cooking and food services'},
     {name: 'Others', icon: '✨', description: 'Other services not listed above'}
+];
+
+// Major towns in Cameroon
+const CAMEROON_TOWNS = [
+    'Buea', 'Limbe', 'Douala', 'Yaoundé', 'Bamenda', 'Bafoussam',
+    'Kribi', 'Garoua', 'Maroua', 'Ngaoundéré', 'Bertoua', 'Ebolowa',
+    'Kumba', 'Dschang', 'Nkongsamba', 'Edéa', 'Mutengene', 'Tiko', 'Other'
 ];
 
 // ============================================================================
@@ -154,12 +161,12 @@ function injectNavExtras() {
     var nav = document.getElementById('nav');
     if (!nav || nav.querySelector('.nav-bell')) return;
 
-    // My Jobs / Dashboard link
+    // My Profile link (renamed from My Jobs)
     var dashLink = document.createElement('a');
     dashLink.href = 'dashboard.html';
     dashLink.className = 'btn-secondary';
     dashLink.id = 'navDashboard';
-    dashLink.textContent = 'My Jobs';
+    dashLink.textContent = 'My Profile';
     dashLink.style.display = 'none';
     var authBtn = nav.querySelector('#authBtn');
     if (authBtn) nav.insertBefore(dashLink, authBtn);
@@ -251,18 +258,29 @@ function fallbackCopy(text) {
 }
 
 // ============================================================================
-// ANALYTICS
+// ANALYTICS – improved visitor tracking
 // ============================================================================
 async function trackVisitor() {
     if (!supabaseClient || sessionStorage.getItem('visitorTracked')) return;
     try {
         var today = new Date().toISOString().slice(0, 10);
 
+        // Insert a log entry (this is the reliable source for day/week/month)
+        try {
+            await supabaseClient.from('visitor_logs').insert([{
+                visited_at: new Date().toISOString(),
+                visit_date: today
+            }]);
+        } catch (e) {
+            console.log('[HandyMan] visitor_logs insert skipped:', e.message);
+        }
+
+        // Also keep the simple counter
         var { data: stats } = await supabaseClient
             .from('site_stats')
             .select('total_visitors, visitors_today, visitors_today_date')
             .eq('id', 1)
-            .single();
+            .maybeSingle();
 
         if (stats) {
             var visitorsToday = stats.visitors_today || 0;
@@ -277,14 +295,16 @@ async function trackVisitor() {
                 visitors_today_date: today,
                 last_updated: new Date().toISOString()
             }).eq('id', 1);
+        } else {
+            // Create the row if missing
+            await supabaseClient.from('site_stats').upsert({
+                id: 1,
+                total_visitors: 1,
+                visitors_today: 1,
+                visitors_today_date: today,
+                last_updated: new Date().toISOString()
+            });
         }
-
-        try {
-            await supabaseClient.from('visitor_logs').insert([{
-                visited_at: new Date().toISOString(),
-                visit_date: today
-            }]);
-        } catch (e) { /* non-critical */ }
 
         sessionStorage.setItem('visitorTracked', 'true');
     } catch (e) {
@@ -293,7 +313,7 @@ async function trackVisitor() {
 }
 
 // ============================================================================
-// AUTHENTICATION
+// AUTHENTICATION + soft-delete block
 // ============================================================================
 async function checkAuth() {
     try {
@@ -303,9 +323,20 @@ async function checkAuth() {
         if (user) {
             var { data: profile } = await supabaseClient
                 .from('profiles')
-                .select('is_admin, full_name, phone, avatar_url')
+                .select('is_admin, full_name, phone, avatar_url, is_deleted')
                 .eq('id', user.id)
                 .single();
+
+            // Soft-delete check: force logout if account was deleted by admin
+            if (profile && profile.is_deleted === true) {
+                await supabaseClient.auth.signOut();
+                currentUser = null;
+                currentProfile = null;
+                alert('This account has been deactivated by the administrator. Please contact support if you believe this is a mistake.');
+                window.location.href = 'login.html';
+                return;
+            }
+
             currentProfile = profile;
             loadNotifications();
             startNotificationPolling();
