@@ -1,6 +1,6 @@
 /**
  * Handy Man Buea — Core Application Logic
- * Version: 1.3.1 (review counter fixed)
+ * Version: 1.3.2 (complete + French foundation)
  * Date: 7 September 2026
  *
  * SECURITY NOTES:
@@ -105,6 +105,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 document.getElementById('nav').classList.toggle('active');
             });
         }
+
+        // Apply language if saved
+        applyLanguage(getCurrentLang());
     } catch (err) {
         console.error('[HandyMan] App init error:', err);
         if (document.getElementById('categoryGrid')) {
@@ -629,3 +632,73 @@ function buildContactLinks(phone) {
         call: 'tel:+237' + local
     };
 }
+
+// ============================================================================
+// LANGUAGE SUPPORT (English main + French)
+// ============================================================================
+const TRANSLATIONS = {
+    en: {
+        home: 'Home',
+        findWorkers: 'Find Workers',
+        findJobs: 'Find Jobs',
+        joinAsWorker: 'Join as Worker',
+        postAJob: 'Post a Job',
+        login: 'Login',
+        logout: 'Logout',
+        myProfile: 'My Profile',
+        contactUs: 'Contact Us',
+        search: 'Search',
+        contact: 'Contact',
+        getItDone: 'Get It Done',
+        popularServices: 'Popular Services',
+        featuredWorkers: 'Featured Workers in Cameroon',
+        howItWorks: 'How It Works',
+        findTrusted: 'Find Trusted Local Help in Cameroon',
+        connectWith: 'Connect with skilled plumbers, electricians, cleaners, and more — anywhere in Cameroon.',
+        findAWorker: 'Find a Worker',
+        postAJobBtn: 'Post a Job'
+    },
+    fr: {
+        home: 'Accueil',
+        findWorkers: 'Trouver des travailleurs',
+        findJobs: 'Trouver des emplois',
+        joinAsWorker: 'Rejoindre comme travailleur',
+        postAJob: 'Publier un emploi',
+        login: 'Connexion',
+        logout: 'Déconnexion',
+        myProfile: 'Mon Profil',
+        contactUs: 'Contactez-nous',
+        search: 'Rechercher',
+        contact: 'Contacter',
+        getItDone: 'Faites-le faire',
+        popularServices: 'Services populaires',
+        featuredWorkers: 'Travailleurs vedettes au Cameroun',
+        howItWorks: 'Comment ça marche',
+        findTrusted: 'Trouvez de l\'aide locale de confiance au Cameroun',
+        connectWith: 'Connectez-vous avec des plombiers, électriciens, nettoyeurs qualifiés et plus — partout au Cameroun.',
+        findAWorker: 'Trouver un travailleur',
+        postAJobBtn: 'Publier un emploi'
+    }
+};
+
+function getCurrentLang() {
+    return localStorage.getItem('handyman_lang') || 'en';
+}
+
+function setLanguage(lang) {
+    if (lang !== 'en' && lang !== 'fr') lang = 'en';
+    localStorage.setItem('handyman_lang', lang);
+    applyLanguage(lang);
+}
+
+function applyLanguage(lang) {
+    // This is a foundation. Full page translation will be expanded as needed.
+    // For now it prepares the system so English remains default and French is available.
+    document.documentElement.lang = lang;
+    console.log('[HandyMan] Language set to:', lang);
+    // Future: loop through data-i18n attributes and replace text using TRANSLATIONS[lang]
+}
+
+// Expose for buttons (you can add EN / FR toggle buttons later)
+window.setLanguage = setLanguage;
+window.getCurrentLang = getCurrentLang;
