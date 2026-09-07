@@ -45,7 +45,7 @@
 
         document.addEventListener('DOMContentLoaded', async () => {
             await checkAuth();
-            setTimeout(async () => { await loadWorkerProfile(); }, 150);
+            setTimeout(async () => { await loadWorkerProfile(); }, 200);
         });
 
         async function loadWorkerProfile() {
@@ -64,7 +64,6 @@
             }
 
             try {
-                // Load worker details
                 const { data: worker, error: workerError } = await supabaseClient
                     .from('worker_details')
                     .select('*')
@@ -76,20 +75,17 @@
                     return;
                 }
 
-                // Load profile
                 const { data: profile } = await supabaseClient
                     .from('profiles')
                     .select('full_name, avatar_url, location, phone, portfolio, is_deleted')
                     .eq('id', id)
                     .single();
 
-                // Check if account is deleted
                 if (profile && profile.is_deleted === true) {
                     container.innerHTML = '<p class="error">This worker profile is no longer available.</p>';
                     return;
                 }
 
-                // Load reviews
                 const { data: reviews } = await supabaseClient
                     .from('reviews')
                     .select('*')
@@ -98,12 +94,13 @@
 
                 const p = profile || {};
                 const phoneNum = (worker.whatsapp_number || p.phone || '').replace(/\D/g, '');
-                const whatsappLink = phoneNum ? `https://wa.me/237${phoneNum}` : '#';
-                const callLink = p.phone ? `tel:${p.phone}` : '#';
+                let localPhone = phoneNum;
+                if (localPhone.indexOf('237') === 0) localPhone = localPhone.substring(3);
+                const whatsappLink = localPhone ? ('https://wa.me/237' + localPhone) : '#';
+                const callLink = p.phone ? ('tel:' + p.phone) : '#';
 
                 const avatarUrl = p.avatar_url || 'https://via.placeholder.com/120?text=No+Photo';
 
-                // Portfolio
                 let portfolio = [];
                 if (worker.portfolio && Array.isArray(worker.portfolio) && worker.portfolio.length > 0) {
                     portfolio = worker.portfolio;
@@ -118,9 +115,9 @@
                             <h3>📸 Portfolio (${portfolio.length} photo${portfolio.length > 1 ? 's' : ''})</h3>
                             <div class="portfolio-grid">
                                 ${portfolio.map((url, i) => `
-                                    <img src="${url}" class="portfolio-img" 
-                                         onerror="this.onerror=null;this.src='https://via.placeholder.com/180?text=Image+Not+Found';this.classList.add('img-error');" 
-                                         onclick="window.open('${url}', '_blank')" 
+                                    <img src="${url}" class="portfolio-img"
+                                         onerror="this.onerror=null;this.src='https://via.placeholder.com/180?text=Image+Not+Found';this.classList.add('img-error');"
+                                         onclick="window.open('${url}', '_blank')"
                                          alt="Portfolio ${i+1}">
                                 `).join('')}
                             </div>
@@ -128,7 +125,6 @@
                     `;
                 }
 
-                // Reviews HTML
                 let reviewsHtml = '';
                 if (reviews && reviews.length > 0) {
                     reviewsHtml = reviews.map(r => `
@@ -144,7 +140,7 @@
                     reviewsHtml = '<p>No reviews yet. Be the first to rate this worker!</p>';
                 }
 
-                // Rating form (only if logged in and not the worker themselves)
+                // Rating form – always visible when logged in and not viewing own profile
                 let rateFormHtml = '';
                 if (currentUser && currentUser.id !== id) {
                     rateFormHtml = `
@@ -158,37 +154,39 @@
                                 <option value="2">⭐⭐ 2 Stars - Fair</option>
                                 <option value="1">⭐ 1 Star - Poor</option>
                             </select>
-                            <label>Your Review (optional)</label>
+                            <label>Your Review / Comment (optional)</label>
                             <textarea id="ratingComment" placeholder="Tell others about your experience with this worker..."></textarea>
-                            <button class="btn-primary" onclick="submitWorkerReview()" style="margin-top:12px;">Submit Review</button>
+                            <button class="btn-primary" onclick="submitWorkerReview()" style="margin-top:12px;">Submit Rating & Comment</button>
                             <p id="rateMessage" class="message" style="display:none;"></p>
                         </div>
                     `;
                 } else if (!currentUser) {
                     rateFormHtml = `
                         <div class="rate-form">
-                            <p>Please <a href="login.html">login</a> to leave a rating.</p>
+                            <p>Please <a href="login.html">login</a> to leave a rating and comment.</p>
                         </div>
                     `;
                 }
 
+                const safeName = (p.full_name || 'Unknown').replace(/'/g, "\\'");
+
                 container.innerHTML = `
                     <div class="profile-header">
-                        <img src="${avatarUrl}" class="profile-avatar" 
-                             onerror="this.onerror=null;this.src='https://via.placeholder.com/120?text=No+Photo'" 
+                        <img src="${avatarUrl}" class="profile-avatar"
+                             onerror="this.onerror=null;this.src='https://via.placeholder.com/120?text=No+Photo'"
                              alt="${p.full_name || 'Worker'}">
                         <div class="profile-info">
                             <h1>${p.full_name || 'Unknown'}</h1>
                             <span class="badge">${worker.verified ? '✓ Verified' : 'New'}</span>
                             <p class="profile-category">${worker.category || 'General'}</p>
-                            <p class="profile-location">📍 ${p.location || 'Buea'}</p>
+                            <p class="profile-location">📍 ${p.location || 'Cameroon'}</p>
                             <div class="profile-rating">
-                                ${'⭐'.repeat(Math.round(worker.rating || 0))} 
+                                ${'⭐'.repeat(Math.round(worker.rating || 0))}
                                 <span>${worker.rating || 0}/5 (${worker.review_count || 0} reviews)</span>
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="profile-body">
                         <div class="profile-section">
                             <h3>About</h3>
@@ -196,19 +194,19 @@
                             <p style="margin-top:12px;"><strong>Experience:</strong> ${worker.experience_years || 0} years</p>
                             <p><strong>Availability:</strong> ${worker.availability || 'Available'}</p>
                         </div>
-                        
+
                         <div class="profile-section">
                             <h3>Contact</h3>
                             ${p.phone ? `<p>📞 ${p.phone}</p>` : ''}
                             <a href="${whatsappLink}" target="_blank" class="btn-whatsapp">💬 WhatsApp</a>
                             ${p.phone ? `<a href="${callLink}" class="btn-primary" style="margin-left:8px;">📞 Call Now</a>` : ''}
                             <div style="margin-top: 16px;">
-                                <button onclick="reportWorker('${id}', '${(p.full_name || 'Unknown').replace(/'/g, "\\'")}')" class="btn-report">🚩 Report this worker</button>
+                                <button onclick="reportWorker('${id}', '${safeName}')" class="btn-report">🚩 Report this worker</button>
                             </div>
                         </div>
-                        
+
                         ${portfolioHtml}
-                        
+
                         <div class="profile-section">
                             <h3>⭐ Reviews (${reviews ? reviews.length : 0})</h3>
                             <div id="reviewsList">
@@ -232,7 +230,7 @@
                 return;
             }
 
-            const rating = parseInt(document.getElementById('ratingValue').value);
+            const rating = parseInt(document.getElementById('ratingValue').value, 10);
             const comment = document.getElementById('ratingComment').value.trim();
             const msg = document.getElementById('rateMessage');
 
@@ -242,8 +240,8 @@
             }
 
             try {
-                // Insert the review
-                const { error } = await supabaseClient.from('reviews').insert([{
+                // Try with extra columns first
+                let { error } = await supabaseClient.from('reviews').insert([{
                     worker_id: currentWorkerId,
                     reviewer_id: currentUser.id,
                     rating: rating,
@@ -252,13 +250,21 @@
                 }]);
 
                 if (error) {
-                    msg.textContent = 'Error: ' + error.message;
-                    msg.className = 'message error';
-                    msg.style.display = 'block';
-                    return;
+                    // Fallback to basic columns
+                    const { error: error2 } = await supabaseClient.from('reviews').insert([{
+                        worker_id: currentWorkerId,
+                        rating: rating,
+                        comment: comment || null
+                    }]);
+                    if (error2) {
+                        msg.textContent = 'Error: ' + error2.message;
+                        msg.className = 'message error';
+                        msg.style.display = 'block';
+                        return;
+                    }
                 }
 
-                // Recalculate average rating
+                // Recalculate average
                 const { data: allReviews } = await supabaseClient
                     .from('reviews')
                     .select('rating')
@@ -277,11 +283,10 @@
                         .eq('id', currentWorkerId);
                 }
 
-                msg.textContent = 'Thank you! Your review has been submitted.';
+                msg.textContent = 'Thank you! Your rating and comment have been submitted.';
                 msg.className = 'message success';
                 msg.style.display = 'block';
 
-                // Reload the profile after a short delay
                 setTimeout(() => {
                     loadWorkerProfile();
                 }, 1500);
@@ -293,7 +298,7 @@
         }
 
         function reportWorker(workerId, workerName) {
-            window.location.href = `report.html?type=worker&id=${workerId}&name=${encodeURIComponent(workerName)}`;
+            window.location.href = 'report.html?type=worker&id=' + workerId + '&name=' + encodeURIComponent(workerName);
         }
     </script>
 </body>

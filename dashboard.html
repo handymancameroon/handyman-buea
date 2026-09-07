@@ -33,7 +33,6 @@
         <div class="container">
             <h1>My Dashboard</h1>
 
-            <!-- ADMIN ONLY — not shown to clients or workers -->
             <div class="admin-only-box" id="adminOnlyBox">
                 <h2 style="margin-bottom:12px;">⚙️ Administrator</h2>
                 <p style="margin-bottom:16px;color:var(--text-light);">You have admin access. Open the full control panel:</p>
@@ -81,7 +80,6 @@
                 window.location.href = 'login.html';
                 return;
             }
-            // Show Admin box only for admin
             if (isAdmin()) {
                 var box = document.getElementById('adminOnlyBox');
                 if (box) box.style.display = 'block';
@@ -280,20 +278,19 @@
                     .order('created_at', { ascending: false });
 
                 if (!disputes || disputes.length === 0) {
-                    container.innerHTML = '<p class="empty-dashboard">No disputes involving you.</p>';
+                    container.innerHTML = '<p class="empty-dashboard">You have no disputes or reports.</p>';
                     return;
                 }
 
                 container.innerHTML = disputes.map(d => {
                     const date = new Date(d.created_at).toLocaleDateString('en-GB');
-                    const isMine = d.reporter_id === currentUser.id;
+                    const statusClass = d.status === 'Open' ? 'status-available' : 'status-closed';
                     return `
                         <div class="dispute-row">
                             <div>
                                 <h4>${d.reason || 'Report'}</h4>
-                                <p>${isMine ? 'You reported' : 'Reported against you'}: ${d.target_name || ''} (${d.target_type || ''})</p>
-                                <p style="font-size:0.85rem;">${d.details || ''}</p>
-                                <p style="font-size:0.8rem;">${date} • Status: <strong>${d.status}</strong></p>
+                                <p>${d.target_name || ''} (${d.target_type || ''}) • ${date}</p>
+                                <span class="status-badge ${statusClass}">${d.status || ''}</span>
                             </div>
                         </div>`;
                 }).join('');
