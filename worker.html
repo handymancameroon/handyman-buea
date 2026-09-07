@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Worker Profile - Handy Man</title>
+    <title>Worker Profile - Handy Man Cameroon</title>
+    <meta name="description" content="View worker profile, portfolio, ratings and contact details on Handy Man Cameroon.">
     <link rel="stylesheet" href="style.css">
     <style>
         .portfolio-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 12px; }
@@ -92,19 +93,15 @@
                     return;
                 }
 
-                // Load reviews with reviewer profile
                 const { data: reviews } = await supabaseClient
                     .from('reviews')
                     .select('*')
                     .eq('worker_id', id)
                     .order('created_at', { ascending: false });
 
-                // Fetch reviewer profiles for photos + names
                 let reviewerMap = {};
                 if (reviews && reviews.length > 0) {
-                    const reviewerIds = reviews
-                        .map(r => r.reviewer_id)
-                        .filter(Boolean);
+                    const reviewerIds = reviews.map(r => r.reviewer_id).filter(Boolean);
                     if (reviewerIds.length > 0) {
                         const { data: reviewers } = await supabaseClient
                             .from('profiles')
@@ -148,7 +145,6 @@
                     `;
                 }
 
-                // Calculate display rating from actual reviews (more reliable)
                 let displayRating = worker.rating || 0;
                 let displayCount = worker.review_count || 0;
                 if (reviews && reviews.length > 0) {
@@ -163,13 +159,10 @@
                         const rev = reviewerMap[r.reviewer_id] || {};
                         const revName = rev.full_name || 'Registered User';
                         const revAvatar = rev.avatar_url || 'https://via.placeholder.com/40?text=U';
-                        const revLink = r.reviewer_id
-                            ? (rev.is_worker
-                                ? `worker.html?id=${r.reviewer_id}`
-                                : `dashboard.html`)
-                            : '#';
                         const nameHtml = r.reviewer_id
-                            ? `<a class="reviewer-link" href="${rev.is_worker ? 'worker.html?id=' + r.reviewer_id : '#'}">${revName}</a>`
+                            ? (rev.is_worker
+                                ? `<a class="reviewer-link" href="worker.html?id=${r.reviewer_id}">${revName}</a>`
+                                : `<strong>${revName}</strong>`)
                             : `<strong>${revName}</strong>`;
 
                         return `
@@ -189,7 +182,6 @@
                     reviewsHtml = '<p>No reviews yet. Be the first to rate this worker!</p>';
                 }
 
-                // Only registered users can rate, and not their own profile
                 let rateFormHtml = '';
                 if (currentUser && currentUser.id !== id) {
                     rateFormHtml = `
@@ -299,7 +291,6 @@
                 }]);
 
                 if (error) {
-                    // Fallback without extra columns
                     const { error: error2 } = await supabaseClient.from('reviews').insert([{
                         worker_id: currentWorkerId,
                         rating: rating,
@@ -313,7 +304,6 @@
                     }
                 }
 
-                // Recalculate average and count
                 const { data: allReviews } = await supabaseClient
                     .from('reviews')
                     .select('rating')
