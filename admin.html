@@ -19,6 +19,10 @@
         .dispute-detail-box { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
         .dispute-detail-box p { margin-bottom: 8px; }
         .detail-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+        .user-detail-box { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+        .user-detail-box h3 { margin-bottom: 12px; }
+        .user-detail-box .meta { color: var(--text-light); font-size: 0.9rem; margin-bottom: 8px; }
+        .job-mini { padding: 10px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; background: #f8fafc; }
     </style>
 </head>
 <body>
@@ -29,7 +33,7 @@
                 <a href="index.html">Home</a>
                 <a href="workers.html">Find Workers</a>
                 <a href="jobs.html">Find Jobs</a>
-                <a href="dashboard.html" class="btn-secondary">My Jobs</a>
+                <a href="dashboard.html" class="btn-secondary">My Profile</a>
                 <a href="login.html" class="btn-secondary" id="authBtn">Login</a>
             </nav>
             <button class="menu-toggle" id="menuToggle">☰</button>
@@ -43,7 +47,9 @@
 
             <div class="admin-stats-grid" id="statsGrid">
                 <div class="stat-card visitors"><h3 id="statVisitors">...</h3><p>Total Visitors</p></div>
-                <div class="stat-card today"><h3 id="statTodayRegs">...</h3><p>Registered Today</p></div>
+                <div class="stat-card today"><h3 id="statToday">...</h3><p>Visitors Today</p></div>
+                <div class="stat-card"><h3 id="statWeek">...</h3><p>Visitors This Week</p></div>
+                <div class="stat-card"><h3 id="statMonth">...</h3><p>Visitors This Month</p></div>
                 <div class="stat-card workers"><h3 id="statWorkers">...</h3><p>Workers Registered</p></div>
                 <div class="stat-card clients"><h3 id="statClients">...</h3><p>Employers / Clients</p></div>
                 <div class="stat-card jobs"><h3 id="statJobs">...</h3><p>Total Job Posts</p></div>
@@ -78,6 +84,7 @@
                     <input type="text" id="userSearch" placeholder="Search by name, phone or location..." oninput="loadAllUsers()">
                 </div>
                 <div id="allUsersList"><p class="loading">Loading users...</p></div>
+                <div id="userDetailArea"></div>
             </div>
 
             <div class="admin-section">
@@ -167,15 +174,37 @@
     async function loadStats() {
         if (!supabaseClient) return;
         try {
-            var statsRes = await supabaseClient.from('site_stats').select('total_visitors').eq('id', 1).maybeSingle();
+            // Total visitors from site_stats
+            var statsRes = await supabaseClient.from('site_stats').select('total_visitors, visitors_today').eq('id', 1).maybeSingle();
             setText('statVisitors', (statsRes.data && statsRes.data.total_visitors) || 0);
+            setText('statToday', (statsRes.data && statsRes.data.visitors_today) || 0);
 
-            var todayStart = new Date();
-            todayStart.setHours(0, 0, 0, 0);
+            // Day / Week / Month from visitor_logs
+            var now = new Date();
+            var todayStr = now.toISOString().slice(0, 10);
 
-            var todayRes = await supabaseClient.from('profiles').select('*', { count: 'exact', head: true }).gte('created_at', todayStart.toISOString());
-            setText('statTodayRegs', todayRes.count || 0);
+            var weekStart = new Date(now);
+            weekStart.setDate(now.getDate() - 7);
+            var weekStr = weekStart.toISOString().slice(0, 10);
 
+            var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+            var monthStr = monthStart.toISOString().slice(0, 10);
+
+            // Today count from logs
+            var todayLog = await supabaseClient.from('visitor_logs').select('*', { count: 'exact', head: true }).eq('visit_date', todayStr);
+            if (todayLog.count !== null && todayLog.count !== undefined) {
+                setText('statToday', todayLog.count);
+            }
+
+            // Week
+            var weekLog = await supabaseClient.from('visitor_logs').select('*', { count: 'exact', head: true }).gte('visit_date', weekStr);
+            setText('statWeek', weekLog.count || 0);
+
+            // Month
+            var monthLog = await supabaseClient.from('visitor_logs').select('*', { count: 'exact', head: true }).gte('visit_date', monthStr);
+            setText('statMonth', monthLog.count || 0);
+
+            // Users & jobs
             var workerRes = await supabaseClient.from('profiles').select('*', { count: 'exact', head: true }).eq('is_worker', true).eq('is_deleted', false);
             setText('statWorkers', workerRes.count || 0);
 
@@ -202,10 +231,13 @@
         var filter = filterEl ? filterEl.value : 'all';
         var search = searchEl ? searchEl.value.toLowerCase().trim() : '';
 
+        // Clear previous detail view
+        setHtml('userDetailArea', '');
+
         try {
             var query = supabaseClient
                 .from('profiles')
-                .select('id, full_name, phone, is_worker, is_admin, location, created_at, is_deleted, deleted_at')
+                .select('id, full_name, phone, is_worker, is_admin, location, created_at, is_deleted, deleted_at, avatar_url')
                 .order('full_name', { ascending: true })
                 .limit(400);
 
@@ -258,11 +290,107 @@
                     (isDeleted ? ' <span style="color:#ef4444;">(Deleted)</span>' : '') +
                     '</h4><p style="margin:0;font-size:0.9rem;">' + type + ' • ' + (u.location || 'Cameroon') +
                     ' • ' + (phone || 'No phone') + '</p></div><div class="user-actions">' + contact +
+                    '<button class="btn-small" onclick="viewUserDetail(\'' + u.id + '\')">View</button> ' +
                     '<button class="btn-small" onclick="sendSingleNotification(\'' + u.id + '\',\'' + safeName + '\')">Notify</button> ' +
                     actionBtn + '</div></div>';
             }).join(''));
         } catch (err) {
             setHtml('allUsersList', '<p class="empty-dashboard">Error loading users.</p>');
+        }
+    }
+
+    async function viewUserDetail(userId) {
+        if (!supabaseClient || !userId) return;
+        setHtml('userDetailArea', '<p class="loading">Loading account details...</p>');
+
+        try {
+            var { data: profile, error } = await supabaseClient
+                .from('profiles')
+                .select('*')
+                .eq('id', userId)
+                .single();
+
+            if (error || !profile) {
+                setHtml('userDetailArea', '<p class="empty-dashboard">Could not load user.</p>');
+                return;
+            }
+
+            var type = profile.is_admin ? 'Admin' : (profile.is_worker ? 'Worker' : 'Client');
+            var created = profile.created_at ? new Date(profile.created_at).toLocaleString('en-GB') : '—';
+            var deleted = profile.is_deleted ? ('Yes – ' + (profile.deleted_at ? new Date(profile.deleted_at).toLocaleString('en-GB') : '')) : 'No';
+
+            // Jobs posted by this user
+            var { data: jobs } = await supabaseClient
+                .from('job_posts')
+                .select('id, title, category, status, created_at, location')
+                .eq('client_id', userId)
+                .order('created_at', { ascending: false })
+                .limit(50);
+
+            // Worker details if any
+            var workerHtml = '';
+            if (profile.is_worker) {
+                var { data: wd } = await supabaseClient
+                    .from('worker_details')
+                    .select('*')
+                    .eq('id', userId)
+                    .maybeSingle();
+                if (wd) {
+                    workerHtml = '<p><strong>Category:</strong> ' + (wd.category || '—') + '</p>' +
+                        '<p><strong>Experience:</strong> ' + (wd.experience_years || 0) + ' years</p>' +
+                        '<p><strong>Availability:</strong> ' + (wd.availability || '—') + '</p>' +
+                        '<p><strong>Rating:</strong> ' + (wd.rating || 0) + '/5 (' + (wd.review_count || 0) + ' reviews)</p>' +
+                        '<p><strong>Description:</strong> ' + (wd.description || '—') + '</p>';
+                }
+            }
+
+            var jobsHtml = '';
+            if (jobs && jobs.length) {
+                jobsHtml = '<h4 style="margin-top:16px;">Posted Jobs (' + jobs.length + ')</h4>' +
+                    jobs.map(function(j) {
+                        var d = j.created_at ? new Date(j.created_at).toLocaleString('en-GB') : '';
+                        return '<div class="job-mini"><strong>' + (j.title || '') + '</strong><br>' +
+                            (j.category || '') + ' • ' + (j.location || '') + ' • ' + (j.status || '') + '<br>' +
+                            '<small>' + d + '</small> ' +
+                            '<a href="job.html?id=' + j.id + '" class="btn-small" style="margin-left:8px;">Open</a></div>';
+                    }).join('');
+            } else {
+                jobsHtml = '<p style="margin-top:12px;color:var(--text-light);">No job posts found for this account.</p>';
+            }
+
+            var phone = profile.phone || '';
+            var contactBtns = phone
+                ? '<a class="btn-call" href="' + callLink(phone) + '">Call</a> ' +
+                  '<a class="btn-whatsapp" href="' + whatsappLink(phone) + '" target="_blank">WhatsApp</a> '
+                : '';
+
+            var safeName = (profile.full_name || 'User').replace(/'/g, "\\'");
+
+            var html = '<div class="user-detail-box">' +
+                '<h3>👤 Account Details</h3>' +
+                '<p class="meta">ID: ' + profile.id + '</p>' +
+                '<p><strong>Name:</strong> ' + (profile.full_name || '—') + '</p>' +
+                '<p><strong>Type:</strong> ' + type + '</p>' +
+                '<p><strong>Phone:</strong> ' + (phone || '—') + '</p>' +
+                '<p><strong>Location:</strong> ' + (profile.location || '—') + '</p>' +
+                '<p><strong>Registered:</strong> ' + created + '</p>' +
+                '<p><strong>Deleted:</strong> ' + deleted + '</p>' +
+                workerHtml +
+                '<div style="margin:12px 0;">' + contactBtns +
+                '<button class="btn-small" onclick="sendSingleNotification(\'' + profile.id + '\',\'' + safeName + '\')">Send Notification</button> ' +
+                (profile.is_deleted
+                    ? '<button class="btn-primary" onclick="restoreUser(\'' + profile.id + '\',\'' + safeName + '\')">Restore</button>'
+                    : '<button class="btn-close-job" onclick="deleteUser(\'' + profile.id + '\',\'' + safeName + '\')">Delete</button>') +
+                '</div>' +
+                jobsHtml +
+                '<button class="btn-secondary" style="margin-top:16px;" onclick="setHtml(\'userDetailArea\',\'\')">← Close details</button>' +
+                '</div>';
+
+            setHtml('userDetailArea', html);
+            document.getElementById('userDetailArea').scrollIntoView({ behavior: 'smooth' });
+        } catch (err) {
+            console.error(err);
+            setHtml('userDetailArea', '<p class="empty-dashboard">Error loading details.</p>');
         }
     }
 
@@ -279,7 +407,7 @@
         else alert('Notification sent to ' + userName);
     }
 
-    // Soft-delete: deactivates account so user cannot log in; visible under "Deleted Accounts"
+    // Soft-delete: deactivates account so user cannot log in
     async function deleteUser(userId, name) {
         if (!confirm('Delete (deactivate) ' + name + '?\n\nThey will NOT be able to log in or appear on the site.\nYou can restore them later from the "Deleted Accounts" filter.')) return;
 
@@ -313,6 +441,7 @@
         loadAllUsers();
         loadAllWorkers();
         loadStats();
+        setHtml('userDetailArea', '');
     }
 
     async function restoreUser(userId, name) {
@@ -346,6 +475,7 @@
         loadAllUsers();
         loadAllWorkers();
         loadStats();
+        setHtml('userDetailArea', '');
     }
 
     async function sendBroadcast() {
@@ -463,14 +593,15 @@
         var msgReporterBtn = reporterId
             ? '<button class="btn-primary" onclick="messageUser(\'' + reporterId + '\',\'' + safeReporter + '\')">Message Reporter</button>'
             : '';
-        var msgTargetBtn = (targetId && d.target_type !== 'Bug' && d.target_type !== 'job')
+        // Always try to message the reported person when we have a target_id (even for jobs if it is a user id)
+        var msgTargetBtn = (targetId && targetId.length > 10 && d.target_type !== 'Bug')
             ? '<button class="btn-primary" onclick="messageUser(\'' + targetId + '\',\'' + safeTarget + '\')">Message Reported Person</button>'
             : '';
         var resolveBtn = d.status === 'Open'
             ? '<button class="btn-small" onclick="resolveDispute(\'' + d.id + '\')">Mark Resolved</button>'
             : '';
 
-        // Try load phones for WhatsApp / Call
+        // Load phones for BOTH reporter and reported so admin can Call / WhatsApp both
         var phonesHtml = '';
         try {
             var ids = [];
@@ -478,14 +609,15 @@
             if (targetId && targetId.length > 10) ids.push(targetId);
             if (ids.length) {
                 var pr = await supabaseClient.from('profiles').select('id, full_name, phone').in('id', ids);
-                if (pr.data) {
-                    phonesHtml = pr.data.map(function (p) {
-                        var ph = p.phone || '';
-                        if (!ph) return '';
-                        return '<p><strong>' + (p.full_name || 'User') + ':</strong> ' +
-                            '<a class="btn-call" href="' + callLink(ph) + '">Call</a> ' +
-                            '<a class="btn-whatsapp" href="' + whatsappLink(ph) + '" target="_blank">WhatsApp</a></p>';
-                    }).join('');
+                if (pr.data && pr.data.length) {
+                    phonesHtml = '<p style="margin-top:12px;"><strong>Contact both parties:</strong></p>' +
+                        pr.data.map(function (p) {
+                            var ph = p.phone || '';
+                            if (!ph) return '<p>' + (p.full_name || 'User') + ': No phone on file</p>';
+                            return '<p><strong>' + (p.full_name || 'User') + ':</strong> ' +
+                                '<a class="btn-call" href="' + callLink(ph) + '">Call</a> ' +
+                                '<a class="btn-whatsapp" href="' + whatsappLink(ph) + '" target="_blank">WhatsApp</a></p>';
+                        }).join('');
                 }
             }
         } catch (e) {}
@@ -585,7 +717,6 @@
             setHtml('allJobsList', res.data.map(function (job) {
                 var date = new Date(job.created_at).toLocaleDateString('en-GB');
                 var poster = (job.profiles && job.profiles.full_name) || 'Unknown';
-                var safeTitle = (job.title || '').replace(/'/g, "\\'");
                 return '<div class="dispute-row"><div class="dispute-info"><h4>' + (job.title || '') +
                     '</h4><p>' + (job.category || '') + ' • ' + (job.location || '') + ' • ' + poster + ' • ' + date +
                     ' • ' + (job.status || '') + '</p></div>' +
