@@ -3,7 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Handy Man - Find Trusted Local Help in Cameroon</title>
+    <title>Handy Man Cameroon – Find Trusted Plumbers, Electricians & Local Workers</title>
+    <meta name="description" content="Handy Man Cameroon connects you with trusted local workers: plumbers, electricians, cleaners, carpenters, masons and more in Buea, Douala, Yaoundé, Bamenda and across Cameroon. Free to use.">
+    <meta name="keywords" content="handyman Cameroon, plumber Buea, electrician Douala, cleaner Yaoundé, local workers Cameroon, find workers Buea, Handy Man">
+    <meta name="author" content="Handy Man Cameroon">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://handyman-buea.vercel.app/">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://handyman-buea.vercel.app/">
+    <meta property="og:title" content="Handy Man Cameroon – Find Trusted Local Workers">
+    <meta property="og:description" content="Connect with skilled plumbers, electricians, cleaners and more anywhere in Cameroon.">
+    <meta property="og:image" content="https://handyman-buea.vercel.app/og-image.jpg">
+    <meta property="og:locale" content="en_CM">
+    <meta property="og:locale:alternate" content="fr_CM">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Handy Man Cameroon – Find Trusted Local Workers">
+    <meta name="twitter:description" content="Connect with skilled workers across Cameroon.">
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Handy Man Cameroon",
+      "url": "https://handyman-buea.vercel.app/",
+      "description": "Find trusted local workers in Cameroon – plumbers, electricians, cleaners and more.",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://handyman-buea.vercel.app/workers.html?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+
     <link rel="stylesheet" href="style.css">
     <style>
         .contact-modal {
@@ -60,6 +96,31 @@
             text-decoration: underline;
             margin: 0 8px;
         }
+        .lang-switch {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 90;
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 30px;
+            padding: 6px 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+        .lang-switch button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 16px;
+        }
+        .lang-switch button.active {
+            background: var(--primary);
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -67,12 +128,12 @@
         <div class="container">
             <a href="index.html" class="logo">🔧 Handy Man</a>
             <nav class="nav" id="nav">
-                <a href="index.html">Home</a>
-                <a href="workers.html">Find Workers</a>
-                <a href="jobs.html">Find Jobs</a>
-                <a href="login.html" class="btn-secondary">Join as Worker</a>
-                <a href="post-job.html" class="btn-secondary">Post a Job</a>
-                <a href="login.html" class="btn-secondary" id="authBtn">Login</a>
+                <a href="index.html" data-i18n="nav_home">Home</a>
+                <a href="workers.html" data-i18n="nav_workers">Find Workers</a>
+                <a href="jobs.html" data-i18n="nav_jobs">Find Jobs</a>
+                <a href="login.html" class="btn-secondary" data-i18n="nav_join">Join as Worker</a>
+                <a href="post-job.html" class="btn-secondary" data-i18n="nav_post">Post a Job</a>
+                <a href="login.html" class="btn-secondary" id="authBtn" data-i18n="nav_login">Login</a>
             </nav>
             <button class="menu-toggle" id="menuToggle">☰</button>
         </div>
@@ -81,31 +142,31 @@
     <section class="hero-carousel" id="heroCarousel">
         <div class="carousel-slide active" style="background-image: url('https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=1200&q=80')">
             <div class="carousel-content">
-                <h1>Find Trusted Local Help in Cameroon</h1>
-                <p>Connect with skilled plumbers, electricians, cleaners, and more — anywhere in Cameroon.</p>
-                <a href="workers.html" class="btn-primary">Find a Worker</a>
-                <a href="post-job.html" class="btn-secondary">Post a Job</a>
+                <h1 data-i18n="hero_title">Find Trusted Local Help in Cameroon</h1>
+                <p data-i18n="hero_sub">Connect with skilled plumbers, electricians, cleaners, and more — anywhere in Cameroon.</p>
+                <a href="workers.html" class="btn-primary" data-i18n="hero_find">Find a Worker</a>
+                <a href="post-job.html" class="btn-secondary" data-i18n="hero_post">Post a Job</a>
             </div>
         </div>
         <div class="carousel-slide" style="background-image: url('https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=1200&q=80')">
             <div class="carousel-content">
-                <h1>Skilled Construction Workers</h1>
-                <p>Find masons, carpenters, and builders for your projects.</p>
-                <a href="workers.html?category=Masonry" class="btn-primary">Find Builders</a>
+                <h1 data-i18n="hero2_title">Skilled Construction Workers</h1>
+                <p data-i18n="hero2_sub">Find masons, carpenters, and builders for your projects.</p>
+                <a href="workers.html?category=Masonry" class="btn-primary" data-i18n="hero2_btn">Find Builders</a>
             </div>
         </div>
         <div class="carousel-slide" style="background-image: url('https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=1200&q=80')">
             <div class="carousel-content">
-                <h1>Professional Cleaning Services</h1>
-                <p>Get your home or office sparkling clean.</p>
-                <a href="workers.html?category=Cleaning" class="btn-primary">Find Cleaners</a>
+                <h1 data-i18n="hero3_title">Professional Cleaning Services</h1>
+                <p data-i18n="hero3_sub">Get your home or office sparkling clean.</p>
+                <a href="workers.html?category=Cleaning" class="btn-primary" data-i18n="hero3_btn">Find Cleaners</a>
             </div>
         </div>
         <div class="carousel-slide" style="background-image: url('https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=1200&q=80')">
             <div class="carousel-content">
-                <h1>Expert Electrical Repairs</h1>
-                <p>Safe and reliable electrical work for your property.</p>
-                <a href="workers.html?category=Electrical" class="btn-primary">Find Electricians</a>
+                <h1 data-i18n="hero4_title">Expert Electrical Repairs</h1>
+                <p data-i18n="hero4_sub">Safe and reliable electrical work for your property.</p>
+                <a href="workers.html?category=Electrical" class="btn-primary" data-i18n="hero4_btn">Find Electricians</a>
             </div>
         </div>
         <div class="carousel-dots" id="carouselDots"></div>
@@ -113,7 +174,7 @@
 
     <section class="categories">
         <div class="container">
-            <h2>Popular Services</h2>
+            <h2 data-i18n="popular_services">Popular Services</h2>
             <div class="category-grid" id="categoryGrid">
                 <p class="loading">Loading categories...</p>
             </div>
@@ -122,7 +183,7 @@
 
     <section class="featured">
         <div class="container">
-            <h2>Featured Workers in Cameroon</h2>
+            <h2 data-i18n="featured_workers">Featured Workers in Cameroon</h2>
             <div class="worker-grid" id="workerGrid">
                 <p class="loading">Loading workers...</p>
             </div>
@@ -131,22 +192,22 @@
 
     <section class="how-it-works">
         <div class="container">
-            <h2>How It Works</h2>
+            <h2 data-i18n="how_title">How It Works</h2>
             <div class="steps">
                 <div class="step">
                     <div class="step-icon">🔍</div>
-                    <h3>Search</h3>
-                    <p>Find the right worker in your town</p>
+                    <h3 data-i18n="how_search">Search</h3>
+                    <p data-i18n="how_search_p">Find the right worker in your town</p>
                 </div>
                 <div class="step">
                     <div class="step-icon">📞</div>
-                    <h3>Contact</h3>
-                    <p>Call or WhatsApp them directly</p>
+                    <h3 data-i18n="how_contact">Contact</h3>
+                    <p data-i18n="how_contact_p">Call or WhatsApp them directly</p>
                 </div>
                 <div class="step">
                     <div class="step-icon">✅</div>
-                    <h3>Get It Done</h3>
-                    <p>Rate and review after service</p>
+                    <h3 data-i18n="how_done">Get It Done</h3>
+                    <p data-i18n="how_done_p">Rate and review after service</p>
                 </div>
             </div>
         </div>
@@ -154,37 +215,43 @@
 
     <footer class="footer">
         <div class="container">
-            <p>© 2026 Handy Man. Connecting people with skilled workers across Cameroon.</p>
+            <p data-i18n="footer_text">© 2026 Handy Man. Connecting people with skilled workers across Cameroon.</p>
             <div class="footer-links">
-                <button type="button" onclick="openContactModal()">📧 Contact Us</button>
+                <button type="button" onclick="openContactModal()" data-i18n="contact_us">📧 Contact Us</button>
             </div>
         </div>
     </footer>
+
+    <!-- Language switcher -->
+    <div class="lang-switch" id="langSwitch">
+        <button type="button" id="langEn" class="active" onclick="setLanguage('en')">EN</button>
+        <button type="button" id="langFr" onclick="setLanguage('fr')">FR</button>
+    </div>
 
     <!-- Contact Us Modal -->
     <div class="contact-modal" id="contactModal">
         <div class="contact-modal-content">
             <button class="close-btn" onclick="closeContactModal()">✕</button>
-            <h3>📧 Contact Us</h3>
-            <p style="color:var(--text-light);margin-bottom:16px;font-size:0.9rem;">Send us a message. We will reply as soon as possible.</p>
+            <h3 data-i18n="contact_title">📧 Contact Us</h3>
+            <p style="color:var(--text-light);margin-bottom:16px;font-size:0.9rem;" data-i18n="contact_sub">Send us a message. We will reply as soon as possible.</p>
             <form id="contactForm" onsubmit="submitContact(event)">
                 <div class="form-group">
-                    <label>Your Name</label>
+                    <label data-i18n="contact_name">Your Name</label>
                     <input type="text" id="contactName" placeholder="Your full name">
                 </div>
                 <div class="form-group">
-                    <label>Email *</label>
+                    <label data-i18n="contact_email">Email *</label>
                     <input type="email" id="contactEmail" required placeholder="your@email.com">
                 </div>
                 <div class="form-group">
-                    <label>Phone / WhatsApp *</label>
+                    <label data-i18n="contact_phone">Phone / WhatsApp *</label>
                     <input type="tel" id="contactPhone" required placeholder="6XX XXX XXX">
                 </div>
                 <div class="form-group">
-                    <label>Message *</label>
+                    <label data-i18n="contact_message">Message *</label>
                     <textarea id="contactMessage" required placeholder="How can we help you?"></textarea>
                 </div>
-                <button type="submit" class="btn-primary full" id="contactSubmitBtn">Send Message</button>
+                <button type="submit" class="btn-primary full" id="contactSubmitBtn" data-i18n="contact_send">Send Message</button>
                 <p id="contactStatus" class="message" style="display:none;"></p>
             </form>
         </div>
@@ -194,6 +261,65 @@
     <script src="config.js"></script>
     <script src="app.js"></script>
     <script>
+        // Simple EN / FR translations
+        var translations = {
+            en: {
+                nav_home: "Home", nav_workers: "Find Workers", nav_jobs: "Find Jobs",
+                nav_join: "Join as Worker", nav_post: "Post a Job", nav_login: "Login",
+                hero_title: "Find Trusted Local Help in Cameroon",
+                hero_sub: "Connect with skilled plumbers, electricians, cleaners, and more — anywhere in Cameroon.",
+                hero_find: "Find a Worker", hero_post: "Post a Job",
+                hero2_title: "Skilled Construction Workers", hero2_sub: "Find masons, carpenters, and builders for your projects.", hero2_btn: "Find Builders",
+                hero3_title: "Professional Cleaning Services", hero3_sub: "Get your home or office sparkling clean.", hero3_btn: "Find Cleaners",
+                hero4_title: "Expert Electrical Repairs", hero4_sub: "Safe and reliable electrical work for your property.", hero4_btn: "Find Electricians",
+                popular_services: "Popular Services", featured_workers: "Featured Workers in Cameroon",
+                how_title: "How It Works", how_search: "Search", how_search_p: "Find the right worker in your town",
+                how_contact: "Contact", how_contact_p: "Call or WhatsApp them directly",
+                how_done: "Get It Done", how_done_p: "Rate and review after service",
+                footer_text: "© 2026 Handy Man. Connecting people with skilled workers across Cameroon.",
+                contact_us: "📧 Contact Us", contact_title: "📧 Contact Us",
+                contact_sub: "Send us a message. We will reply as soon as possible.",
+                contact_name: "Your Name", contact_email: "Email *", contact_phone: "Phone / WhatsApp *",
+                contact_message: "Message *", contact_send: "Send Message"
+            },
+            fr: {
+                nav_home: "Accueil", nav_workers: "Trouver un ouvrier", nav_jobs: "Trouver un job",
+                nav_join: "Devenir ouvrier", nav_post: "Publier un job", nav_login: "Connexion",
+                hero_title: "Trouvez de l'aide locale de confiance au Cameroun",
+                hero_sub: "Connectez-vous avec des plombiers, électriciens, agents de nettoyage et plus — partout au Cameroun.",
+                hero_find: "Trouver un ouvrier", hero_post: "Publier un job",
+                hero2_title: "Ouvriers du bâtiment qualifiés", hero2_sub: "Trouvez maçons, menuisiers et constructeurs.", hero2_btn: "Trouver des constructeurs",
+                hero3_title: "Services de nettoyage professionnels", hero3_sub: "Faites briller votre maison ou bureau.", hero3_btn: "Trouver des agents de nettoyage",
+                hero4_title: "Réparations électriques expertes", hero4_sub: "Travaux électriques sûrs et fiables.", hero4_btn: "Trouver des électriciens",
+                popular_services: "Services populaires", featured_workers: "Ouvriers en vedette au Cameroun",
+                how_title: "Comment ça marche", how_search: "Rechercher", how_search_p: "Trouvez le bon ouvrier dans votre ville",
+                how_contact: "Contacter", how_contact_p: "Appelez ou écrivez sur WhatsApp",
+                how_done: "C'est fait", how_done_p: "Notez et commentez après le service",
+                footer_text: "© 2026 Handy Man. Connecter les gens aux ouvriers qualifiés à travers le Cameroun.",
+                contact_us: "📧 Nous contacter", contact_title: "📧 Nous contacter",
+                contact_sub: "Envoyez-nous un message. Nous répondrons dès que possible.",
+                contact_name: "Votre nom", contact_email: "Email *", contact_phone: "Téléphone / WhatsApp *",
+                contact_message: "Message *", contact_send: "Envoyer"
+            }
+        };
+
+        function setLanguage(lang) {
+            localStorage.setItem('handyman_lang', lang);
+            document.documentElement.lang = lang;
+            var dict = translations[lang] || translations.en;
+            document.querySelectorAll('[data-i18n]').forEach(function(el) {
+                var key = el.getAttribute('data-i18n');
+                if (dict[key]) el.textContent = dict[key];
+            });
+            document.getElementById('langEn').classList.toggle('active', lang === 'en');
+            document.getElementById('langFr').classList.toggle('active', lang === 'fr');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var saved = localStorage.getItem('handyman_lang') || 'en';
+            setLanguage(saved);
+        });
+
         function openContactModal() {
             document.getElementById('contactModal').classList.add('active');
         }
@@ -206,12 +332,12 @@
 
         async function submitContact(e) {
             e.preventDefault();
-            const btn = document.getElementById('contactSubmitBtn');
-            const status = document.getElementById('contactStatus');
-            const name = document.getElementById('contactName').value.trim();
-            const email = document.getElementById('contactEmail').value.trim();
-            const phone = document.getElementById('contactPhone').value.trim();
-            const message = document.getElementById('contactMessage').value.trim();
+            var btn = document.getElementById('contactSubmitBtn');
+            var status = document.getElementById('contactStatus');
+            var name = document.getElementById('contactName').value.trim();
+            var email = document.getElementById('contactEmail').value.trim();
+            var phone = document.getElementById('contactPhone').value.trim();
+            var message = document.getElementById('contactMessage').value.trim();
 
             if (!email || !phone || !message) {
                 status.textContent = 'Please fill email, phone and message.';
@@ -226,7 +352,7 @@
             try {
                 if (!supabaseClient) throw new Error('Not connected');
 
-                const { error } = await supabaseClient.from('contact_messages').insert([{
+                var { error } = await supabaseClient.from('contact_messages').insert([{
                     name: name || null,
                     email: email,
                     phone: phone,
@@ -253,7 +379,7 @@
             }
 
             btn.disabled = false;
-            btn.textContent = 'Send Message';
+            btn.textContent = (localStorage.getItem('handyman_lang') === 'fr') ? 'Envoyer' : 'Send Message';
         }
     </script>
 </body>
