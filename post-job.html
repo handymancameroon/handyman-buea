@@ -16,12 +16,12 @@
         <div class="container">
             <a href="index.html" class="logo">🔧 Handy Man</a>
             <nav class="nav" id="nav">
-                <a href="index.html">Home</a>
-                <a href="workers.html">Find Workers</a>
-                <a href="jobs.html">Find Jobs</a>
-                <a href="login.html" class="btn-secondary">Join as Worker</a>
-                <a href="post-job.html" class="btn-secondary">Post a Job</a>
-                <a href="login.html" class="btn-secondary" id="authBtn">Login</a>
+                <a href="index.html" data-i18n="nav_home">Home</a>
+                <a href="workers.html" data-i18n="nav_workers">Find Workers</a>
+                <a href="jobs.html" data-i18n="nav_jobs">Find Jobs</a>
+                <a href="login.html" class="btn-secondary" data-i18n="nav_join">Join as Worker</a>
+                <a href="post-job.html" class="btn-secondary" data-i18n="nav_post">Post a Job</a>
+                <a href="login.html" class="btn-secondary" id="authBtn" data-i18n="nav_login">Login</a>
             </nav>
             <button class="menu-toggle" id="menuToggle">☰</button>
         </div>
@@ -30,7 +30,7 @@
     <main class="auth-page">
         <div class="container">
             <div class="auth-box" id="postJobBox">
-                <h2>Post a Job</h2>
+                <h2 data-i18n="nav_post">Post a Job</h2>
                 <p>Describe what you need and skilled workers will contact you.</p>
                 
                 <form id="jobForm" onsubmit="handlePostJob(event)">
@@ -39,7 +39,7 @@
                         <input type="text" id="jTitle" required placeholder="e.g. Fix leaking kitchen pipe">
                     </div>
                     <div class="form-group">
-                        <label>Service Category *</label>
+                        <label data-i18n="service_category">Service Category *</label>
                         <select id="jCategory" required>
                             <option value="">Select category</option>
                             <option value="Plumbing">Plumbing</option>
@@ -60,11 +60,10 @@
                         <textarea id="jDescription" required rows="4" placeholder="Describe the job in detail..."></textarea>
                     </div>
 
-                    <!-- TOWN SELECTOR -->
                     <div class="form-group">
-                        <label>Town / City *</label>
+                        <label data-i18n="town">Town / City *</label>
                         <select id="jTown" required onchange="handleJobTownChange()">
-                            <option value="">Select town</option>
+                            <option value="" data-i18n="select_town">Select town</option>
                             <option value="Buea">Buea</option>
                             <option value="Limbe">Limbe</option>
                             <option value="Douala">Douala</option>
@@ -80,7 +79,7 @@
                             <option value="Ebolowa">Ebolowa</option>
                             <option value="Mutengene">Mutengene</option>
                             <option value="Tiko">Tiko</option>
-                            <option value="Other">Other (specify below)</option>
+                            <option value="Other" data-i18n="other_specify">Other (specify below)</option>
                         </select>
                         <div id="jCustomTownField" class="custom-town-field">
                             <input type="text" id="jCustomTown" placeholder="Enter your town">
@@ -97,7 +96,7 @@
                         <label>Budget (optional)</label>
                         <input type="text" id="jBudget" placeholder="e.g. 10,000 FCFA or Negotiable">
                     </div>
-                    <button type="submit" class="btn-primary full">Post Job</button>
+                    <button type="submit" class="btn-primary full" data-i18n="nav_post">Post Job</button>
                 </form>
                 
                 <p id="jobMessage" class="message"></p>
@@ -116,7 +115,7 @@
                 document.getElementById('postJobBox').innerHTML = `
                     <h2>Login Required</h2>
                     <p>You need to be logged in to post a job.</p>
-                    <a href="login.html" class="btn-primary full" style="margin-top: 20px; display: inline-block;">Go to Login</a>
+                    <a href="login.html" class="btn-primary full" style="margin-top: 20px; display: inline-block;">${t('nav_login')}</a>
                 `;
             }
         });
