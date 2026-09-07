@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Handy Man</title>
+    <title>Login / Register - Handy Man Cameroon</title>
+    <meta name="description" content="Login or create a free account on Handy Man Cameroon to find workers or offer services anywhere in Cameroon.">
     <link rel="stylesheet" href="style.css">
     <style>
         .worker-fields, .client-fields { display: none; animation: fadeIn 0.3s ease; }
@@ -57,11 +58,11 @@
             display: block;
         }
         .auth-box { max-width: 520px; }
-        .password-wrapper {
+        .password-wrap {
             position: relative;
         }
-        .password-wrapper input {
-            padding-right: 70px;
+        .password-wrap input {
+            padding-right: 44px;
         }
         .toggle-password {
             position: absolute;
@@ -70,10 +71,10 @@
             transform: translateY(-50%);
             background: none;
             border: none;
-            color: var(--primary);
-            font-size: 0.85rem;
             cursor: pointer;
-            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--text-light);
+            padding: 4px;
         }
     </style>
 </head>
@@ -111,9 +112,9 @@
                         </div>
                         <div class="form-group">
                             <label>Password</label>
-                            <div class="password-wrapper">
+                            <div class="password-wrap">
                                 <input type="password" id="loginPassword" required placeholder="••••••••">
-                                <button type="button" class="toggle-password" onclick="togglePassword('loginPassword', this)">Show</button>
+                                <button type="button" class="toggle-password" onclick="togglePasswordVisibility('loginPassword', this)" aria-label="Show password">👁️</button>
                             </div>
                         </div>
                         <button type="submit" class="btn-primary full">Login</button>
@@ -139,16 +140,16 @@
                         </div>
                         <div class="form-group">
                             <label>Password *</label>
-                            <div class="password-wrapper">
+                            <div class="password-wrap">
                                 <input type="password" id="regPassword" required placeholder="Min 6 characters" minlength="6">
-                                <button type="button" class="toggle-password" onclick="togglePassword('regPassword', this)">Show</button>
+                                <button type="button" class="toggle-password" onclick="togglePasswordVisibility('regPassword', this)" aria-label="Show password">👁️</button>
                             </div>
                         </div>
                         <div class="form-group">
                             <label>Confirm Password *</label>
-                            <div class="password-wrapper">
+                            <div class="password-wrap">
                                 <input type="password" id="regPasswordConfirm" required placeholder="Re-enter password" minlength="6">
-                                <button type="button" class="toggle-password" onclick="togglePassword('regPasswordConfirm', this)">Show</button>
+                                <button type="button" class="toggle-password" onclick="togglePasswordVisibility('regPasswordConfirm', this)" aria-label="Show password">👁️</button>
                             </div>
                         </div>
 
@@ -160,7 +161,7 @@
                             </select>
                         </div>
 
-                        <!-- TOWN SELECTOR (for both Client & Worker) -->
+                        <!-- TOWN SELECTOR -->
                         <div class="form-group">
                             <label>Town / City *</label>
                             <select id="regTown" required onchange="handleTownChange()">
@@ -290,34 +291,34 @@
             setupAvatarPreview();
         });
 
-        function showTab(tab) {
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(tab + 'Tab').classList.add('active');
-            if (event && event.target) event.target.classList.add('active');
-            else {
-                document.querySelectorAll('.tab-btn').forEach(b => {
-                    if (b.textContent.toLowerCase().includes(tab)) b.classList.add('active');
-                });
-            }
-        }
-
-        function togglePassword(inputId, btn) {
+        function togglePasswordVisibility(inputId, btn) {
             var input = document.getElementById(inputId);
             if (!input) return;
             if (input.type === 'password') {
                 input.type = 'text';
-                btn.textContent = 'Hide';
+                btn.textContent = '🙈';
             } else {
                 input.type = 'password';
-                btn.textContent = 'Show';
+                btn.textContent = '👁️';
+            }
+        }
+
+        function showTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
+            document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+            document.getElementById(tab + 'Tab').classList.add('active');
+            if (event && event.target) event.target.classList.add('active');
+            else {
+                document.querySelectorAll('.tab-btn').forEach(function(b) {
+                    if (b.textContent.toLowerCase().indexOf(tab) !== -1) b.classList.add('active');
+                });
             }
         }
 
         function toggleFields() {
-            const type = document.getElementById('regType').value;
-            const workerFields = document.getElementById('workerFields');
-            const clientFields = document.getElementById('clientFields');
+            var type = document.getElementById('regType').value;
+            var workerFields = document.getElementById('workerFields');
+            var clientFields = document.getElementById('clientFields');
 
             if (type === 'worker') {
                 workerFields.classList.add('active');
@@ -335,9 +336,9 @@
         }
 
         function handleCategoryChange() {
-            const cat = document.getElementById('serviceCategory').value;
-            const field = document.getElementById('customCategoryField');
-            const input = document.getElementById('customCategory');
+            var cat = document.getElementById('serviceCategory').value;
+            var field = document.getElementById('customCategoryField');
+            var input = document.getElementById('customCategory');
             if (cat === 'Others') {
                 field.classList.add('active');
                 input.required = true;
@@ -348,9 +349,9 @@
         }
 
         function handleTownChange() {
-            const town = document.getElementById('regTown').value;
-            const field = document.getElementById('customTownField');
-            const input = document.getElementById('customTown');
+            var town = document.getElementById('regTown').value;
+            var field = document.getElementById('customTownField');
+            var input = document.getElementById('customTown');
             if (town === 'Other') {
                 field.classList.add('active');
                 input.required = true;
@@ -361,7 +362,7 @@
         }
 
         function getSelectedTown() {
-            const town = document.getElementById('regTown').value;
+            var town = document.getElementById('regTown').value;
             if (town === 'Other') {
                 return document.getElementById('customTown').value.trim() || 'Cameroon';
             }
@@ -369,11 +370,11 @@
         }
 
         function setupAvatarPreview() {
-            const input = document.getElementById('regPhotoFile');
-            const preview = document.getElementById('regAvatarPreview');
+            var input = document.getElementById('regPhotoFile');
+            var preview = document.getElementById('regAvatarPreview');
             if (!input || !preview) return;
             input.addEventListener('change', function () {
-                const file = this.files && this.files[0];
+                var file = this.files && this.files[0];
                 if (file && file.type.startsWith('image/')) {
                     preview.src = URL.createObjectURL(file);
                     preview.classList.add('show');
@@ -385,20 +386,20 @@
         }
 
         function setupFilePreviews() {
-            ['wPortfolio', 'cPortfolio'].forEach(id => {
-                const input = document.getElementById(id);
+            ['wPortfolio', 'cPortfolio'].forEach(function(id) {
+                var input = document.getElementById(id);
                 if (!input) return;
                 input.addEventListener('change', function () {
-                    const preview = document.getElementById(id + 'Preview');
+                    var preview = document.getElementById(id + 'Preview');
                     if (!preview) return;
                     preview.innerHTML = '';
-                    const files = Array.from(this.files || []).slice(0, 2);
+                    var files = Array.from(this.files || []).slice(0, 2);
                     if (this.files && this.files.length > 2) {
                         alert('Maximum 2 photos. Only the first 2 will be used.');
                     }
-                    files.forEach(file => {
+                    files.forEach(function(file) {
                         if (file.type.startsWith('image/')) {
-                            const img = document.createElement('img');
+                            var img = document.createElement('img');
                             img.className = 'file-preview-item';
                             img.src = URL.createObjectURL(file);
                             preview.appendChild(img);
@@ -409,7 +410,7 @@
         }
 
         function showMessage(msg, type) {
-            const el = document.getElementById('authMessage');
+            var el = document.getElementById('authMessage');
             el.textContent = msg;
             el.className = 'message ' + type;
         }
@@ -420,31 +421,15 @@
                 showMessage('Cannot connect. Please refresh.', 'error');
                 return;
             }
-            const email = document.getElementById('loginEmail').value.trim();
-            const password = document.getElementById('loginPassword').value;
-            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+            var email = document.getElementById('loginEmail').value.trim();
+            var password = document.getElementById('loginPassword').value;
+            var { error } = await supabaseClient.auth.signInWithPassword({ email: email, password: password });
             if (error) {
                 showMessage(error.message, 'error');
-                return;
+            } else {
+                showMessage('Login successful! Redirecting...', 'success');
+                setTimeout(function() { window.location.href = 'index.html'; }, 1000);
             }
-
-            // Soft-delete check after successful login
-            if (data && data.user) {
-                const { data: profile } = await supabaseClient
-                    .from('profiles')
-                    .select('is_deleted')
-                    .eq('id', data.user.id)
-                    .maybeSingle();
-
-                if (profile && profile.is_deleted === true) {
-                    await supabaseClient.auth.signOut();
-                    showMessage('This account has been deactivated by the administrator.', 'error');
-                    return;
-                }
-            }
-
-            showMessage('Login successful! Redirecting...', 'success');
-            setTimeout(() => window.location.href = 'index.html', 1000);
         }
 
         async function handleRegister(e) {
@@ -454,32 +439,36 @@
                 return;
             }
 
-            const password = document.getElementById('regPassword').value;
-            const confirm = document.getElementById('regPasswordConfirm').value;
+            var password = document.getElementById('regPassword').value;
+            var confirm = document.getElementById('regPasswordConfirm').value;
             if (password !== confirm) {
                 showMessage('Passwords do not match. Please check and try again.', 'error');
                 return;
             }
+            if (password.length < 6) {
+                showMessage('Password must be at least 6 characters.', 'error');
+                return;
+            }
 
-            const btn = document.getElementById('regSubmitBtn');
+            var btn = document.getElementById('regSubmitBtn');
             btn.disabled = true;
             btn.textContent = 'Creating account...';
 
             try {
-                const email = document.getElementById('regEmail').value.trim();
-                const fullName = document.getElementById('regName').value.trim();
-                const phone = document.getElementById('regPhone').value.trim();
-                const isWorker = document.getElementById('regType').value === 'worker';
-                const selectedTown = getSelectedTown();
+                var email = document.getElementById('regEmail').value.trim();
+                var fullName = document.getElementById('regName').value.trim();
+                var phone = document.getElementById('regPhone').value.trim();
+                var isWorker = document.getElementById('regType').value === 'worker';
+                var selectedTown = getSelectedTown();
 
-                let category = document.getElementById('serviceCategory').value;
+                var category = document.getElementById('serviceCategory').value;
                 if (category === 'Others') {
                     category = document.getElementById('customCategory').value.trim() || 'Others';
                 }
 
-                const { data, error } = await supabaseClient.auth.signUp({
-                    email,
-                    password,
+                var { data, error } = await supabaseClient.auth.signUp({
+                    email: email,
+                    password: password,
                     options: {
                         data: { full_name: fullName, phone: phone, is_worker: isWorker }
                     }
@@ -499,29 +488,27 @@
                     return;
                 }
 
-                const userId = data.user.id;
+                var userId = data.user.id;
                 currentUser = data.user;
 
-                // Upload profile photo
-                let photoUrl = null;
-                const photoFile = document.getElementById('regPhotoFile').files[0];
+                var photoUrl = null;
+                var photoFile = document.getElementById('regPhotoFile').files[0];
                 if (photoFile) {
                     showMessage('Uploading profile photo...', 'success');
                     photoUrl = await uploadFile(photoFile, 'profiles', userId);
                 }
 
-                const profileData = {
+                var profileData = {
                     id: userId,
                     full_name: fullName,
                     phone: phone,
                     is_worker: isWorker,
                     location: selectedTown,
                     avatar_url: photoUrl,
-                    portfolio: [],
-                    is_deleted: false
+                    portfolio: []
                 };
 
-                const { error: profileError } = await supabaseClient
+                var { error: profileError } = await supabaseClient
                     .from('profiles')
                     .upsert([profileData], { onConflict: 'id' });
 
@@ -534,10 +521,10 @@
 
                 if (isWorker) {
                     showMessage('Uploading portfolio...', 'success');
-                    const portfolioFiles = document.getElementById('wPortfolio').files;
-                    const portfolioUrls = await uploadMultipleFiles(portfolioFiles, 'portfolio', userId, 2);
+                    var portfolioFiles = document.getElementById('wPortfolio').files;
+                    var portfolioUrls = await uploadMultipleFiles(portfolioFiles, 'portfolio', userId, 2);
 
-                    const workerDetails = {
+                    var workerDetails = {
                         id: userId,
                         category: category,
                         description: document.getElementById('wDescription').value.trim(),
@@ -548,7 +535,7 @@
                         portfolio: portfolioUrls
                     };
 
-                    const { error: workerError } = await supabaseClient
+                    var { error: workerError } = await supabaseClient
                         .from('worker_details')
                         .upsert([workerDetails], { onConflict: 'id' });
 
@@ -563,21 +550,20 @@
                         await supabaseClient.from('profiles').update({ portfolio: portfolioUrls }).eq('id', userId);
                     }
                 } else {
-                    // Client path – create first job
                     showMessage('Uploading reference photos...', 'success');
-                    const portfolioFiles = document.getElementById('cPortfolio').files;
-                    const portfolioUrls = await uploadMultipleFiles(portfolioFiles, 'portfolio', userId, 2);
+                    var cPortfolioFiles = document.getElementById('cPortfolio').files;
+                    var cPortfolioUrls = await uploadMultipleFiles(cPortfolioFiles, 'portfolio', userId, 2);
 
-                    if (portfolioUrls.length > 0) {
+                    if (cPortfolioUrls.length > 0) {
                         await supabaseClient.from('profiles')
-                            .update({ portfolio: portfolioUrls })
+                            .update({ portfolio: cPortfolioUrls })
                             .eq('id', userId);
                     }
 
-                    const area = document.getElementById('cArea').value.trim();
-                    const fullLocation = area ? (area + ', ' + selectedTown) : selectedTown;
+                    var area = document.getElementById('cArea').value.trim();
+                    var fullLocation = area ? (area + ', ' + selectedTown) : selectedTown;
 
-                    const jobData = {
+                    var jobData = {
                         client_id: userId,
                         title: document.getElementById('cJobTitle').value.trim(),
                         description: document.getElementById('cJobDesc').value.trim(),
@@ -587,21 +573,19 @@
                         status: 'Open'
                     };
 
-                    if (portfolioUrls.length > 0) {
-                        jobData.images = portfolioUrls;
+                    if (cPortfolioUrls.length > 0) {
+                        jobData.images = cPortfolioUrls;
                     }
 
-                    const { error: jobError } = await supabaseClient.from('job_posts').insert([jobData]);
-                    if (jobError) {
-                        if (jobData.images) {
-                            delete jobData.images;
-                            await supabaseClient.from('job_posts').insert([jobData]);
-                        }
+                    var { error: jobError } = await supabaseClient.from('job_posts').insert([jobData]);
+                    if (jobError && jobData.images) {
+                        delete jobData.images;
+                        await supabaseClient.from('job_posts').insert([jobData]);
                     }
                 }
 
                 showMessage('Account created successfully! Redirecting...', 'success');
-                setTimeout(() => window.location.href = 'index.html', 1500);
+                setTimeout(function() { window.location.href = 'index.html'; }, 1500);
             } catch (err) {
                 console.error(err);
                 showMessage('Unexpected error: ' + (err.message || 'Please try again'), 'error');
