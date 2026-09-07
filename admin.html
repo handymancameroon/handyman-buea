@@ -9,19 +9,77 @@
     <style>
         .admin-filter-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
         .admin-filter-bar select, .admin-filter-bar input { padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); min-width: 180px; }
-        .user-row, .dispute-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px; background: #fff; flex-wrap: wrap; }
-        .user-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-        .btn-whatsapp { background: #25D366; color: white; border: none; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; cursor: pointer; }
-        .btn-call { background: #0ea5e9; color: white; border: none; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; }
+        .user-row, .dispute-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 14px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 10px;
+            background: #fff;
+            flex-wrap: wrap;
+        }
+        .user-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .user-actions a, .user-actions button {
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .btn-whatsapp { background: #25D366; color: white; border: none; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; cursor: pointer; display: inline-block; }
+        .btn-call { background: #0ea5e9; color: white; border: none; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; display: inline-block; }
         .broadcast-box { background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 24px; }
         .broadcast-box textarea { width: 100%; min-height: 100px; padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin: 10px 0; }
         .stat-card.today { border-left: 4px solid #22c55e; }
         .deleted-user { opacity: 0.65; background: #fef2f2 !important; }
-        .dispute-detail-box, .user-detail-box { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
-        .dispute-detail-box p, .user-detail-box p { margin-bottom: 8px; }
+        .dispute-detail-box { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
         .detail-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
         .mail-row { border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 10px; background: #fff; }
         .mail-row.unread { border-left: 4px solid #2563eb; }
+
+        /* Profile view modal – keeps the list intact */
+        .user-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            overflow-y: auto;
+        }
+        .user-modal-overlay.active { display: flex; }
+        .user-modal-box {
+            background: #fff;
+            border-radius: 14px;
+            padding: 24px;
+            max-width: 640px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .user-modal-box .close-modal {
+            position: absolute;
+            top: 12px;
+            right: 14px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-light);
+            line-height: 1;
+        }
+        .user-modal-box h3 { margin-bottom: 12px; padding-right: 30px; }
+        .user-modal-box p { margin-bottom: 8px; }
     </style>
 </head>
 <body>
@@ -78,7 +136,7 @@
 
             <div class="admin-section">
                 <h2>👥 All Users (Clients & Workers)</h2>
-                <p style="color:var(--text-light);margin-bottom:12px;">Users are sorted alphabetically. Use the filter <strong>Deleted Accounts</strong> to see and restore accounts. Click <strong>View</strong> for full details, posts and status.</p>
+                <p style="color:var(--text-light);margin-bottom:12px;">Users sorted alphabetically. Use filter <strong>Deleted Accounts</strong> to restore. Click <strong>View</strong> to open details (list stays open).</p>
                 <div class="admin-filter-bar">
                     <select id="userFilter" onchange="loadAllUsers()">
                         <option value="all">All Active Users</option>
@@ -86,7 +144,7 @@
                         <option value="clients">Clients only</option>
                         <option value="deleted">Deleted Accounts</option>
                     </select>
-                    <input type="text" id="userSearch" placeholder="Search by name, phone, location or category..." oninput="loadAllUsers()">
+                    <input type="text" id="userSearch" placeholder="Search by name, phone or location..." oninput="loadAllUsers()">
                 </div>
                 <div id="allUsersList"><p class="loading">Loading users...</p></div>
             </div>
@@ -118,6 +176,14 @@
         </div>
     </main>
 
+    <!-- Profile detail modal (does NOT replace the list) -->
+    <div class="user-modal-overlay" id="userModal">
+        <div class="user-modal-box" id="userModalContent">
+            <button type="button" class="close-modal" onclick="closeUserModal()">✕</button>
+            <div id="userModalBody"><p class="loading">Loading...</p></div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <script src="app.js"></script>
@@ -145,6 +211,13 @@
         loadAllWorkers();
         loadAllJobs();
         loadContactMails();
+
+        var modal = document.getElementById('userModal');
+        if (modal) {
+            modal.addEventListener('click', function (e) {
+                if (e.target === modal) closeUserModal();
+            });
+        }
     });
 
     function formatPhone(phone) {
@@ -183,12 +256,11 @@
             setText('statVisitors', (statsRes.data && statsRes.data.total_visitors) || 0);
             setText('statTodayVisitors', (statsRes.data && statsRes.data.visitors_today) || 0);
 
-            // Week & month from visitor_logs if table exists
             var weekStart = new Date();
             weekStart.setDate(weekStart.getDate() - 7);
             var monthStart = new Date();
             monthStart.setDate(1);
-            monthStart.setHours(0,0,0,0);
+            monthStart.setHours(0, 0, 0, 0);
 
             try {
                 var weekRes = await supabaseClient.from('visitor_logs').select('*', { count: 'exact', head: true }).gte('visited_at', weekStart.toISOString());
@@ -246,8 +318,7 @@
 
             var res = await query;
             if (res.error) {
-                setHtml('allUsersList', '<p class="empty-dashboard">Error: ' + res.error.message +
-                    '<br><br>If you see a column error, run the SQL migration for is_deleted in Supabase.</p>');
+                setHtml('allUsersList', '<p class="empty-dashboard">Error: ' + res.error.message + '</p>');
                 return;
             }
 
@@ -257,9 +328,7 @@
                     var name = (u.full_name || '').toLowerCase();
                     var phone = (u.phone || '').toLowerCase();
                     var loc = (u.location || '').toLowerCase();
-                    return name.indexOf(search) !== -1 ||
-                           phone.indexOf(search) !== -1 ||
-                           loc.indexOf(search) !== -1;
+                    return name.indexOf(search) !== -1 || phone.indexOf(search) !== -1 || loc.indexOf(search) !== -1;
                 });
             }
 
@@ -275,42 +344,55 @@
                 var isDeleted = u.is_deleted === true;
 
                 var contact = phone
-                    ? '<a class="btn-call" href="' + callLink(phone) + '">Call</a> ' +
-                      '<a class="btn-whatsapp" href="' + whatsappLink(phone) + '" target="_blank">WhatsApp</a> '
+                    ? '<a class="btn-call" href="' + callLink(phone) + '">Call</a>' +
+                      '<a class="btn-whatsapp" href="' + whatsappLink(phone) + '" target="_blank">WhatsApp</a>'
                     : '';
 
                 var actionBtn = isDeleted
-                    ? '<button class="btn-primary" onclick="restoreUser(\'' + u.id + '\',\'' + safeName + '\')">Restore</button>'
-                    : '<button class="btn-close-job" onclick="deleteUser(\'' + u.id + '\',\'' + safeName + '\')">Delete</button>';
+                    ? '<button type="button" class="btn-primary" onclick="restoreUser(\'' + u.id + '\',\'' + safeName + '\')">Restore</button>'
+                    : '<button type="button" class="btn-close-job" onclick="deleteUser(\'' + u.id + '\',\'' + safeName + '\')">Delete</button>';
 
                 return '<div class="user-row ' + (isDeleted ? 'deleted-user' : '') + '">' +
-                    '<div><h4 style="margin:0 0 4px;">' + (u.full_name || 'No name') +
+                    '<div style="min-width:0;flex:1;">' +
+                    '<h4 style="margin:0 0 4px;">' + (u.full_name || 'No name') +
                     (isDeleted ? ' <span style="color:#ef4444;">(Deleted)</span>' : '') +
-                    '</h4><p style="margin:0;font-size:0.9rem;">' + type + ' • ' + (u.location || 'Cameroon') +
-                    ' • ' + (phone || 'No phone') + '</p></div><div class="user-actions">' +
-                    '<button class="btn-small" onclick="viewUserDetail(\'' + u.id + '\')">View</button> ' +
+                    '</h4>' +
+                    '<p style="margin:0;font-size:0.9rem;">' + type + ' • ' + (u.location || 'Cameroon') + ' • ' + (phone || 'No phone') + '</p>' +
+                    '</div>' +
+                    '<div class="user-actions">' +
+                    '<button type="button" class="btn-small" onclick="viewUserDetail(\'' + u.id + '\')">View</button>' +
                     contact +
-                    '<button class="btn-small" onclick="sendSingleNotification(\'' + u.id + '\',\'' + safeName + '\')">Notify</button> ' +
-                    actionBtn + '</div></div>';
+                    '<button type="button" class="btn-small" onclick="sendSingleNotification(\'' + u.id + '\',\'' + safeName + '\')">Notify</button>' +
+                    actionBtn +
+                    '</div></div>';
             }).join(''));
         } catch (err) {
             setHtml('allUsersList', '<p class="empty-dashboard">Error loading users.</p>');
         }
     }
 
+    function closeUserModal() {
+        var modal = document.getElementById('userModal');
+        if (modal) modal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
     async function viewUserDetail(userId) {
         if (!supabaseClient || !userId) return;
-        setHtml('allUsersList', '<p class="loading">Loading account details...</p>');
+
+        var modal = document.getElementById('userModal');
+        var body = document.getElementById('userModalBody');
+        if (!modal || !body) return;
+
+        body.innerHTML = '<p class="loading">Loading account details...</p>';
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
 
         try {
-            var { data: profile, error } = await supabaseClient
-                .from('profiles')
-                .select('*')
-                .eq('id', userId)
-                .single();
-
-            if (error || !profile) {
-                setHtml('allUsersList', '<p class="empty-dashboard">Could not load user.</p><button class="btn-secondary" onclick="loadAllUsers()">← Back</button>');
+            var profileRes = await supabaseClient.from('profiles').select('*').eq('id', userId).single();
+            var profile = profileRes.data;
+            if (profileRes.error || !profile) {
+                body.innerHTML = '<p class="empty-dashboard">Could not load user.</p>';
                 return;
             }
 
@@ -322,7 +404,8 @@
 
             var workerHtml = '';
             if (profile.is_worker) {
-                var { data: w } = await supabaseClient.from('worker_details').select('*').eq('id', userId).maybeSingle();
+                var wRes = await supabaseClient.from('worker_details').select('*').eq('id', userId).maybeSingle();
+                var w = wRes.data;
                 if (w) {
                     workerHtml = '<hr style="margin:16px 0;"><h4>Worker Details</h4>' +
                         '<p><strong>Category:</strong> ' + (w.category || '—') + '</p>' +
@@ -333,20 +416,21 @@
                 }
             }
 
-            var jobsHtml = '';
-            var { data: jobs } = await supabaseClient
+            var jobsRes = await supabaseClient
                 .from('job_posts')
                 .select('id, title, category, status, created_at, location')
                 .eq('client_id', userId)
                 .order('created_at', { ascending: false })
-                .limit(30);
+                .limit(20);
 
-            if (jobs && jobs.length) {
-                jobsHtml = '<hr style="margin:16px 0;"><h4>Posted Jobs (' + jobs.length + ')</h4><ul style="padding-left:18px;">';
+            var jobs = jobsRes.data || [];
+            var jobsHtml = '';
+            if (jobs.length) {
+                jobsHtml = '<hr style="margin:16px 0;"><h4>Posted Jobs (' + jobs.length + ')</h4><ul style="padding-left:18px;margin:0;">';
                 jobs.forEach(function (j) {
                     var d = j.created_at ? new Date(j.created_at).toLocaleString('en-GB') : '';
-                    jobsHtml += '<li><a href="job.html?id=' + j.id + '">' + (j.title || 'Job') + '</a> — ' +
-                        (j.category || '') + ' • ' + (j.status || '') + ' • ' + d + ' • ' + (j.location || '') + '</li>';
+                    jobsHtml += '<li style="margin-bottom:6px;"><a href="job.html?id=' + j.id + '" target="_blank">' + (j.title || 'Job') + '</a> — ' +
+                        (j.category || '') + ' • ' + (j.status || '') + ' • ' + d + '</li>';
                 });
                 jobsHtml += '</ul>';
             } else {
@@ -359,31 +443,30 @@
                 : '';
 
             var actionBtn = profile.is_deleted
-                ? '<button class="btn-primary" onclick="restoreUser(\'' + profile.id + '\',\'' + safeName + '\')">Restore Account</button>'
-                : '<button class="btn-close-job" onclick="deleteUser(\'' + profile.id + '\',\'' + safeName + '\')">Delete Account</button>';
+                ? '<button type="button" class="btn-primary" onclick="restoreUser(\'' + profile.id + '\',\'' + safeName + '\'); closeUserModal();">Restore Account</button>'
+                : '<button type="button" class="btn-close-job" onclick="deleteUser(\'' + profile.id + '\',\'' + safeName + '\'); closeUserModal();">Delete Account</button>';
 
-            var html = '<div class="user-detail-box">' +
+            body.innerHTML =
                 '<h3>👤 Account Details</h3>' +
-                '<p class="meta">ID: ' + profile.id + '</p>' +
+                '<p style="font-size:0.8rem;color:var(--text-light);">ID: ' + profile.id + '</p>' +
                 '<p><strong>Name:</strong> ' + (profile.full_name || '—') + '</p>' +
                 '<p><strong>Type:</strong> ' + type + '</p>' +
                 '<p><strong>Phone:</strong> ' + (phone || '—') + '</p>' +
                 '<p><strong>Location:</strong> ' + (profile.location || '—') + '</p>' +
                 '<p><strong>Registered:</strong> ' + created + '</p>' +
                 '<p><strong>Deleted:</strong> ' + deleted + '</p>' +
-                (profile.avatar_url ? '<p><img src="' + profile.avatar_url + '" style="width:80px;height:80px;border-radius:50%;object-fit:cover;"></p>' : '') +
+                (profile.avatar_url ? '<p><img src="' + profile.avatar_url + '" style="width:80px;height:80px;border-radius:50%;object-fit:cover;margin-top:8px;" alt=""></p>' : '') +
                 workerHtml +
                 jobsHtml +
-                '<div class="detail-actions" style="margin-top:16px;">' + contactBtns +
-                '<button class="btn-small" onclick="sendSingleNotification(\'' + profile.id + '\',\'' + safeName + '\')">Send Notification</button> ' +
+                '<div class="detail-actions" style="margin-top:16px;">' +
+                contactBtns +
+                '<button type="button" class="btn-small" onclick="sendSingleNotification(\'' + profile.id + '\',\'' + safeName + '\')">Send Notification</button> ' +
                 actionBtn +
-                '<button class="btn-secondary" onclick="loadAllUsers()">← Back to list</button>' +
-                '</div></div>';
-
-            setHtml('allUsersList', html);
+                '<button type="button" class="btn-secondary" onclick="closeUserModal()">Close</button>' +
+                '</div>';
         } catch (err) {
             console.error(err);
-            setHtml('allUsersList', '<p class="empty-dashboard">Error loading details.</p><button class="btn-secondary" onclick="loadAllUsers()">← Back</button>');
+            body.innerHTML = '<p class="empty-dashboard">Error loading details.</p>';
         }
     }
 
@@ -401,48 +484,37 @@
     }
 
     async function deleteUser(userId, name) {
-        if (!confirm('Delete (deactivate) ' + name + '?\n\nThey will NOT be able to log in or appear on the site.\nYou can restore them later from the "Deleted Accounts" filter.')) return;
+        if (!confirm('Delete (deactivate) ' + name + '?\n\nThey will NOT be able to log in or appear on the site.\nYou can restore them later from "Deleted Accounts".')) return;
 
         var res = await supabaseClient
             .from('profiles')
-            .update({
-                is_deleted: true,
-                deleted_at: new Date().toISOString()
-            })
+            .update({ is_deleted: true, deleted_at: new Date().toISOString() })
             .eq('id', userId)
             .select('id, is_deleted');
 
         if (res.error) {
-            alert('Error deleting: ' + res.error.message +
-                '\n\nMost common causes:\n1) Run the SQL migration (is_deleted column + admin policies)\n2) Your account must have is_admin = true');
+            alert('Error deleting: ' + res.error.message);
             return;
         }
-
         if (!res.data || res.data.length === 0) {
-            alert('Delete did not apply (0 rows updated). Check that is_admin is true for your account and the SQL policies were added.');
+            alert('Delete did not apply. Check is_admin and SQL policies.');
             return;
         }
 
-        await supabaseClient
-            .from('worker_details')
-            .update({ availability: 'Deleted' })
-            .eq('id', userId);
-
-        alert(name + ' has been deleted (deactivated).\n\nThey can no longer use this account.\nOpen the filter "Deleted Accounts" to restore them anytime.');
+        await supabaseClient.from('worker_details').update({ availability: 'Deleted' }).eq('id', userId);
+        alert(name + ' has been deleted (deactivated).');
+        closeUserModal();
         loadAllUsers();
         loadAllWorkers();
         loadStats();
     }
 
     async function restoreUser(userId, name) {
-        if (!confirm('Restore ' + name + '? They will be able to log in again and appear on the site.')) return;
+        if (!confirm('Restore ' + name + '? They will be able to log in again.')) return;
 
         var res = await supabaseClient
             .from('profiles')
-            .update({
-                is_deleted: false,
-                deleted_at: null
-            })
+            .update({ is_deleted: false, deleted_at: null })
             .eq('id', userId)
             .select('id, is_deleted');
 
@@ -450,18 +522,14 @@
             alert('Error restoring: ' + res.error.message);
             return;
         }
-
         if (!res.data || res.data.length === 0) {
-            alert('Restore did not apply (0 rows updated). Check admin policies in Supabase.');
+            alert('Restore did not apply. Check admin policies.');
             return;
         }
 
-        await supabaseClient
-            .from('worker_details')
-            .update({ availability: 'Available' })
-            .eq('id', userId);
-
+        await supabaseClient.from('worker_details').update({ availability: 'Available' }).eq('id', userId);
         alert(name + ' restored successfully!');
+        closeUserModal();
         loadAllUsers();
         loadAllWorkers();
         loadStats();
@@ -558,7 +626,7 @@
                     '<p style="font-size:0.85rem;">' + preview + '</p>' +
                     '<p style="font-size:0.8rem;">' + date + ' • <span class="status-badge ' + statusClass + '">' + (d.status || '') + '</span></p>' +
                     '</div>' +
-                    '<div><button class="btn-small" onclick="event.stopPropagation(); openDisputeDetail(\'' + d.id + '\')">Open</button></div>' +
+                    '<div><button type="button" class="btn-small" onclick="event.stopPropagation(); openDisputeDetail(\'' + d.id + '\')">Open</button></div>' +
                     '</div>';
             }).join(''));
         } catch (err) {
@@ -580,13 +648,13 @@
         var safeTarget = (d.target_name || 'User').replace(/'/g, "\\'");
 
         var msgReporterBtn = reporterId
-            ? '<button class="btn-primary" onclick="messageUser(\'' + reporterId + '\',\'' + safeReporter + '\')">Message Reporter</button>'
+            ? '<button type="button" class="btn-primary" onclick="messageUser(\'' + reporterId + '\',\'' + safeReporter + '\')">Message Reporter</button>'
             : '';
         var msgTargetBtn = (targetId && d.target_type !== 'Bug' && d.target_type !== 'job')
-            ? '<button class="btn-primary" onclick="messageUser(\'' + targetId + '\',\'' + safeTarget + '\')">Message Reported Person</button>'
+            ? '<button type="button" class="btn-primary" onclick="messageUser(\'' + targetId + '\',\'' + safeTarget + '\')">Message Reported Person</button>'
             : '';
         var resolveBtn = d.status === 'Open'
-            ? '<button class="btn-small" onclick="resolveDispute(\'' + d.id + '\')">Mark Resolved</button>'
+            ? '<button type="button" class="btn-small" onclick="resolveDispute(\'' + d.id + '\')">Mark Resolved</button>'
             : '';
 
         var phonesHtml = '';
@@ -620,7 +688,7 @@
             '<p style="background:#f8fafc;padding:12px;border-radius:8px;white-space:pre-wrap;">' + (d.details || 'No details') + '</p>' +
             '<div class="detail-actions">' +
             msgReporterBtn + msgTargetBtn + resolveBtn +
-            '<button class="btn-secondary" onclick="loadDisputes()">← Back to list</button>' +
+            '<button type="button" class="btn-secondary" onclick="loadDisputes()">← Back to list</button>' +
             '</div></div>';
 
         setHtml('disputesList', html);
@@ -672,15 +740,17 @@
                 var p = w.profiles || {};
                 var safeName = (p.full_name || 'worker').replace(/'/g, "\\'");
                 var isDeleted = p.is_deleted === true || w.availability === 'Deleted';
-                return '<div class="dispute-row ' + (isDeleted ? 'deleted-user' : '') + '"><div class="dispute-info"><h4>' + (p.full_name || 'Unknown') +
+                return '<div class="dispute-row ' + (isDeleted ? 'deleted-user' : '') + '">' +
+                    '<div class="dispute-info"><h4>' + (p.full_name || 'Unknown') +
                     (isDeleted ? ' <span style="color:#ef4444;">(Deleted)</span>' : '') +
                     '</h4><p>' + (w.category || '') + ' • ' + (p.phone || 'No phone') + ' • ' + (p.location || 'Cameroon') +
                     '</p></div>' +
-                    '<button class="btn-small" onclick="viewUserDetail(\'' + w.id + '\')">View</button> ' +
+                    '<div class="user-actions">' +
+                    '<button type="button" class="btn-small" onclick="viewUserDetail(\'' + w.id + '\')">View</button> ' +
                     (isDeleted
-                        ? '<button class="btn-primary" onclick="restoreUser(\'' + w.id + '\',\'' + safeName + '\')">Restore</button>'
-                        : '<button class="btn-close-job" onclick="deleteUser(\'' + w.id + '\',\'' + safeName + '\')">Delete</button>') +
-                    '</div>';
+                        ? '<button type="button" class="btn-primary" onclick="restoreUser(\'' + w.id + '\',\'' + safeName + '\')">Restore</button>'
+                        : '<button type="button" class="btn-close-job" onclick="deleteUser(\'' + w.id + '\',\'' + safeName + '\')">Delete</button>') +
+                    '</div></div>';
             }).join(''));
         } catch (err) {
             setHtml('allWorkersList', '<p class="empty-dashboard">Error loading workers.</p>');
@@ -727,7 +797,7 @@
                 .limit(100);
 
             if (res.error) {
-                setHtml('contactMailsList', '<p class="empty-dashboard">Table contact_messages not found yet. Run the SQL below in Supabase.</p>');
+                setHtml('contactMailsList', '<p class="empty-dashboard">Table contact_messages not found. Run the SQL migration.</p>');
                 return;
             }
             if (!res.data || res.data.length === 0) {
@@ -743,7 +813,7 @@
                     '<p><strong>Phone:</strong> ' + (m.phone || '—') + '</p>' +
                     '<p><strong>Date:</strong> ' + date + '</p>' +
                     '<p style="white-space:pre-wrap;background:#f8fafc;padding:10px;border-radius:8px;">' + (m.message || '') + '</p>' +
-                    (m.read ? '' : '<button class="btn-small" onclick="markMailRead(\'' + m.id + '\')">Mark as Read</button>') +
+                    (m.read ? '' : '<button type="button" class="btn-small" onclick="markMailRead(\'' + m.id + '\')">Mark as Read</button>') +
                     '</div>';
             }).join(''));
         } catch (err) {
