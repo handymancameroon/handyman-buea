@@ -1,6 +1,6 @@
 /**
  * Handy Man Buea — Core Application Logic
- * Version: 1.3 (restored + minimal safe updates)
+ * Version: 1.3.1 (review counter fixed)
  * Date: 7 September 2026
  *
  * SECURITY NOTES:
@@ -161,7 +161,7 @@ function injectNavExtras() {
     var nav = document.getElementById('nav');
     if (!nav || nav.querySelector('.nav-bell')) return;
 
-    // My Profile link (renamed from My Jobs)
+    // My Profile link
     var dashLink = document.createElement('a');
     dashLink.href = 'dashboard.html';
     dashLink.className = 'btn-secondary';
@@ -324,7 +324,6 @@ async function checkAuth() {
                 .eq('id', user.id)
                 .single();
 
-            // Soft-delete check: force logout if account was deleted by admin
             if (profile && profile.is_deleted === true) {
                 await supabaseClient.auth.signOut();
                 currentUser = null;
@@ -344,10 +343,6 @@ async function checkAuth() {
     }
 }
 
-/**
- * Check if the current user is an admin.
- * CLIENT-SIDE convenience check only. Real security is enforced by RLS.
- */
 function isAdmin() {
     if (currentProfile && currentProfile.is_admin === true) return true;
     return false;
@@ -498,7 +493,7 @@ function renderCategories(categories) {
 }
 
 // ============================================================================
-// FEATURED WORKERS
+// FEATURED WORKERS + RENDER (FIXED REVIEW COUNTER)
 // ============================================================================
 async function loadFeaturedWorkers() {
     var grid = document.getElementById('workerGrid');
@@ -529,6 +524,13 @@ function renderWorkers(workers, container) {
         var avatar = w.profiles && w.profiles.avatar_url ? w.profiles.avatar_url : 'https://via.placeholder.com/80?text=No+Photo';
         var name = w.profiles && w.profiles.full_name ? w.profiles.full_name : 'Unknown';
         var location = w.profiles && w.profiles.location ? w.profiles.location : 'Cameroon';
+
+        // FIXED: always show a proper rating display
+        var rating = Number(w.rating) || 0;
+        var count = Number(w.review_count) || 0;
+        var stars = '⭐'.repeat(Math.max(0, Math.min(5, Math.round(rating))));
+        if (stars === '') stars = '☆☆☆☆☆';
+
         return '<div class="worker-card" onclick="viewWorker(\'' + w.id + '\')">' +
             '<div class="worker-avatar">' +
             '<img src="' + avatar + '" alt="' + name + '" onerror="this.src=\'https://via.placeholder.com/80?text=No+Photo\'">' +
@@ -536,7 +538,7 @@ function renderWorkers(workers, container) {
             '<h3>' + name + '</h3>' +
             '<p class="worker-category">' + (w.category || 'General') + '</p>' +
             '<p class="worker-location">📍 ' + location + '</p>' +
-            '<div class="worker-rating">' + '⭐'.repeat(Math.round(w.rating || 0)) + ' (' + (w.review_count || 0) + ' reviews)</div>' +
+            '<div class="worker-rating">' + stars + ' <span>(' + count + ' review' + (count === 1 ? '' : 's') + ')</span></div>' +
             '<button class="btn-small">View Profile</button>' +
             '</div>';
     }).join('');
