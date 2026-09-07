@@ -3,24 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel - Handy Man</title>
+    <title>Admin Panel - Handy Man Cameroon</title>
+    <meta name="robots" content="noindex, nofollow">
     <link rel="stylesheet" href="style.css">
     <style>
         .admin-filter-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
-        .admin-filter-bar select, .admin-filter-bar input { padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); }
-        .user-row, .dispute-row, .mail-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 14px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px; background: #fff; flex-wrap: wrap; }
-        .user-actions, .mail-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .admin-filter-bar select, .admin-filter-bar input { padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); min-width: 180px; }
+        .user-row, .dispute-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px; background: #fff; flex-wrap: wrap; }
+        .user-actions { display: flex; gap: 8px; flex-wrap: wrap; }
         .btn-whatsapp { background: #25D366; color: white; border: none; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; cursor: pointer; }
         .btn-call { background: #0ea5e9; color: white; border: none; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; }
         .broadcast-box { background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 24px; }
         .broadcast-box textarea { width: 100%; min-height: 100px; padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin: 10px 0; }
         .stat-card.today { border-left: 4px solid #22c55e; }
         .deleted-user { opacity: 0.65; background: #fef2f2 !important; }
-        .dispute-detail-box { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
-        .dispute-detail-box p { margin-bottom: 8px; }
+        .dispute-detail-box, .user-detail-box { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+        .dispute-detail-box p, .user-detail-box p { margin-bottom: 8px; }
         .detail-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
-        .mail-unread { border-left: 4px solid #3b82f6; background: #f0f9ff; }
-        .mail-body { font-size: 0.95rem; margin-top: 6px; white-space: pre-wrap; }
+        .mail-row { border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 10px; background: #fff; }
+        .mail-row.unread { border-left: 4px solid #2563eb; }
     </style>
 </head>
 <body>
@@ -45,18 +46,14 @@
 
             <div class="admin-stats-grid" id="statsGrid">
                 <div class="stat-card visitors"><h3 id="statVisitors">...</h3><p>Total Visitors</p></div>
+                <div class="stat-card today"><h3 id="statTodayVisitors">...</h3><p>Visitors Today</p></div>
+                <div class="stat-card"><h3 id="statWeekVisitors">...</h3><p>Visitors This Week</p></div>
+                <div class="stat-card"><h3 id="statMonthVisitors">...</h3><p>Visitors This Month</p></div>
                 <div class="stat-card today"><h3 id="statTodayRegs">...</h3><p>Registered Today</p></div>
                 <div class="stat-card workers"><h3 id="statWorkers">...</h3><p>Workers Registered</p></div>
                 <div class="stat-card clients"><h3 id="statClients">...</h3><p>Employers / Clients</p></div>
                 <div class="stat-card jobs"><h3 id="statJobs">...</h3><p>Total Job Posts</p></div>
                 <div class="stat-card disputes"><h3 id="statDisputes">...</h3><p>Open Disputes</p></div>
-            </div>
-
-            <!-- NEW: Contact Messages section -->
-            <div class="admin-section">
-                <h2>📩 Contact Messages (Mails)</h2>
-                <p style="color:var(--text-light);margin-bottom:12px;">Messages sent through the Contact Us form appear here.</p>
-                <div id="contactMessagesList"><p class="loading">Loading messages...</p></div>
             </div>
 
             <div class="admin-section">
@@ -75,8 +72,13 @@
             </div>
 
             <div class="admin-section">
+                <h2>📬 Contact Us Messages</h2>
+                <div id="contactMailsList"><p class="loading">Loading messages...</p></div>
+            </div>
+
+            <div class="admin-section">
                 <h2>👥 All Users (Clients & Workers)</h2>
-                <p style="color:var(--text-light);margin-bottom:12px;">Users are sorted alphabetically by name. Use the filter <strong>Deleted Accounts</strong> to see and restore accounts you deactivated.</p>
+                <p style="color:var(--text-light);margin-bottom:12px;">Users are sorted alphabetically. Use the filter <strong>Deleted Accounts</strong> to see and restore accounts. Click <strong>View</strong> for full details, posts and status.</p>
                 <div class="admin-filter-bar">
                     <select id="userFilter" onchange="loadAllUsers()">
                         <option value="all">All Active Users</option>
@@ -84,7 +86,7 @@
                         <option value="clients">Clients only</option>
                         <option value="deleted">Deleted Accounts</option>
                     </select>
-                    <input type="text" id="userSearch" placeholder="Search by name, phone or location..." oninput="loadAllUsers()">
+                    <input type="text" id="userSearch" placeholder="Search by name, phone, location or category..." oninput="loadAllUsers()">
                 </div>
                 <div id="allUsersList"><p class="loading">Loading users...</p></div>
             </div>
@@ -138,11 +140,11 @@
         }
 
         loadStats();
-        loadContactMessages();
         loadAllUsers();
         loadDisputes();
         loadAllWorkers();
         loadAllJobs();
+        loadContactMails();
     });
 
     function formatPhone(phone) {
@@ -177,120 +179,49 @@
     async function loadStats() {
         if (!supabaseClient) return;
         try {
-            // Total visitors
-            var statsRes = await supabaseClient.from('site_stats').select('total_visitors').eq('id', 1).maybeSingle();
+            var statsRes = await supabaseClient.from('site_stats').select('total_visitors, visitors_today').eq('id', 1).maybeSingle();
             setText('statVisitors', (statsRes.data && statsRes.data.total_visitors) || 0);
+            setText('statTodayVisitors', (statsRes.data && statsRes.data.visitors_today) || 0);
 
-            // Registered Today – more robust
+            // Week & month from visitor_logs if table exists
+            var weekStart = new Date();
+            weekStart.setDate(weekStart.getDate() - 7);
+            var monthStart = new Date();
+            monthStart.setDate(1);
+            monthStart.setHours(0,0,0,0);
+
+            try {
+                var weekRes = await supabaseClient.from('visitor_logs').select('*', { count: 'exact', head: true }).gte('visited_at', weekStart.toISOString());
+                setText('statWeekVisitors', weekRes.count || 0);
+            } catch (e) { setText('statWeekVisitors', '—'); }
+
+            try {
+                var monthRes = await supabaseClient.from('visitor_logs').select('*', { count: 'exact', head: true }).gte('visited_at', monthStart.toISOString());
+                setText('statMonthVisitors', monthRes.count || 0);
+            } catch (e) { setText('statMonthVisitors', '—'); }
+
             var todayStart = new Date();
             todayStart.setHours(0, 0, 0, 0);
-            var todayISO = todayStart.toISOString();
 
-            var todayRes = await supabaseClient
-                .from('profiles')
-                .select('id', { count: 'exact', head: true })
-                .gte('created_at', todayISO);
+            var todayRes = await supabaseClient.from('profiles').select('*', { count: 'exact', head: true }).gte('created_at', todayStart.toISOString());
+            setText('statTodayRegs', todayRes.count || 0);
 
-            setText('statTodayRegs', (todayRes && typeof todayRes.count === 'number') ? todayRes.count : 0);
+            var workerRes = await supabaseClient.from('profiles').select('*', { count: 'exact', head: true }).eq('is_worker', true).eq('is_deleted', false);
+            setText('statWorkers', workerRes.count || 0);
 
-            // Workers
-            var workerRes = await supabaseClient
-                .from('profiles')
-                .select('id', { count: 'exact', head: true })
-                .eq('is_worker', true)
-                .eq('is_deleted', false);
-            setText('statWorkers', (workerRes && typeof workerRes.count === 'number') ? workerRes.count : 0);
+            var clientRes = await supabaseClient.from('profiles').select('*', { count: 'exact', head: true }).eq('is_worker', false).eq('is_deleted', false);
+            setText('statClients', clientRes.count || 0);
 
-            // Clients
-            var clientRes = await supabaseClient
-                .from('profiles')
-                .select('id', { count: 'exact', head: true })
-                .eq('is_worker', false)
-                .eq('is_deleted', false);
-            setText('statClients', (clientRes && typeof clientRes.count === 'number') ? clientRes.count : 0);
+            var jobRes = await supabaseClient.from('job_posts').select('*', { count: 'exact', head: true });
+            setText('statJobs', jobRes.count || 0);
 
-            // Jobs
-            var jobRes = await supabaseClient
-                .from('job_posts')
-                .select('id', { count: 'exact', head: true });
-            setText('statJobs', (jobRes && typeof jobRes.count === 'number') ? jobRes.count : 0);
-
-            // Open disputes
-            var disputeRes = await supabaseClient
-                .from('disputes')
-                .select('id', { count: 'exact', head: true })
-                .eq('status', 'Open');
-            setText('statDisputes', (disputeRes && typeof disputeRes.count === 'number') ? disputeRes.count : 0);
-
+            var disputeRes = await supabaseClient.from('disputes').select('*', { count: 'exact', head: true }).eq('status', 'Open');
+            setText('statDisputes', disputeRes.count || 0);
         } catch (err) {
             console.error('Stats error:', err);
-            setText('statTodayRegs', '0');
         }
     }
 
-    // ========== CONTACT MESSAGES ==========
-    async function loadContactMessages() {
-        if (!supabaseClient) {
-            setHtml('contactMessagesList', '<p class="empty-dashboard">Cannot connect.</p>');
-            return;
-        }
-        try {
-            var res = await supabaseClient
-                .from('contact_messages')
-                .select('*')
-                .order('created_at', { ascending: false })
-                .limit(100);
-
-            if (res.error) {
-                setHtml('contactMessagesList',
-                    '<p class="empty-dashboard">Could not load messages.<br>' +
-                    'Error: ' + res.error.message + '<br><br>' +
-                    '👉 Run the SQL below in Supabase SQL Editor to create the table.</p>');
-                return;
-            }
-
-            var list = res.data || [];
-            if (list.length === 0) {
-                setHtml('contactMessagesList', '<p class="empty-dashboard">No contact messages yet.</p>');
-                return;
-            }
-
-            setHtml('contactMessagesList', list.map(function (m) {
-                var date = new Date(m.created_at).toLocaleString('en-GB');
-                var isUnread = m.status === 'new' || !m.status;
-                var cls = isUnread ? 'mail-row mail-unread' : 'mail-row';
-                return '<div class="' + cls + '">' +
-                    '<div style="flex:1;">' +
-                    '<h4 style="margin:0 0 4px;">' + (m.name || 'Anonymous') +
-                    (isUnread ? ' <span style="color:#3b82f6;font-size:0.8rem;">(New)</span>' : '') +
-                    '</h4>' +
-                    '<p style="margin:0;font-size:0.9rem;"><strong>Email:</strong> ' + (m.email || '—') +
-                    ' &nbsp;|&nbsp; <strong>Phone:</strong> ' + (m.phone || '—') + '</p>' +
-                    '<p style="margin:4px 0 0;font-size:0.85rem;color:#64748b;">' + date + '</p>' +
-                    '<div class="mail-body">' + (m.message || '') + '</div>' +
-                    '</div>' +
-                    '<div class="mail-actions">' +
-                    (isUnread ? '<button class="btn-small" onclick="markMessageRead(\'' + m.id + '\')">Mark Read</button> ' : '') +
-                    '<button class="btn-close-job" onclick="deleteContactMessage(\'' + m.id + '\')">Delete</button>' +
-                    '</div></div>';
-            }).join(''));
-        } catch (err) {
-            setHtml('contactMessagesList', '<p class="empty-dashboard">Error loading messages.</p>');
-        }
-    }
-
-    async function markMessageRead(id) {
-        await supabaseClient.from('contact_messages').update({ status: 'read' }).eq('id', id);
-        loadContactMessages();
-    }
-
-    async function deleteContactMessage(id) {
-        if (!confirm('Delete this message permanently?')) return;
-        await supabaseClient.from('contact_messages').delete().eq('id', id);
-        loadContactMessages();
-    }
-
-    // ========== USERS (same as before) ==========
     async function loadAllUsers() {
         if (!supabaseClient) {
             setHtml('allUsersList', '<p class="empty-dashboard">Cannot connect.</p>');
@@ -304,9 +235,9 @@
         try {
             var query = supabaseClient
                 .from('profiles')
-                .select('id, full_name, phone, is_worker, is_admin, location, created_at, is_deleted, deleted_at')
+                .select('id, full_name, phone, is_worker, is_admin, location, created_at, is_deleted, deleted_at, avatar_url')
                 .order('full_name', { ascending: true })
-                .limit(400);
+                .limit(500);
 
             if (filter === 'workers') query = query.eq('is_worker', true).eq('is_deleted', false);
             if (filter === 'clients') query = query.eq('is_worker', false).eq('is_deleted', false);
@@ -356,12 +287,103 @@
                     '<div><h4 style="margin:0 0 4px;">' + (u.full_name || 'No name') +
                     (isDeleted ? ' <span style="color:#ef4444;">(Deleted)</span>' : '') +
                     '</h4><p style="margin:0;font-size:0.9rem;">' + type + ' • ' + (u.location || 'Cameroon') +
-                    ' • ' + (phone || 'No phone') + '</p></div><div class="user-actions">' + contact +
+                    ' • ' + (phone || 'No phone') + '</p></div><div class="user-actions">' +
+                    '<button class="btn-small" onclick="viewUserDetail(\'' + u.id + '\')">View</button> ' +
+                    contact +
                     '<button class="btn-small" onclick="sendSingleNotification(\'' + u.id + '\',\'' + safeName + '\')">Notify</button> ' +
                     actionBtn + '</div></div>';
             }).join(''));
         } catch (err) {
             setHtml('allUsersList', '<p class="empty-dashboard">Error loading users.</p>');
+        }
+    }
+
+    async function viewUserDetail(userId) {
+        if (!supabaseClient || !userId) return;
+        setHtml('allUsersList', '<p class="loading">Loading account details...</p>');
+
+        try {
+            var { data: profile, error } = await supabaseClient
+                .from('profiles')
+                .select('*')
+                .eq('id', userId)
+                .single();
+
+            if (error || !profile) {
+                setHtml('allUsersList', '<p class="empty-dashboard">Could not load user.</p><button class="btn-secondary" onclick="loadAllUsers()">← Back</button>');
+                return;
+            }
+
+            var type = profile.is_admin ? 'Admin' : (profile.is_worker ? 'Worker' : 'Client');
+            var phone = profile.phone || '';
+            var created = profile.created_at ? new Date(profile.created_at).toLocaleString('en-GB') : '—';
+            var deleted = profile.is_deleted ? (profile.deleted_at ? new Date(profile.deleted_at).toLocaleString('en-GB') : 'Yes') : 'No';
+            var safeName = (profile.full_name || 'User').replace(/'/g, "\\'");
+
+            var workerHtml = '';
+            if (profile.is_worker) {
+                var { data: w } = await supabaseClient.from('worker_details').select('*').eq('id', userId).maybeSingle();
+                if (w) {
+                    workerHtml = '<hr style="margin:16px 0;"><h4>Worker Details</h4>' +
+                        '<p><strong>Category:</strong> ' + (w.category || '—') + '</p>' +
+                        '<p><strong>Rating:</strong> ' + (w.rating || 0) + '/5 (' + (w.review_count || 0) + ' reviews)</p>' +
+                        '<p><strong>Experience:</strong> ' + (w.experience_years || 0) + ' years</p>' +
+                        '<p><strong>Availability:</strong> ' + (w.availability || '—') + '</p>' +
+                        '<p><strong>Description:</strong> ' + (w.description || '—') + '</p>';
+                }
+            }
+
+            var jobsHtml = '';
+            var { data: jobs } = await supabaseClient
+                .from('job_posts')
+                .select('id, title, category, status, created_at, location')
+                .eq('client_id', userId)
+                .order('created_at', { ascending: false })
+                .limit(30);
+
+            if (jobs && jobs.length) {
+                jobsHtml = '<hr style="margin:16px 0;"><h4>Posted Jobs (' + jobs.length + ')</h4><ul style="padding-left:18px;">';
+                jobs.forEach(function (j) {
+                    var d = j.created_at ? new Date(j.created_at).toLocaleString('en-GB') : '';
+                    jobsHtml += '<li><a href="job.html?id=' + j.id + '">' + (j.title || 'Job') + '</a> — ' +
+                        (j.category || '') + ' • ' + (j.status || '') + ' • ' + d + ' • ' + (j.location || '') + '</li>';
+                });
+                jobsHtml += '</ul>';
+            } else {
+                jobsHtml = '<hr style="margin:16px 0;"><p>No job posts by this user.</p>';
+            }
+
+            var contactBtns = phone
+                ? '<a class="btn-call" href="' + callLink(phone) + '">Call</a> ' +
+                  '<a class="btn-whatsapp" href="' + whatsappLink(phone) + '" target="_blank">WhatsApp</a> '
+                : '';
+
+            var actionBtn = profile.is_deleted
+                ? '<button class="btn-primary" onclick="restoreUser(\'' + profile.id + '\',\'' + safeName + '\')">Restore Account</button>'
+                : '<button class="btn-close-job" onclick="deleteUser(\'' + profile.id + '\',\'' + safeName + '\')">Delete Account</button>';
+
+            var html = '<div class="user-detail-box">' +
+                '<h3>👤 Account Details</h3>' +
+                '<p class="meta">ID: ' + profile.id + '</p>' +
+                '<p><strong>Name:</strong> ' + (profile.full_name || '—') + '</p>' +
+                '<p><strong>Type:</strong> ' + type + '</p>' +
+                '<p><strong>Phone:</strong> ' + (phone || '—') + '</p>' +
+                '<p><strong>Location:</strong> ' + (profile.location || '—') + '</p>' +
+                '<p><strong>Registered:</strong> ' + created + '</p>' +
+                '<p><strong>Deleted:</strong> ' + deleted + '</p>' +
+                (profile.avatar_url ? '<p><img src="' + profile.avatar_url + '" style="width:80px;height:80px;border-radius:50%;object-fit:cover;"></p>' : '') +
+                workerHtml +
+                jobsHtml +
+                '<div class="detail-actions" style="margin-top:16px;">' + contactBtns +
+                '<button class="btn-small" onclick="sendSingleNotification(\'' + profile.id + '\',\'' + safeName + '\')">Send Notification</button> ' +
+                actionBtn +
+                '<button class="btn-secondary" onclick="loadAllUsers()">← Back to list</button>' +
+                '</div></div>';
+
+            setHtml('allUsersList', html);
+        } catch (err) {
+            console.error(err);
+            setHtml('allUsersList', '<p class="empty-dashboard">Error loading details.</p><button class="btn-secondary" onclick="loadAllUsers()">← Back</button>');
         }
     }
 
@@ -406,7 +428,7 @@
             .update({ availability: 'Deleted' })
             .eq('id', userId);
 
-        alert(name + ' has been deleted (deactivated).\n\nThey can no longer use this account and should not appear when browsing the site.\nOpen the filter "Deleted Accounts" to restore them anytime.');
+        alert(name + ' has been deleted (deactivated).\n\nThey can no longer use this account.\nOpen the filter "Deleted Accounts" to restore them anytime.');
         loadAllUsers();
         loadAllWorkers();
         loadStats();
@@ -534,19 +556,102 @@
                     '<p><strong>Target:</strong> ' + (d.target_name || '') + ' (' + (d.target_type || '') + ')</p>' +
                     '<p><strong>Reporter:</strong> ' + (d.reporter_name || 'Anonymous') + '</p>' +
                     '<p style="font-size:0.85rem;">' + preview + '</p>' +
-                    '<p style="font-size:0.8rem;color:#64748b;">' + date + ' • <span class="' + statusClass + '">' + (d.status || 'Open') + '</span></p>' +
-                    '</div></div>';
+                    '<p style="font-size:0.8rem;">' + date + ' • <span class="status-badge ' + statusClass + '">' + (d.status || '') + '</span></p>' +
+                    '</div>' +
+                    '<div><button class="btn-small" onclick="event.stopPropagation(); openDisputeDetail(\'' + d.id + '\')">Open</button></div>' +
+                    '</div>';
             }).join(''));
         } catch (err) {
             setHtml('disputesList', '<p class="empty-dashboard">Error loading disputes.</p>');
         }
     }
 
-    // Keep the rest of your existing dispute detail, workers and jobs functions
-    // (they remain unchanged from your current working version)
-    async function openDisputeDetail(id) {
-        // Placeholder – your existing openDisputeDetail function stays the same
-        alert('Dispute detail view – your previous working function will continue here. Tell me if you need the full version again.');
+    async function openDisputeDetail(disputeId) {
+        var { data: d, error } = await supabaseClient.from('disputes').select('*').eq('id', disputeId).single();
+        if (error || !d) {
+            alert('Could not load dispute.');
+            return;
+        }
+
+        var date = new Date(d.created_at).toLocaleString('en-GB');
+        var reporterId = d.reporter_id || '';
+        var targetId = d.target_id || '';
+        var safeReporter = (d.reporter_name || 'Reporter').replace(/'/g, "\\'");
+        var safeTarget = (d.target_name || 'User').replace(/'/g, "\\'");
+
+        var msgReporterBtn = reporterId
+            ? '<button class="btn-primary" onclick="messageUser(\'' + reporterId + '\',\'' + safeReporter + '\')">Message Reporter</button>'
+            : '';
+        var msgTargetBtn = (targetId && d.target_type !== 'Bug' && d.target_type !== 'job')
+            ? '<button class="btn-primary" onclick="messageUser(\'' + targetId + '\',\'' + safeTarget + '\')">Message Reported Person</button>'
+            : '';
+        var resolveBtn = d.status === 'Open'
+            ? '<button class="btn-small" onclick="resolveDispute(\'' + d.id + '\')">Mark Resolved</button>'
+            : '';
+
+        var phonesHtml = '';
+        try {
+            var ids = [];
+            if (reporterId) ids.push(reporterId);
+            if (targetId && targetId.length > 10) ids.push(targetId);
+            if (ids.length) {
+                var pr = await supabaseClient.from('profiles').select('id, full_name, phone').in('id', ids);
+                if (pr.data) {
+                    phonesHtml = pr.data.map(function (p) {
+                        var ph = p.phone || '';
+                        if (!ph) return '';
+                        return '<p><strong>' + (p.full_name || 'User') + ':</strong> ' +
+                            '<a class="btn-call" href="' + callLink(ph) + '">Call</a> ' +
+                            '<a class="btn-whatsapp" href="' + whatsappLink(ph) + '" target="_blank">WhatsApp</a></p>';
+                    }).join('');
+                }
+            }
+        } catch (e) {}
+
+        var html = '<div class="dispute-detail-box">' +
+            '<h3>🚩 Dispute Detail</h3>' +
+            '<p><strong>Reason:</strong> ' + (d.reason || '') + '</p>' +
+            '<p><strong>Target:</strong> ' + (d.target_name || '') + ' (' + (d.target_type || '') + ') — ID: ' + (targetId || 'n/a') + '</p>' +
+            '<p><strong>Reporter:</strong> ' + (d.reporter_name || 'Anonymous') + ' — ID: ' + (reporterId || 'n/a') + '</p>' +
+            '<p><strong>Status:</strong> ' + (d.status || '') + '</p>' +
+            '<p><strong>Date:</strong> ' + date + '</p>' +
+            phonesHtml +
+            '<p style="margin-top:12px;"><strong>Full details:</strong></p>' +
+            '<p style="background:#f8fafc;padding:12px;border-radius:8px;white-space:pre-wrap;">' + (d.details || 'No details') + '</p>' +
+            '<div class="detail-actions">' +
+            msgReporterBtn + msgTargetBtn + resolveBtn +
+            '<button class="btn-secondary" onclick="loadDisputes()">← Back to list</button>' +
+            '</div></div>';
+
+        setHtml('disputesList', html);
+    }
+
+    async function messageUser(userId, userName) {
+        if (!userId || userId === 'null' || userId === 'undefined') {
+            alert('No user ID available for this person.');
+            return;
+        }
+        var message = prompt('Write a message for ' + userName + ':');
+        if (!message || !message.trim()) return;
+        var res = await supabaseClient.from('notifications').insert([{
+            user_id: userId,
+            title: 'Message from Admin (Dispute)',
+            message: message.trim(),
+            read: false
+        }]);
+        if (res.error) alert('Error: ' + res.error.message);
+        else alert('Notification sent to ' + userName);
+    }
+
+    async function resolveDispute(disputeId) {
+        if (!confirm('Mark as resolved?')) return;
+        var res = await supabaseClient.from('disputes').update({ status: 'Resolved' }).eq('id', disputeId);
+        if (res.error) alert('Error: ' + res.error.message);
+        else {
+            alert('Resolved.');
+            loadDisputes();
+            loadStats();
+        }
     }
 
     async function loadAllWorkers() {
@@ -560,17 +665,24 @@
                 .select('*, profiles(full_name, phone, location, is_deleted)')
                 .order('created_at', { ascending: false });
             if (res.error || !res.data || res.data.length === 0) {
-                setHtml('allWorkersList', '<p class="empty-dashboard">No workers found.</p>');
+                setHtml('allWorkersList', '<p class="empty-dashboard">No workers yet.</p>');
                 return;
             }
             setHtml('allWorkersList', res.data.map(function (w) {
                 var p = w.profiles || {};
+                var safeName = (p.full_name || 'worker').replace(/'/g, "\\'");
                 var isDeleted = p.is_deleted === true || w.availability === 'Deleted';
                 return '<div class="dispute-row ' + (isDeleted ? 'deleted-user' : '') + '"><div class="dispute-info"><h4>' + (p.full_name || 'Unknown') +
                     (isDeleted ? ' <span style="color:#ef4444;">(Deleted)</span>' : '') +
-                    '</h4><p>' + (w.category || '') + ' • ' + (p.location || '') + '</p></div></div>';
+                    '</h4><p>' + (w.category || '') + ' • ' + (p.phone || 'No phone') + ' • ' + (p.location || 'Cameroon') +
+                    '</p></div>' +
+                    '<button class="btn-small" onclick="viewUserDetail(\'' + w.id + '\')">View</button> ' +
+                    (isDeleted
+                        ? '<button class="btn-primary" onclick="restoreUser(\'' + w.id + '\',\'' + safeName + '\')">Restore</button>'
+                        : '<button class="btn-close-job" onclick="deleteUser(\'' + w.id + '\',\'' + safeName + '\')">Delete</button>') +
+                    '</div>';
             }).join(''));
-        } catch (e) {
+        } catch (err) {
             setHtml('allWorkersList', '<p class="empty-dashboard">Error loading workers.</p>');
         }
     }
@@ -584,22 +696,64 @@
             var res = await supabaseClient
                 .from('job_posts')
                 .select('*, profiles(full_name)')
-                .order('created_at', { ascending: false })
-                .limit(50);
+                .order('created_at', { ascending: false });
             if (res.error || !res.data || res.data.length === 0) {
-                setHtml('allJobsList', '<p class="empty-dashboard">No jobs found.</p>');
+                setHtml('allJobsList', '<p class="empty-dashboard">No jobs yet.</p>');
                 return;
             }
             setHtml('allJobsList', res.data.map(function (job) {
                 var date = new Date(job.created_at).toLocaleDateString('en-GB');
                 var poster = (job.profiles && job.profiles.full_name) || 'Unknown';
                 return '<div class="dispute-row"><div class="dispute-info"><h4>' + (job.title || '') +
-                    '</h4><p>' + (job.category || '') + ' • ' + (job.location || '') + ' • by ' + poster +
-                    '</p><p style="font-size:0.8rem;">' + date + ' • ' + (job.status || 'Open') + '</p></div></div>';
+                    '</h4><p>' + (job.category || '') + ' • ' + (job.location || '') + ' • ' + poster + ' • ' + date +
+                    ' • ' + (job.status || '') + '</p></div>' +
+                    '<a href="job.html?id=' + job.id + '" class="btn-small">View</a></div>';
             }).join(''));
-        } catch (e) {
+        } catch (err) {
             setHtml('allJobsList', '<p class="empty-dashboard">Error loading jobs.</p>');
         }
+    }
+
+    async function loadContactMails() {
+        if (!supabaseClient) {
+            setHtml('contactMailsList', '<p class="empty-dashboard">Cannot connect.</p>');
+            return;
+        }
+        try {
+            var res = await supabaseClient
+                .from('contact_messages')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(100);
+
+            if (res.error) {
+                setHtml('contactMailsList', '<p class="empty-dashboard">Table contact_messages not found yet. Run the SQL below in Supabase.</p>');
+                return;
+            }
+            if (!res.data || res.data.length === 0) {
+                setHtml('contactMailsList', '<p class="empty-dashboard">No contact messages yet.</p>');
+                return;
+            }
+
+            setHtml('contactMailsList', res.data.map(function (m) {
+                var date = m.created_at ? new Date(m.created_at).toLocaleString('en-GB') : '';
+                var unreadClass = m.read ? '' : 'unread';
+                return '<div class="mail-row ' + unreadClass + '">' +
+                    '<p><strong>From:</strong> ' + (m.name || 'Anonymous') + ' &lt;' + (m.email || '') + '&gt;</p>' +
+                    '<p><strong>Phone:</strong> ' + (m.phone || '—') + '</p>' +
+                    '<p><strong>Date:</strong> ' + date + '</p>' +
+                    '<p style="white-space:pre-wrap;background:#f8fafc;padding:10px;border-radius:8px;">' + (m.message || '') + '</p>' +
+                    (m.read ? '' : '<button class="btn-small" onclick="markMailRead(\'' + m.id + '\')">Mark as Read</button>') +
+                    '</div>';
+            }).join(''));
+        } catch (err) {
+            setHtml('contactMailsList', '<p class="empty-dashboard">Error loading messages.</p>');
+        }
+    }
+
+    async function markMailRead(id) {
+        await supabaseClient.from('contact_messages').update({ read: true }).eq('id', id);
+        loadContactMails();
     }
     </script>
 </body>
