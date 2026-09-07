@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Profile - Handy Man</title>
+    <title>My Profile - Handy Man Cameroon</title>
+    <meta name="robots" content="noindex, nofollow">
     <link rel="stylesheet" href="style.css">
     <style>
         .dashboard-section { background: var(--card); padding: 24px; border-radius: 12px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
@@ -17,7 +18,6 @@
             width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem; font-family: inherit;
         }
         .edit-form textarea { min-height: 80px; resize: vertical; }
-        .edit-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
     </style>
 </head>
 <body>
@@ -55,8 +55,8 @@
 
             <div class="dashboard-section">
                 <h2>✏️ Edit My Profile</h2>
-                <div id="editProfileSection">
-                    <p class="loading">Loading profile form...</p>
+                <div id="editProfileSection" class="edit-form">
+                    <p class="loading">Loading...</p>
                 </div>
             </div>
 
@@ -87,14 +87,6 @@
     <script src="app.js"></script>
     <script>
         let myWorkerCategory = null;
-        let currentProfileData = null;
-        let currentWorkerData = null;
-
-        const TOWNS = [
-            'Buea','Limbe','Douala','Yaoundé','Bamenda','Bafoussam','Kribi','Kumba',
-            'Garoua','Maroua','Ngaoundéré','Bertoua','Ebolowa','Dschang','Nkongsamba',
-            'Edéa','Mutengene','Tiko','Other'
-        ];
 
         document.addEventListener('DOMContentLoaded', async () => {
             await checkAuth();
@@ -107,7 +99,7 @@
                 if (box) box.style.display = 'block';
             }
             loadPhotoSection();
-            loadEditProfileForm();
+            loadEditProfile();
             loadMyJobs();
             loadMyWorkerProfile();
             loadMyDisputes();
@@ -146,168 +138,115 @@
             alert('Photo updated successfully!');
             loadPhotoSection();
             loadMyWorkerProfile();
-            loadEditProfileForm();
         }
 
-        async function loadEditProfileForm() {
+        async function loadEditProfile() {
             const container = document.getElementById('editProfileSection');
             try {
                 const { data: profile } = await supabaseClient
                     .from('profiles')
-                    .select('*')
+                    .select('full_name, phone, location')
                     .eq('id', currentUser.id)
                     .single();
 
-                currentProfileData = profile || {};
+                const { data: worker } = await supabaseClient
+                    .from('worker_details')
+                    .select('category, description, experience_years, availability')
+                    .eq('id', currentUser.id)
+                    .maybeSingle();
 
-                let worker = null;
-                if (profile && profile.is_worker) {
-                    const { data: wd } = await supabaseClient
-                        .from('worker_details')
-                        .select('*')
-                        .eq('id', currentUser.id)
-                        .maybeSingle();
-                    worker = wd;
-                    currentWorkerData = wd;
-                }
-
-                const townOptions = TOWNS.map(t => {
-                    const selected = (profile && profile.location === t) ? ' selected' : '';
-                    return `<option value="${t}"${selected}>${t}</option>`;
-                }).join('');
+                const towns = ['Buea','Limbe','Douala','Yaoundé','Bamenda','Bafoussam','Kribi','Kumba','Garoua','Maroua','Ngaoundéré','Bertoua','Ebolowa','Dschang','Nkongsamba','Edéa','Mutengene','Tiko','Other'];
+                let townOptions = towns.map(t => `<option value="${t}" ${(profile && profile.location === t) ? 'selected' : ''}>${t}</option>`).join('');
 
                 let workerFields = '';
-                if (profile && profile.is_worker) {
+                if (worker) {
                     workerFields = `
                         <div class="form-group">
-                            <label>Service Category</label>
-                            <input type="text" id="editCategory" value="${(worker && worker.category) || ''}" placeholder="e.g. Plumbing">
+                            <label>Category</label>
+                            <input type="text" id="editCategory" value="${worker.category || ''}">
                         </div>
                         <div class="form-group">
-                            <label>Years of Experience</label>
-                            <input type="number" id="editExperience" min="0" value="${(worker && worker.experience_years) || 0}">
+                            <label>Description of services</label>
+                            <textarea id="editDescription">${worker.description || ''}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Years of experience</label>
+                            <input type="number" id="editExperience" min="0" value="${worker.experience_years || 0}">
                         </div>
                         <div class="form-group">
                             <label>Availability</label>
                             <select id="editAvailability">
-                                <option value="Available" ${(worker && worker.availability === 'Available') ? 'selected' : ''}>Available</option>
-                                <option value="Busy" ${(worker && worker.availability === 'Busy') ? 'selected' : ''}>Busy</option>
+                                <option value="Available" ${worker.availability === 'Available' ? 'selected' : ''}>Available</option>
+                                <option value="Busy" ${worker.availability === 'Busy' ? 'selected' : ''}>Busy</option>
                             </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Description of Services</label>
-                            <textarea id="editDescription">${(worker && worker.description) || ''}</textarea>
                         </div>
                     `;
                 }
 
                 container.innerHTML = `
-                    <form class="edit-form" onsubmit="saveProfile(event)">
-                        <div class="form-group">
-                            <label>Full Name *</label>
-                            <input type="text" id="editName" required value="${(profile && profile.full_name) || ''}">
-                        </div>
-                        <div class="form-group">
-                            <label>Phone (WhatsApp) *</label>
-                            <input type="tel" id="editPhone" required value="${(profile && profile.phone) || ''}">
-                        </div>
-                        <div class="form-group">
-                            <label>Town / City *</label>
-                            <select id="editTown" required>
-                                <option value="">Select town</option>
-                                ${townOptions}
-                            </select>
-                        </div>
-                        ${workerFields}
-                        <div class="edit-actions">
-                            <button type="submit" class="btn-primary" id="saveProfileBtn">Save Changes</button>
-                        </div>
-                        <p id="editProfileMsg" class="message" style="display:none;"></p>
-                    </form>
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" id="editName" value="${(profile && profile.full_name) || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>Phone / WhatsApp</label>
+                        <input type="tel" id="editPhone" value="${(profile && profile.phone) || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>Town / City</label>
+                        <select id="editTown">${townOptions}</select>
+                    </div>
+                    ${workerFields}
+                    <button class="btn-primary" onclick="saveProfile()">Save Changes</button>
+                    <p id="editStatus" class="message" style="display:none;"></p>
                 `;
             } catch (err) {
-                container.innerHTML = '<p class="empty-dashboard">Could not load profile form.</p>';
+                container.innerHTML = '<p class="empty-dashboard">Error loading profile form.</p>';
             }
         }
 
-        async function saveProfile(e) {
-            e.preventDefault();
-            const btn = document.getElementById('saveProfileBtn');
-            const msg = document.getElementById('editProfileMsg');
-            btn.disabled = true;
-            btn.textContent = 'Saving...';
-
-            const fullName = document.getElementById('editName').value.trim();
+        async function saveProfile() {
+            const status = document.getElementById('editStatus');
+            const name = document.getElementById('editName').value.trim();
             const phone = document.getElementById('editPhone').value.trim();
-            const location = document.getElementById('editTown').value;
+            const town = document.getElementById('editTown').value;
 
-            if (!fullName || !phone || !location) {
-                msg.textContent = 'Please fill all required fields.';
-                msg.className = 'message error';
-                msg.style.display = 'block';
-                btn.disabled = false;
-                btn.textContent = 'Save Changes';
+            if (!name) {
+                status.textContent = 'Name is required.';
+                status.className = 'message error';
+                status.style.display = 'block';
                 return;
             }
 
             try {
-                const { error: pErr } = await supabaseClient
-                    .from('profiles')
-                    .update({
-                        full_name: fullName,
-                        phone: phone,
-                        location: location
-                    })
-                    .eq('id', currentUser.id);
+                await supabaseClient.from('profiles').update({
+                    full_name: name,
+                    phone: phone,
+                    location: town
+                }).eq('id', currentUser.id);
 
-                if (pErr) throw pErr;
-
-                // Update worker_details if this is a worker
-                if (currentProfileData && currentProfileData.is_worker) {
-                    const category = document.getElementById('editCategory')
-                        ? document.getElementById('editCategory').value.trim()
-                        : null;
-                    const experience = document.getElementById('editExperience')
-                        ? parseInt(document.getElementById('editExperience').value, 10) || 0
-                        : 0;
-                    const availability = document.getElementById('editAvailability')
-                        ? document.getElementById('editAvailability').value
-                        : 'Available';
-                    const description = document.getElementById('editDescription')
-                        ? document.getElementById('editDescription').value.trim()
-                        : '';
-
-                    const workerUpdate = {
+                const catEl = document.getElementById('editCategory');
+                if (catEl) {
+                    await supabaseClient.from('worker_details').update({
+                        category: catEl.value.trim(),
+                        description: document.getElementById('editDescription').value.trim(),
+                        experience_years: parseInt(document.getElementById('editExperience').value, 10) || 0,
+                        availability: document.getElementById('editAvailability').value,
                         contact_phone: phone,
                         whatsapp_number: phone
-                    };
-                    if (category) workerUpdate.category = category;
-                    workerUpdate.experience_years = experience;
-                    workerUpdate.availability = availability;
-                    workerUpdate.description = description;
-
-                    await supabaseClient
-                        .from('worker_details')
-                        .update(workerUpdate)
-                        .eq('id', currentUser.id);
+                    }).eq('id', currentUser.id);
                 }
 
-                msg.textContent = 'Profile updated successfully!';
-                msg.className = 'message success';
-                msg.style.display = 'block';
-
+                status.textContent = 'Profile updated successfully!';
+                status.className = 'message success';
+                status.style.display = 'block';
                 loadPhotoSection();
                 loadMyWorkerProfile();
-                loadEditProfileForm();
             } catch (err) {
-                console.error(err);
-                msg.textContent = 'Error: ' + (err.message || 'Could not save');
-                msg.className = 'message error';
-                msg.style.display = 'block';
+                status.textContent = 'Error: ' + (err.message || 'Could not save');
+                status.className = 'message error';
+                status.style.display = 'block';
             }
-
-            btn.disabled = false;
-            btn.textContent = 'Save Changes';
         }
 
         async function loadMyJobs() {
