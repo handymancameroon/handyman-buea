@@ -1,6 +1,6 @@
 /**
  * Handy Man Cameroon — Core Application Logic
- * Version: 1.4.0 (Full bilingual EN/FR support) 
+ * Version: 1.4.0 (Full bilingual EN/FR support)  
  * Date: 7 September 2026
  */
 
