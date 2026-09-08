@@ -3,6 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Preconnect early so the browser opens these connections while the
+         rest of the HTML is still parsing, instead of waiting until the
+         script/image tags are actually reached. Shortens how long the
+         loading states are visible, especially on slow connections. -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://zuhkhpdrxwfjcqnolmpu.supabase.co" crossorigin>
+    <link rel="preconnect" href="https://images.unsplash.com" crossorigin>
+
     <title>Handy Man Cameroon – Find Trusted Plumbers, Electricians & Local Workers</title>
     <meta name="description" content="Handy Man Cameroon connects you with trusted local workers: plumbers, electricians, cleaners, carpenters, masons and more in Buea, Douala, Yaoundé, Bamenda and across Cameroon. Free to use.">
     <meta name="keywords" content="handyman Cameroon, plumber Buea, electrician Douala, cleaner Yaoundé, local workers Cameroon, find workers Buea, Handy Man">
