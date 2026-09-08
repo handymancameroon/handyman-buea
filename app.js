@@ -144,13 +144,13 @@ const I18N = {
         no_notifications: "No new notifications",
         just_now: "Just now"
     },
-    fr: {
-        // Navigation
+        fr: {
+        // Navigation (shortened so the menu stays on one line)
         nav_home: "Accueil",
-        nav_workers: "Trouver des travailleurs",
-        nav_jobs: "Trouver des emplois",
-        nav_join: "Rejoindre comme travailleur",
-        nav_post: "Publier un emploi",
+        nav_workers: "Ouvriers",
+        nav_jobs: "Emplois",
+        nav_join: "Devenir ouvrier",
+        nav_post: "Publier",
         nav_login: "Connexion",
         nav_logout: "Déconnexion",
         nav_profile: "Mon Profil",
