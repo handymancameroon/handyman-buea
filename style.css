@@ -25,10 +25,24 @@ body {
     line-height: 1.6;
 }
 
+/* Safety net: no image (broken, missing, or slow-loading) can ever blow out
+   a layout or force horizontal scroll. Elements that need a specific size
+   (.worker-avatar img, .profile-avatar, etc.) still win because they are
+   more specific selectors. */
+img {
+    max-width: 100%;
+    height: auto;
+}
+
 .container {
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 20px;
+}
+
+/* Generic utility */
+.hidden {
+    display: none !important;
 }
 
 /* ========== HEADER ========== */
@@ -313,6 +327,25 @@ section h2 {
     gap: 24px;
 }
 
+/* FIX: while data is loading (or empty / errored), the grid containers above
+   only have ONE child (a short text/div). CSS Grid places a lone child in
+   the first cell only, so it renders small and pinned to the left edge.
+   The instant real cards replace it, the grid suddenly fills out — that is
+   the "packed left, then rearranges" jump. Forcing these states to span
+   every column fixes it so the loading/empty/error message is centered
+   across the full row from the very first paint. */
+.category-grid > .loading,
+.category-grid > .empty,
+.category-grid > .error,
+.worker-grid > .loading,
+.worker-grid > .empty,
+.worker-grid > .error,
+.job-grid > .loading,
+.job-grid > .empty,
+.job-grid > .error {
+    grid-column: 1 / -1;
+}
+
 .worker-card, .job-card {
     background: var(--card);
     border-radius: 12px;
@@ -334,6 +367,32 @@ section h2 {
     border-radius: 50%;
     object-fit: cover;
     margin-bottom: 12px;
+}
+
+/* Local, network-free replacement for the dead via.placeholder.com images.
+   Use this instead of an <img> tag whenever a worker/client has no photo:
+   e.g. <div class="avatar-placeholder">🧑</div>
+   It never fails to load, never causes a broken-image icon, and never
+   shifts the layout because its size is fixed with CSS, not a downloaded
+   file. */
+.avatar-placeholder {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--border);
+    color: var(--text-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    margin: 0 auto 12px;
+    flex-shrink: 0;
+}
+
+.profile-avatar.avatar-placeholder {
+    width: 120px;
+    height: 120px;
+    font-size: 2.5rem;
 }
 
 .worker-card h3, .job-card h3 {
