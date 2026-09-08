@@ -346,6 +346,17 @@ section h2 {
     grid-column: 1 / -1;
 }
 
+/* Belt-and-suspenders: if any page ever leaves a single, unclassed
+   placeholder (e.g. plain "Loading..." text with no wrapper) sitting
+   inside one of these grids, it still won't get stranded in the first
+   column alone — it will span the row and center itself. */
+.category-grid > *:only-child,
+.worker-grid > *:only-child,
+.job-grid > *:only-child {
+    grid-column: 1 / -1;
+    text-align: center;
+}
+
 .worker-card, .job-card {
     background: var(--card);
     border-radius: 12px;
