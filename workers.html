@@ -11,12 +11,12 @@
         <div class="container">
             <a href="index.html" class="logo">🔧 Handy Man</a>
             <nav class="nav" id="nav">
-                <a href="index.html" data-i18n="nav_home">Home</a>
-                <a href="workers.html" data-i18n="nav_workers">Find Workers</a>
-                <a href="jobs.html" data-i18n="nav_jobs">Find Jobs</a>
-                <a href="login.html" class="btn-secondary" data-i18n="nav_join">Join as Worker</a>
-                <a href="post-job.html" class="btn-secondary" data-i18n="nav_post">Post a Job</a>
-                <a href="login.html" class="btn-secondary" id="authBtn" data-i18n="nav_login">Login</a>
+                <a href="index.html">Home</a>
+                <a href="workers.html">Find Workers</a>
+                <a href="jobs.html">Find Jobs</a>
+                <a href="login.html" class="btn-secondary">Join as Worker</a>
+                <a href="post-job.html" class="btn-secondary">Post a Job</a>
+                <a href="login.html" class="btn-secondary" id="authBtn">Login</a>
             </nav>
             <button class="menu-toggle" id="menuToggle">☰</button>
         </div>
@@ -24,11 +24,11 @@
 
     <main class="search-page">
         <div class="container">
-            <h1 data-i18n="workers_title">Find Workers in Cameroon</h1>
+            <h1>Find Workers in Cameroon</h1>
             <div class="search-filters">
-                <input type="text" id="searchQuery" data-i18n-placeholder="search_placeholder" placeholder="Search by name, skill or town...">
+                <input type="text" id="searchQuery" placeholder="Search by name, skill or town...">
                 <select id="categoryFilter">
-                    <option value="" data-i18n="all_categories">All Categories</option>
+                    <option value="">All Categories</option>
                     <option value="Plumbing">Plumbing</option>
                     <option value="Electrical">Electrical</option>
                     <option value="Carpentry">Carpentry</option>
@@ -42,7 +42,7 @@
                     <option value="Others">Others</option>
                 </select>
                 <select id="townFilter">
-                    <option value="" data-i18n="all_towns">All Towns</option>
+                    <option value="">All Towns</option>
                     <option value="Buea">Buea</option>
                     <option value="Limbe">Limbe</option>
                     <option value="Douala">Douala</option>
@@ -60,10 +60,10 @@
                     <option value="Nkongsamba">Nkongsamba</option>
                     <option value="Edéa">Edéa</option>
                 </select>
-                <button onclick="performSearch()" class="btn-primary" data-i18n="search">Search</button>
+                <button onclick="performSearch()" class="btn-primary">Search</button>
             </div>
             <div class="worker-grid" id="searchResults">
-                <p class="loading" data-i18n="loading">Loading...</p>
+                <p class="loading">Loading workers...</p>
             </div>
         </div>
     </main>
@@ -88,10 +88,10 @@
             const town = document.getElementById('townFilter').value;
             const container = document.getElementById('searchResults');
 
-            container.innerHTML = '<p class="loading">' + t('searching') + '</p>';
+            container.innerHTML = '<p class="loading">Searching...</p>';
 
             if (!supabaseClient) {
-                container.innerHTML = '<p class="empty">' + t('error') + '</p>';
+                container.innerHTML = '<p class="empty">Cannot load workers. Please refresh.</p>';
                 return;
             }
 
@@ -105,7 +105,7 @@
             const { data: workers, error } = await dbQuery;
 
             if (error) {
-                container.innerHTML = '<p class="error">' + t('error') + '</p>';
+                container.innerHTML = '<p class="error">Error loading workers.</p>';
                 return;
             }
 
@@ -132,7 +132,7 @@
             }
 
             if (filtered.length === 0) {
-                container.innerHTML = '<p class="empty">' + t('no_workers') + '</p>';
+                container.innerHTML = '<p class="empty">No workers found. Try a different search.</p>';
                 return;
             }
 
