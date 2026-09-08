@@ -1,6 +1,6 @@
 :root {
     --primary: #2563eb;
-    --primary-dark: #1d4ed8; 
+    --primary-dark: #1d4ed8;
     --secondary: #f97316;
     --bg: #f8fafc;
     --card: #ffffff;
@@ -15,7 +15,7 @@
 * {
     margin: 0;
     padding: 0;
-    box-sizing: border-box; 
+    box-sizing: border-box;
 }
 
 body {
@@ -25,24 +25,10 @@ body {
     line-height: 1.6;
 }
 
-/* Safety net: no image (broken, missing, or slow-loading) can ever blow out
-   a layout or force horizontal scroll. Elements that need a specific size
-   (.worker-avatar img, .profile-avatar, etc.) still win because they are
-   more specific selectors. */
-img {
-    max-width: 100%;
-    height: auto;
-}
-
 .container {
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 20px;
-}
-
-/* Generic utility */
-.hidden {
-    display: none !important;
 }
 
 /* ========== HEADER ========== */
@@ -66,14 +52,12 @@ img {
     font-weight: 700;
     color: var(--primary);
     text-decoration: none;
-    white-space: nowrap;
 }
 
 .nav {
     display: flex;
     align-items: center;
-    gap: 4px;                    /* slightly tighter */
-    flex-wrap: nowrap;           /* never wrap on desktop */
+    gap: 8px;
 }
 
 /* Make ALL navigation links look the same (no blue borders) */
@@ -84,14 +68,13 @@ img {
     color: var(--text) !important;
     text-decoration: none !important;
     font-weight: 500 !important;
-    font-size: 0.85rem !important;   /* slightly smaller for long French labels */
-    padding: 7px 10px !important;    /* slightly tighter padding */
+    font-size: 0.9rem !important;
+    padding: 8px 14px !important;
     border-radius: 8px !important;
     background: transparent !important;
     border: none !important;
     transition: all 0.2s !important;
     display: inline-block !important;
-    white-space: nowrap !important;  /* keep each item on one line */
 }
 
 .nav a:hover,
@@ -327,36 +310,6 @@ section h2 {
     gap: 24px;
 }
 
-/* FIX: while data is loading (or empty / errored), the grid containers above
-   only have ONE child (a short text/div). CSS Grid places a lone child in
-   the first cell only, so it renders small and pinned to the left edge.
-   The instant real cards replace it, the grid suddenly fills out — that is
-   the "packed left, then rearranges" jump. Forcing these states to span
-   every column fixes it so the loading/empty/error message is centered
-   across the full row from the very first paint. */
-.category-grid > .loading,
-.category-grid > .empty,
-.category-grid > .error,
-.worker-grid > .loading,
-.worker-grid > .empty,
-.worker-grid > .error,
-.job-grid > .loading,
-.job-grid > .empty,
-.job-grid > .error {
-    grid-column: 1 / -1;
-}
-
-/* Belt-and-suspenders: if any page ever leaves a single, unclassed
-   placeholder (e.g. plain "Loading..." text with no wrapper) sitting
-   inside one of these grids, it still won't get stranded in the first
-   column alone — it will span the row and center itself. */
-.category-grid > *:only-child,
-.worker-grid > *:only-child,
-.job-grid > *:only-child {
-    grid-column: 1 / -1;
-    text-align: center;
-}
-
 .worker-card, .job-card {
     background: var(--card);
     border-radius: 12px;
@@ -378,32 +331,6 @@ section h2 {
     border-radius: 50%;
     object-fit: cover;
     margin-bottom: 12px;
-}
-
-/* Local, network-free replacement for the dead via.placeholder.com images.
-   Use this instead of an <img> tag whenever a worker/client has no photo:
-   e.g. <div class="avatar-placeholder">🧑</div>
-   It never fails to load, never causes a broken-image icon, and never
-   shifts the layout because its size is fixed with CSS, not a downloaded
-   file. */
-.avatar-placeholder {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    background: var(--border);
-    color: var(--text-light);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.75rem;
-    margin: 0 auto 12px;
-    flex-shrink: 0;
-}
-
-.profile-avatar.avatar-placeholder {
-    width: 120px;
-    height: 120px;
-    font-size: 2.5rem;
 }
 
 .worker-card h3, .job-card h3 {
@@ -705,30 +632,347 @@ section h2 {
     color: var(--text-light);
 }
 
-/* Responsive – keep existing mobile behaviour */
-@media (max-width: 900px) {
+.error {
+    color: var(--error);
+}
+
+.job-meta {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    color: var(--text-light);
+    margin-bottom: 16px;
+}
+
+.job-meta span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.apply-section {
+    text-align: center;
+}
+
+.apply-section p {
+    margin-bottom: 16px;
+    color: var(--text-light);
+}
+
+/* ========== DASHBOARD ========== */
+.dashboard-page {
+    padding: 40px 20px;
+    min-height: calc(100vh - 64px);
+}
+
+.dashboard-page h1 {
+    margin-bottom: 32px;
+    font-size: 2rem;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px;
+}
+
+.dashboard-section {
+    background: var(--card);
+    padding: 24px;
+    border-radius: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.dashboard-section h2 {
+    font-size: 1.25rem;
+    margin-bottom: 20px;
+    color: var(--text);
+    text-align: left;
+}
+
+.job-row, .dispute-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    background: #fff;
+    flex-wrap: wrap;
+}
+
+.empty-dashboard {
+    text-align: center;
+    padding: 24px;
+    color: var(--text-light);
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.status-available {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.status-closed {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+/* ========== ADMIN ========== */
+.admin-page {
+    padding: 40px 20px;
+}
+
+.admin-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+    margin-bottom: 40px;
+}
+
+.stat-card {
+    background: var(--card);
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.stat-card h3 {
+    font-size: 1.8rem;
+    margin-bottom: 4px;
+    color: var(--primary);
+}
+
+.stat-card p {
+    color: var(--text-light);
+    font-size: 0.85rem;
+}
+
+.admin-section {
+    background: var(--card);
+    padding: 24px;
+    border-radius: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    margin-bottom: 24px;
+}
+
+.admin-section h2 {
+    font-size: 1.25rem;
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+/* ========== NOTIFICATIONS ========== */
+.nav-bell {
+    position: relative;
+    cursor: pointer;
+    font-size: 1.3rem;
+    padding: 6px 10px;
+    border-radius: 8px;
+}
+
+.nav-bell:hover {
+    background: #eff6ff;
+}
+
+.bell-count {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: var(--error);
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 700;
+    min-width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.notification-dropdown {
+    display: none;
+    position: absolute;
+    top: 64px;
+    right: 20px;
+    width: 320px;
+    max-height: 400px;
+    overflow-y: auto;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    z-index: 200;
+}
+
+.notification-dropdown.active {
+    display: block;
+}
+
+.notification-header {
+    padding: 14px 16px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border);
+}
+
+.notification-list {
+    padding: 8px;
+}
+
+.notification-item {
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-bottom: 4px;
+}
+
+.notification-item:hover {
+    background: #f1f5f9;
+}
+
+.notification-item.unread {
+    background: #eff6ff;
+}
+
+.notification-msg {
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+}
+
+.notification-time {
+    font-size: 0.75rem;
+    color: var(--text-light);
+}
+
+.notification-empty {
+    text-align: center;
+    padding: 24px;
+    color: var(--text-light);
+}
+
+/* ========== SHARE FAB ========== */
+.share-fab {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 52px;
+    height: 52px;
+    background: var(--primary);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(37,99,235,0.4);
+    z-index: 90;
+}
+
+.share-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 300;
+    align-items: center;
+    justify-content: center;
+}
+
+.share-modal.active {
+    display: flex;
+}
+
+.share-modal-content {
+    background: white;
+    padding: 24px;
+    border-radius: 16px;
+    max-width: 400px;
+    width: 90%;
+}
+
+.share-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.share-close {
+    background: none;
+    border: none;
+    font-size: 1.4rem;
+    cursor: pointer;
+}
+
+.share-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+}
+
+.share-btn {
+    flex: 1;
+    text-align: center;
+    min-width: 100px;
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 768px) {
+    .menu-toggle {
+        display: block;
+    }
+
     .nav {
         display: none;
-        flex-direction: column;
         position: absolute;
         top: 64px;
         left: 0;
         right: 0;
         background: white;
+        flex-direction: column;
         padding: 16px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         gap: 4px;
     }
+
     .nav.active {
         display: flex;
     }
-    .nav a {
+
+    .nav a,
+    .nav a.btn-primary,
+    .nav a.btn-secondary {
         width: 100%;
         text-align: left;
         padding: 12px 16px !important;
-        font-size: 1rem !important;
     }
-    .menu-toggle {
-        display: block;
+
+    .hero-carousel {
+        height: 420px;
+    }
+
+    .carousel-content h1 {
+        font-size: 1.8rem;
+    }
+
+    .carousel-content p {
+        font-size: 1rem;
+    }
+
+    .profile-header {
+        flex-direction: column;
+        text-align: center;
     }
 }
