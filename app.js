@@ -4,7 +4,7 @@
  * Date: 7 September 2026
  */
 
-const CONFIG = (typeof window !== 'undefined' && window.HANDYMAN_CONFIG) ? window.HANDYMAN_CONFIG : {};
+const CONFIG = (typeof window !== 'undefined' && window.HANDYMAN_CONFIG) ? window.HANDYMAN_CONFIG : {}; 
 const SUPABASE_URL = CONFIG.SUPABASE_URL || '';
 const SUPABASE_KEY = CONFIG.SUPABASE_ANON_KEY || '';
 
