@@ -1,29 +1,20 @@
 /**
  * Handy Man Buea — Core Application Logic
- * Version: 1.2.1 (Stable + My Profile label + language switcher)
+ * Version: 1.3.0 (Stable + Working EN/FR switcher + My Profile)
  * Date: 8 September 2026
  *
  * SECURITY NOTES:
- * - Supabase credentials are loaded from config.js (not hardcoded here).
- * - The SUPABASE_ANON_KEY is a publishable key safe for client-side use.
- * - NEVER expose SUPABASE_SERVICE_ROLE_KEY in any client-side file.
- * - Admin privileges are verified server-side via RLS policies.
- *   The client-side isAdmin() check is ONLY for UI display purposes.
- * - All write operations are protected by Row Level Security (RLS).
+ * - Supabase credentials are loaded from config.js
+ * - Never expose service role key
+ * - Admin checks are client-side only for UI
  */
 
-// ============================================================================
-// CONFIGURATION (loaded from config.js — see config.template.js)
-// ============================================================================
 const CONFIG = (typeof window !== 'undefined' && window.HANDYMAN_CONFIG) ? window.HANDYMAN_CONFIG : {};
 const SUPABASE_URL = CONFIG.SUPABASE_URL || '';
 const SUPABASE_KEY = CONFIG.SUPABASE_ANON_KEY || '';
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
-    console.error(
-        '[HandyMan] CRITICAL: Missing Supabase configuration. ' +
-        'Please create config.js from config.template.js and include it BEFORE app.js.'
-    );
+    console.error('[HandyMan] CRITICAL: Missing Supabase configuration.');
 }
 
 var supabaseClient = null;
@@ -46,7 +37,126 @@ const FALLBACK_CATEGORIES = [
 ];
 
 // ============================================================================
-// SUPABASE INITIALIZATION
+// TRANSLATIONS
+// ============================================================================
+const I18N = {
+    en: {
+        nav_home: "Home",
+        nav_workers: "Find Workers",
+        nav_jobs: "Find Jobs",
+        nav_join: "Join as Worker",
+        nav_post: "Post a Job",
+        nav_login: "Login",
+        nav_logout: "Logout",
+        nav_profile: "My Profile",
+        search: "Search",
+        loading: "Loading...",
+        view_profile: "View Profile",
+        reviews: "reviews",
+        no_workers: "No workers found. Try a different search.",
+        workers_title: "Find Workers in Cameroon",
+        search_placeholder: "Search by name, skill or town...",
+        all_categories: "All Categories",
+        all_towns: "All Towns"
+    },
+    fr: {
+        nav_home: "Accueil",
+        nav_workers: "Trouver des ouvriers",
+        nav_jobs: "Trouver des emplois",
+        nav_join: "Devenir ouvrier",
+        nav_post: "Publier un emploi",
+        nav_login: "Connexion",
+        nav_logout: "Déconnexion",
+        nav_profile: "Mon Profil",
+        search: "Rechercher",
+        loading: "Chargement...",
+        view_profile: "Voir le profil",
+        reviews: "avis",
+        no_workers: "Aucun ouvrier trouvé. Essayez une autre recherche.",
+        workers_title: "Trouver des ouvriers au Cameroun",
+        search_placeholder: "Rechercher par nom, compétence ou ville...",
+        all_categories: "Toutes les catégories",
+        all_towns: "Toutes les villes"
+    }
+};
+
+function t(key) {
+    var lang = localStorage.getItem('handyman_lang') || 'en';
+    return (I18N[lang] && I18N[lang][key]) || I18N.en[key] || key;
+}
+
+function setLanguage(lang) {
+    if (lang !== 'en' && lang !== 'fr') lang = 'en';
+    localStorage.setItem('handyman_lang', lang);
+    applyLanguage();
+}
+
+function applyLanguage() {
+    var lang = localStorage.getItem('handyman_lang') || 'en';
+
+    // Update language buttons
+    var enBtn = document.getElementById('langEn');
+    var frBtn = document.getElementById('langFr');
+    if (enBtn) enBtn.classList.toggle('active', lang === 'en');
+    if (frBtn) frBtn.classList.toggle('active', lang === 'fr');
+
+    // Update navigation links that exist on every page
+    var nav = document.getElementById('nav');
+    if (nav) {
+        var links = nav.querySelectorAll('a');
+        links.forEach(function(a) {
+            var href = (a.getAttribute('href') || '').toLowerCase();
+            if (href.includes('index.html') || href === '/' || href === '') {
+                if (!a.classList.contains('logo')) a.textContent = t('nav_home');
+            } else if (href.includes('workers.html')) {
+                a.textContent = t('nav_workers');
+            } else if (href.includes('jobs.html')) {
+                a.textContent = t('nav_jobs');
+            } else if (href.includes('login.html') && a.id !== 'authBtn' && !a.id) {
+                a.textContent = t('nav_join');
+            } else if (href.includes('post-job.html')) {
+                a.textContent = t('nav_post');
+            }
+        });
+    }
+
+    // Update injected My Profile button
+    var dash = document.getElementById('navDashboard');
+    if (dash) dash.textContent = t('nav_profile');
+
+    // Update auth button
+    var authBtn = document.getElementById('authBtn');
+    if (authBtn) {
+        if (currentUser) {
+            authBtn.textContent = t('nav_logout');
+        } else {
+            authBtn.textContent = t('nav_login');
+        }
+    }
+
+    // Update common texts on workers page
+    var title = document.querySelector('.search-page h1');
+    if (title) title.textContent = t('workers_title');
+
+    var searchInput = document.getElementById('searchQuery');
+    if (searchInput) searchInput.placeholder = t('search_placeholder');
+
+    var catSelect = document.getElementById('categoryFilter');
+    if (catSelect && catSelect.options.length > 0) {
+        catSelect.options[0].text = t('all_categories');
+    }
+
+    var townSelect = document.getElementById('townFilter');
+    if (townSelect && townSelect.options.length > 0) {
+        townSelect.options[0].text = t('all_towns');
+    }
+
+    var searchBtn = document.querySelector('.search-filters .btn-primary');
+    if (searchBtn) searchBtn.textContent = t('search');
+}
+
+// ============================================================================
+// SUPABASE INIT
 // ============================================================================
 window.supabaseReady = new Promise(function(resolve) {
     window._resolveSupabaseReady = resolve;
@@ -58,30 +168,26 @@ if (typeof window !== 'undefined' && typeof window.supabase !== 'undefined' && t
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
             window.supabase = supabaseClient;
             console.log('[HandyMan] Supabase client initialized.');
-        } else {
-            console.warn('[HandyMan] Supabase not initialized — missing URL or Key.');
         }
     } catch (e) {
         console.error('[HandyMan] Supabase init failed:', e);
     }
-} else {
-    console.warn('[HandyMan] Supabase JS library not loaded.');
 }
-
 if (window._resolveSupabaseReady) {
     window._resolveSupabaseReady(supabaseClient);
 }
 
 // ============================================================================
-// APP INITIALIZATION
+// APP INIT
 // ============================================================================
 document.addEventListener('DOMContentLoaded', async function() {
     try {
         injectNavExtras();
         injectShareButton();
-        injectLanguageSwitcher();          // ← safe addition
+        injectLanguageSwitcher();
         trackVisitor();
         await checkAuth();
+        applyLanguage();
 
         if (document.getElementById('categoryGrid')) {
             await loadCategories();
@@ -93,10 +199,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             initCarousel();
         }
 
-        const menuToggle = document.getElementById('menuToggle');
+        var menuToggle = document.getElementById('menuToggle');
         if (menuToggle) {
             menuToggle.addEventListener('click', function() {
-                document.getElementById('nav').classList.toggle('active');
+                var n = document.getElementById('nav');
+                if (n) n.classList.toggle('active');
             });
         }
     } catch (err) {
@@ -108,7 +215,53 @@ document.addEventListener('DOMContentLoaded', async function() {
 });
 
 // ============================================================================
-// FILE UPLOAD HELPERS
+// LANGUAGE SWITCHER
+// ============================================================================
+function injectLanguageSwitcher() {
+    if (document.getElementById('langSwitch')) return;
+
+    var switcher = document.createElement('div');
+    switcher.id = 'langSwitch';
+    switcher.className = 'lang-switch';
+    switcher.innerHTML = `
+        <button type="button" id="langEn" onclick="setLanguage('en')">EN</button>
+        <button type="button" id="langFr" onclick="setLanguage('fr')">FR</button>
+    `;
+    document.body.appendChild(switcher);
+
+    var style = document.createElement('style');
+    style.textContent = `
+        .lang-switch {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 999;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 30px;
+            padding: 6px 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+            font-size: 0.85rem;
+        }
+        .lang-switch button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 20px;
+            color: #64748b;
+        }
+        .lang-switch button.active {
+            background: #2563eb;
+            color: #fff;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+// ============================================================================
+// FILE UPLOAD
 // ============================================================================
 async function uploadFile(file, folder, userId) {
     if (!supabaseClient || !file) return null;
@@ -149,23 +302,21 @@ async function uploadMultipleFiles(fileList, folder, userId, maxCount) {
 }
 
 // ============================================================================
-// NAVIGATION & UI INJECTION
+// NAV EXTRAS
 // ============================================================================
 function injectNavExtras() {
     var nav = document.getElementById('nav');
-    if (!nav || nav.querySelector('.nav-bell')) return;
+    if (!nav || nav.querySelector('#navDashboard')) return;
 
-    // My Profile link (changed from "My Jobs")
     var dashLink = document.createElement('a');
     dashLink.href = 'dashboard.html';
     dashLink.className = 'btn-secondary';
     dashLink.id = 'navDashboard';
-    dashLink.textContent = 'My Profile';          // ← changed here
+    dashLink.textContent = t('nav_profile');
     dashLink.style.display = 'none';
     var authBtn = nav.querySelector('#authBtn');
     if (authBtn) nav.insertBefore(dashLink, authBtn);
 
-    // Notification bell
     var bellContainer = document.createElement('div');
     bellContainer.className = 'nav-bell';
     bellContainer.id = 'navBell';
@@ -198,14 +349,14 @@ function injectShareButton() {
     fab.id = 'shareFab';
     fab.className = 'share-fab';
     fab.innerHTML = '🔗';
-    fab.title = 'Share Handy Man Buea';
+    fab.title = 'Share Handy Man';
     fab.onclick = openShareModal;
     document.body.appendChild(fab);
 
     var modal = document.createElement('div');
     modal.id = 'shareModal';
     modal.className = 'share-modal';
-    modal.innerHTML = '<div class="share-modal-content"><div class="share-modal-header"><h3>🔗 Share Handy Man Buea</h3><button class="share-close" onclick="closeShareModal()">✕</button></div><div class="share-message-box"><p id="shareText">🔧 Find trusted local workers in Buea, Cameroon! Need a plumber, electrician, cleaner, or any skilled worker? Handy Man Buea connects you with verified professionals fast. Check it out: https://handyman-buea.vercel.app/</p><button class="btn-small" onclick="copyShareText()" style="margin-top:12px;">📋 Copy Message</button></div><div class="share-buttons"><a href="#" id="shareWhatsApp" target="_blank" class="btn-whatsapp share-btn">📱 WhatsApp</a><a href="#" id="shareFacebook" target="_blank" class="btn-primary share-btn" style="background:#1877f2;">📘 Facebook</a><a href="#" id="shareTwitter" target="_blank" class="btn-primary share-btn" style="background:#1da1f2;">🐦 Twitter</a></div></div>';
+    modal.innerHTML = '<div class="share-modal-content"><div class="share-modal-header"><h3>🔗 Share Handy Man</h3><button class="share-close" onclick="closeShareModal()">✕</button></div><div class="share-message-box"><p id="shareText">🔧 Find trusted local workers in Cameroon! https://handyman-buea.vercel.app/</p><button class="btn-small" onclick="copyShareText()" style="margin-top:12px;">📋 Copy Message</button></div><div class="share-buttons"><a href="#" id="shareWhatsApp" target="_blank" class="btn-whatsapp share-btn">📱 WhatsApp</a><a href="#" id="shareFacebook" target="_blank" class="btn-primary share-btn" style="background:#1877f2;">📘 Facebook</a><a href="#" id="shareTwitter" target="_blank" class="btn-primary share-btn" style="background:#1da1f2;">🐦 Twitter</a></div></div>';
     document.body.appendChild(modal);
     modal.addEventListener('click', function(e) {
         if (e.target === modal) closeShareModal();
@@ -215,7 +366,7 @@ function injectShareButton() {
 function openShareModal() {
     var modal = document.getElementById('shareModal');
     if (!modal) return;
-    var text = encodeURIComponent('🔧 Find trusted local workers in Buea, Cameroon! Need a plumber, electrician, cleaner, or any skilled worker? Handy Man Buea connects you with verified professionals fast. Check it out: https://handyman-buea.vercel.app/');
+    var text = encodeURIComponent('🔧 Find trusted local workers in Cameroon! https://handyman-buea.vercel.app/');
     var url = encodeURIComponent('https://handyman-buea.vercel.app/');
     document.getElementById('shareWhatsApp').href = 'https://wa.me/?text=' + text;
     document.getElementById('shareFacebook').href = 'https://www.facebook.com/sharer/sharer.php?u=' + url;
@@ -252,80 +403,12 @@ function fallbackCopy(text) {
 }
 
 // ============================================================================
-// LANGUAGE SWITCHER (safe, non-breaking)
-// ============================================================================
-function injectLanguageSwitcher() {
-    if (document.getElementById('langSwitch')) return;
-
-    var switcher = document.createElement('div');
-    switcher.id = 'langSwitch';
-    switcher.className = 'lang-switch';
-    switcher.innerHTML = `
-        <button type="button" id="langEn" onclick="setLanguage('en')">EN</button>
-        <button type="button" id="langFr" onclick="setLanguage('fr')">FR</button>
-    `;
-    document.body.appendChild(switcher);
-
-    // Minimal style so it never breaks layout
-    var style = document.createElement('style');
-    style.textContent = `
-        .lang-switch {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            z-index: 90;
-            background: #fff;
-            border: 1px solid #e2e8f0;
-            border-radius: 30px;
-            padding: 6px 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-            font-size: 0.85rem;
-        }
-        .lang-switch button {
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-weight: 600;
-            padding: 4px 10px;
-            border-radius: 20px;
-            color: #64748b;
-        }
-        .lang-switch button.active {
-            background: #2563eb;
-            color: #fff;
-        }
-    `;
-    document.head.appendChild(style);
-
-    // Set initial active state
-    var lang = localStorage.getItem('handyman_lang') || 'en';
-    setLanguage(lang);
-}
-
-function setLanguage(lang) {
-    if (lang !== 'en' && lang !== 'fr') lang = 'en';
-    localStorage.setItem('handyman_lang', lang);
-
-    var enBtn = document.getElementById('langEn');
-    var frBtn = document.getElementById('langFr');
-    if (enBtn) enBtn.classList.toggle('active', lang === 'en');
-    if (frBtn) frBtn.classList.toggle('active', lang === 'fr');
-
-    // Only translate the injected "My Profile" button for now (safe)
-    var dash = document.getElementById('navDashboard');
-    if (dash) {
-        dash.textContent = (lang === 'fr') ? 'Mon Profil' : 'My Profile';
-    }
-}
-
-// ============================================================================
 // ANALYTICS
 // ============================================================================
 async function trackVisitor() {
     if (!supabaseClient || sessionStorage.getItem('visitorTracked')) return;
     try {
         var today = new Date().toISOString().slice(0, 10);
-
         var { data: stats } = await supabaseClient
             .from('site_stats')
             .select('total_visitors, visitors_today, visitors_today_date')
@@ -346,22 +429,14 @@ async function trackVisitor() {
                 last_updated: new Date().toISOString()
             }).eq('id', 1);
         }
-
-        try {
-            await supabaseClient.from('visitor_logs').insert([{
-                visited_at: new Date().toISOString(),
-                visit_date: today
-            }]);
-        } catch (e) { /* non-critical */ }
-
         sessionStorage.setItem('visitorTracked', 'true');
     } catch (e) {
-        console.log('[HandyMan] Visitor tracking skipped:', e.message);
+        console.log('[HandyMan] Visitor tracking skipped');
     }
 }
 
 // ============================================================================
-// AUTHENTICATION
+// AUTH
 // ============================================================================
 async function checkAuth() {
     try {
@@ -384,10 +459,6 @@ async function checkAuth() {
     }
 }
 
-/**
- * Check if the current user is an admin.
- * CLIENT-SIDE convenience check only. Real security is enforced by RLS.
- */
 function isAdmin() {
     if (currentProfile && currentProfile.is_admin === true) return true;
     return false;
@@ -400,22 +471,23 @@ function updateAuthUI() {
     if (!authBtn) return;
 
     if (currentUser && supabaseClient) {
-        authBtn.textContent = 'Logout';
+        authBtn.textContent = t('nav_logout');
         authBtn.href = '#';
         authBtn.onclick = async function(e) {
             e.preventDefault();
             try {
                 await supabaseClient.auth.signOut();
                 stopNotificationPolling();
-            } catch (e) {
-                console.error('[HandyMan] Logout error:', e);
-            }
+            } catch (e) {}
             window.location.reload();
         };
-        if (dashLink) dashLink.style.display = 'inline-block';
+        if (dashLink) {
+            dashLink.style.display = 'inline-block';
+            dashLink.textContent = t('nav_profile');
+        }
         if (bell) bell.style.display = 'inline-flex';
     } else {
-        authBtn.textContent = 'Login';
+        authBtn.textContent = t('nav_login');
         authBtn.href = 'login.html';
         authBtn.onclick = null;
         if (dashLink) dashLink.style.display = 'none';
@@ -436,15 +508,10 @@ async function loadNotifications() {
             .eq('read', false)
             .order('created_at', { ascending: false })
             .limit(20);
-        if (error) {
-            console.error('[HandyMan] Notification load error:', error);
-            return;
-        }
+        if (error) return;
         renderNotificationBell(notifications ? notifications.length : 0);
         renderNotificationList(notifications || []);
-    } catch (err) {
-        console.error('[HandyMan] Notification error:', err);
-    }
+    } catch (err) {}
 }
 
 function renderNotificationBell(count) {
@@ -504,7 +571,7 @@ function stopNotificationPolling() {
 }
 
 // ============================================================================
-// CATEGORIES
+// CATEGORIES & WORKERS
 // ============================================================================
 async function loadCategories() {
     var grid = document.getElementById('categoryGrid');
@@ -537,9 +604,6 @@ function renderCategories(categories) {
     }).join('');
 }
 
-// ============================================================================
-// FEATURED WORKERS
-// ============================================================================
 async function loadFeaturedWorkers() {
     var grid = document.getElementById('workerGrid');
     if (!grid) return;
@@ -565,10 +629,11 @@ async function loadFeaturedWorkers() {
 }
 
 function renderWorkers(workers, container) {
+    if (!container) return;
     container.innerHTML = workers.map(function(w) {
-        var avatar = w.profiles && w.profiles.avatar_url ? w.profiles.avatar_url : 'https://via.placeholder.com/80?text=No+Photo';
-        var name = w.profiles && w.profiles.full_name ? w.profiles.full_name : 'Unknown';
-        var location = w.profiles && w.profiles.location ? w.profiles.location : 'Cameroon';
+        var avatar = (w.profiles && w.profiles.avatar_url) ? w.profiles.avatar_url : 'https://via.placeholder.com/80?text=No+Photo';
+        var name = (w.profiles && w.profiles.full_name) ? w.profiles.full_name : 'Unknown';
+        var location = (w.profiles && w.profiles.location) ? w.profiles.location : 'Cameroon';
         return '<div class="worker-card" onclick="viewWorker(\'' + w.id + '\')">' +
             '<div class="worker-avatar">' +
             '<img src="' + avatar + '" alt="' + name + '" onerror="this.src=\'https://via.placeholder.com/80?text=No+Photo\'">' +
@@ -576,14 +641,14 @@ function renderWorkers(workers, container) {
             '<h3>' + name + '</h3>' +
             '<p class="worker-category">' + (w.category || 'General') + '</p>' +
             '<p class="worker-location">📍 ' + location + '</p>' +
-            '<div class="worker-rating">' + '⭐'.repeat(Math.round(w.rating || 0)) + ' (' + (w.review_count || 0) + ' reviews)</div>' +
-            '<button class="btn-small">View Profile</button>' +
+            '<div class="worker-rating">' + '⭐'.repeat(Math.round(w.rating || 0)) + ' (' + (w.review_count || 0) + ' ' + t('reviews') + ')</div>' +
+            '<button class="btn-small">' + t('view_profile') + '</button>' +
             '</div>';
     }).join('');
 }
 
 // ============================================================================
-// CAROUSEL
+// CAROUSEL & HELPERS
 // ============================================================================
 function initCarousel() {
     var slides = document.querySelectorAll('.carousel-slide');
@@ -612,9 +677,6 @@ function initCarousel() {
     }
 }
 
-// ============================================================================
-// NAVIGATION HELPERS
-// ============================================================================
 function searchWorkers() {
     var query = document.getElementById('searchInput');
     if (query && query.value) {
@@ -634,9 +696,6 @@ function viewJob(id) {
     window.location.href = 'job.html?id=' + id;
 }
 
-// ============================================================================
-// UTILITY FUNCTIONS
-// ============================================================================
 function escapeHtml(text) {
     if (!text) return '';
     var div = document.createElement('div');
@@ -667,3 +726,14 @@ function buildContactLinks(phone) {
         call: 'tel:+237' + local
     };
 }
+
+// Expose needed functions
+window.setLanguage = setLanguage;
+window.t = t;
+window.checkAuth = checkAuth;
+window.isAdmin = isAdmin;
+window.updateAuthUI = updateAuthUI;
+window.uploadFile = uploadFile;
+window.renderWorkers = renderWorkers;
+window.viewWorker = viewWorker;
+window.searchByCategory = searchByCategory;
