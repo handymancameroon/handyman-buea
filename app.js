@@ -368,12 +368,20 @@ document.addEventListener('DOMContentLoaded', async function() {
         injectShareButton();
         injectLanguageSwitcher();
         trackVisitor();
-        await checkAuth();
-        applyLanguage(getCurrentLang());
 
-        if (document.getElementById('categoryGrid')) await loadCategories();
-        if (document.getElementById('workerGrid')) await loadFeaturedWorkers();
+        // Run the auth check and the category/worker grids at the same time
+        // instead of one after another. Previously the grids didn't even
+        // start loading until checkAuth() finished its round trip to
+        // Supabase — on a slow connection that meant the left-packed
+        // loading text (see loadCategories/loadFeaturedWorkers) sat there
+        // far longer than it needed to.
+        var pending = [checkAuth()];
+        if (document.getElementById('categoryGrid')) pending.push(loadCategories());
+        if (document.getElementById('workerGrid')) pending.push(loadFeaturedWorkers());
         if (document.getElementById('carouselDots')) initCarousel();
+
+        await Promise.all(pending);
+        applyLanguage(getCurrentLang());
 
         const menuToggle = document.getElementById('menuToggle');
         if (menuToggle) {
@@ -671,6 +679,14 @@ function stopNotificationPolling() {
 async function loadCategories() {
     var grid = document.getElementById('categoryGrid');
     if (!grid) return;
+    // Always render a properly-classed loading state right away. Whatever
+    // static text was sitting in the HTML before (e.g. "Loading
+    // categories...") was a lone, unclassed text node inside a CSS Grid
+    // container — Grid drops a single child into the first column only,
+    // which is what made the page look "packed to the left" until the
+    // real cards arrived. ".loading" is styled in style.css to span every
+    // column and stay centered.
+    grid.innerHTML = '<p class="loading">' + t('loading') + '</p>';
     if (!supabaseClient) {
         renderCategories(FALLBACK_CATEGORIES);
         return;
@@ -687,16 +703,18 @@ function renderCategories(categories) {
     var grid = document.getElementById('categoryGrid');
     if (!grid) return;
     grid.innerHTML = categories.map(function(cat) {
-        return '<div class="category-card" onclick="searchByCategory(\'' + cat.name + '\')">' +
+        var name = escapeHtml(cat.name);
+        return '<div class="category-card" onclick="searchByCategory(\'' + name + '\')">' +
             '<div class="category-icon">' + (cat.icon || '🔧') + '</div>' +
-            '<h3>' + cat.name + '</h3>' +
-            '<p>' + (cat.description || '') + '</p></div>';
+            '<h3>' + name + '</h3>' +
+            '<p>' + escapeHtml(cat.description || '') + '</p></div>';
     }).join('');
 }
 
 async function loadFeaturedWorkers() {
     var grid = document.getElementById('workerGrid');
     if (!grid) return;
+    grid.innerHTML = '<p class="loading">' + t('loading') + '</p>';
     if (!supabaseClient) {
         grid.innerHTML = '<p class="empty">' + t('no_workers') + '</p>';
         return;
@@ -718,19 +736,43 @@ async function loadFeaturedWorkers() {
     }
 }
 
+// Builds the avatar for a worker/client card without ever touching a
+// network placeholder service. If there is no photo (or it fails to load
+// later), it falls back to a local CSS circle with the person's initial —
+// zero requests, zero broken-image icons, zero layout shift.
+function avatarMarkup(url, name) {
+    var initial = (name || '?').trim().charAt(0).toUpperCase() || '👤';
+    if (url) {
+        return '<img src="' + escapeHtml(url) + '" alt="' + escapeHtml(name) +
+            '" onerror="handleAvatarError(this, \'' + initial + '\')">';
+    }
+    return '<div class="avatar-placeholder">' + initial + '</div>';
+}
+
+// Called by an <img onerror="..."> when a real photo URL 404s or times
+// out. Swaps the broken <img> for the same local placeholder instead of
+// retrying (or worse, retrying a dead third-party host forever).
+function handleAvatarError(imgEl, initial) {
+    var placeholder = document.createElement('div');
+    placeholder.className = 'avatar-placeholder';
+    placeholder.textContent = initial || '👤';
+    if (imgEl && imgEl.parentNode) imgEl.parentNode.replaceChild(placeholder, imgEl);
+}
+
 function renderWorkers(workers, container) {
     container.innerHTML = workers.map(function(w) {
-        var avatar = (w.profiles && w.profiles.avatar_url) || 'https://via.placeholder.com/80?text=No+Photo';
-        var name = (w.profiles && w.profiles.full_name) || 'Unknown';
-        var location = (w.profiles && w.profiles.location) || 'Cameroon';
+        var avatarUrl = (w.profiles && w.profiles.avatar_url) || '';
+        var name = escapeHtml((w.profiles && w.profiles.full_name) || 'Unknown');
+        var location = escapeHtml((w.profiles && w.profiles.location) || 'Cameroon');
+        var category = escapeHtml(w.category || 'General');
         var rating = Number(w.rating) || 0;
         var count = Number(w.review_count) || 0;
         var stars = '⭐'.repeat(Math.max(0, Math.min(5, Math.round(rating)))) || '☆☆☆☆☆';
 
         return '<div class="worker-card" onclick="viewWorker(\'' + w.id + '\')">' +
-            '<div class="worker-avatar"><img src="' + avatar + '" alt="' + name + '" onerror="this.src=\'https://via.placeholder.com/80?text=No+Photo\'"></div>' +
+            '<div class="worker-avatar">' + avatarMarkup(avatarUrl, name) + '</div>' +
             '<h3>' + name + '</h3>' +
-            '<p class="worker-category">' + (w.category || 'General') + '</p>' +
+            '<p class="worker-category">' + category + '</p>' +
             '<p class="worker-location">📍 ' + location + '</p>' +
             '<div class="worker-rating">' + stars + ' <span>(' + count + ' ' + (count === 1 ? t('review') : t('reviews')) + ')</span></div>' +
             '<button class="btn-small">' + t('view_profile') + '</button></div>';
@@ -804,3 +846,5 @@ window.setLanguage = setLanguage;
 window.getCurrentLang = getCurrentLang;
 window.t = t;
 window.applyLanguage = applyLanguage;
+window.handleAvatarError = handleAvatarError;
+window.avatarMarkup = avatarMarkup;
