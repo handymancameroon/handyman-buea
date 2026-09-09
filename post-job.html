@@ -1,37 +1,213 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Post a Job - HandyMan Cameroon</title>
-<link rel="stylesheet" href="style.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post a Job - Handy Man</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .custom-town-field { display: none; margin-top: 8px; }
+        .custom-town-field.active { display: block; }
+        .upload-hint { color: var(--text-light); font-size: 0.8rem; margin-top: 6px; display: block; }
+    </style>
 </head>
 <body>
-<nav class="navbar"><a href="index.html">🔧 HandyMan</a><a href="jobs.html">Jobs</a><a href="dashboard.html">My Profile</a></nav>
-<div class="container" style="max-width:600px;background:white;padding:24px;border-radius:12px;margin:20px auto;">
-<h2>Post a Job - All Cameroon Towns</h2>
-<input type="text" id="title" placeholder="Job Title e.g. Need Plumber" style="width:100%;padding:10px;margin:8px 0;">
-<select id="category" style="width:100%;padding:10px;margin:8px 0;"></select>
-<select id="town" style="width:100%;padding:10px;margin:8px 0;"></select>
-<input type="text" id="budget" placeholder="Budget e.g. 5000 FCFA" style="width:100%;padding:10px;margin:8px 0;">
-<textarea id="description" placeholder="Job description..." style="width:100%;padding:10px;margin:8px 0;height:100px;"></textarea>
-<input type="tel" id="phone" placeholder="Your Phone" style="width:100%;padding:10px;margin:8px 0;">
-<button onclick="postJob()" class="btn uniform-btn" style="width:100%;">Post Job</button>
-<p id="status"></p>
-</div>
-<script>
-window.addEventListener('load', ()=>{
-  const tSel=document.getElementById('town'); CAMEROON_TOWNS.forEach(t=>{ const o=document.createElement('option'); o.value=t; o.textContent=t; tSel.appendChild(o); });
-  const cSel=document.getElementById('category'); CATEGORIES.forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c; cSel.appendChild(o); });
-});
-async function postJob(){
-  const {data:{user}} = await supabaseClient.auth.getUser(); if(!user){ alert('Login first'); location.href='login.html'; return; }
-  const job={ title:document.getElementById('title').value, category:document.getElementById('category').value, town:document.getElementById('town').value, budget:document.getElementById('budget').value, description:document.getElementById('description').value, phone:document.getElementById('phone').value, user_id:user.id, status:'open' };
-  const {error}=await supabaseClient.from('jobs').insert(job);
-  if(error){ document.getElementById('status').innerText='Error: '+error.message; } else { document.getElementById('status').innerText='Job posted!'; setTimeout(()=> location.href='jobs.html',1000); }
-}
-</script>
-<script src="app.js"></script>
+    <header class="header">
+        <div class="container">
+            <a href="index.html" class="logo">🔧 Handy Man</a>
+            <nav class="nav" id="nav">
+                <a href="index.html" data-i18n="nav_home">Home</a>
+                <a href="workers.html" data-i18n="nav_workers">Find Workers</a>
+                <a href="jobs.html" data-i18n="nav_jobs">Find Jobs</a>
+                <a href="login.html" class="btn-secondary" data-i18n="nav_join">Join as Worker</a>
+                <a href="post-job.html" class="btn-secondary" data-i18n="nav_post">Post a Job</a>
+                <a href="login.html" class="btn-secondary" id="authBtn" data-i18n="nav_login">Login</a>
+            </nav>
+            <button class="menu-toggle" id="menuToggle">☰</button>
+        </div>
+    </header>
+
+    <main class="auth-page">
+        <div class="container">
+            <div class="auth-box" id="postJobBox">
+                <h2 data-i18n="nav_post">Post a Job</h2>
+                <p>Describe what you need and skilled workers will contact you.</p>
+                
+                <form id="jobForm" onsubmit="handlePostJob(event)">
+                    <div class="form-group">
+                        <label>Job Title *</label>
+                        <input type="text" id="jTitle" required placeholder="e.g. Fix leaking kitchen pipe">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="service_category">Service Category *</label>
+                        <select id="jCategory" required>
+                            <option value="">Select category</option>
+                            <option value="Plumbing">Plumbing</option>
+                            <option value="Electrical">Electrical</option>
+                            <option value="Carpentry">Carpentry</option>
+                            <option value="Cleaning">Cleaning</option>
+                            <option value="Painting">Painting</option>
+                            <option value="Masonry">Masonry</option>
+                            <option value="Auto Mechanics">Auto Mechanics</option>
+                            <option value="Phone/Laptop Repair">Phone/Laptop Repair</option>
+                            <option value="Hairdressing">Hairdressing</option>
+                            <option value="Catering">Catering</option>
+                            <option value="Others">Others</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Description *</label>
+                        <textarea id="jDescription" required rows="4" placeholder="Describe the job in detail..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label data-i18n="town">Town / City *</label>
+                        <select id="jTown" required onchange="handleJobTownChange()">
+                            <option value="" data-i18n="select_town">Select town</option>
+                            <option value="Buea">Buea</option>
+                            <option value="Limbe">Limbe</option>
+                            <option value="Douala">Douala</option>
+                            <option value="Yaoundé">Yaoundé</option>
+                            <option value="Bamenda">Bamenda</option>
+                            <option value="Kumba">Kumba</option>
+                            <option value="Kribi">Kribi</option>
+                            <option value="Bafoussam">Bafoussam</option>
+                            <option value="Garoua">Garoua</option>
+                            <option value="Maroua">Maroua</option>
+                            <option value="Ngaoundéré">Ngaoundéré</option>
+                            <option value="Bertoua">Bertoua</option>
+                            <option value="Ebolowa">Ebolowa</option>
+                            <option value="Mutengene">Mutengene</option>
+                            <option value="Tiko">Tiko</option>
+                            <option value="Other" data-i18n="other_specify">Other (specify below)</option>
+                        </select>
+                        <div id="jCustomTownField" class="custom-town-field">
+                            <input type="text" id="jCustomTown" placeholder="Enter your town">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>More precise location (optional)</label>
+                        <input type="text" id="jLocationDetail" placeholder="e.g. Molyko, opposite Total">
+                        <small class="upload-hint">Quarter or landmark (optional).</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Budget (optional)</label>
+                        <input type="text" id="jBudget" placeholder="e.g. 10,000 FCFA or Negotiable">
+                    </div>
+                    <button type="submit" class="btn-primary full" data-i18n="nav_post">Post Job</button>
+                </form>
+                
+                <p id="jobMessage" class="message"></p>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkAuth();
+            
+            if (!currentUser) {
+                document.getElementById('postJobBox').innerHTML = `
+                    <h2>Login Required</h2>
+                    <p>You need to be logged in to post a job.</p>
+                    <a href="login.html" class="btn-primary full" style="margin-top: 20px; display: inline-block;">${t('nav_login')}</a>
+                `;
+            }
+        });
+
+        function handleJobTownChange() {
+            const town = document.getElementById('jTown').value;
+            const field = document.getElementById('jCustomTownField');
+            const input = document.getElementById('jCustomTown');
+            if (town === 'Other') {
+                field.classList.add('active');
+                input.required = true;
+            } else {
+                field.classList.remove('active');
+                input.required = false;
+            }
+        }
+
+        function getJobTown() {
+            const town = document.getElementById('jTown').value;
+            if (town === 'Other') {
+                return document.getElementById('jCustomTown').value.trim() || 'Cameroon';
+            }
+            return town || 'Cameroon';
+        }
+        
+        async function handlePostJob(e) {
+            e.preventDefault();
+            
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (!user) {
+                showJobMessage('Please login first.', 'error');
+                return;
+            }
+
+            let fullLocation = getJobTown();
+            const detail = document.getElementById('jLocationDetail').value.trim();
+            if (detail) {
+                fullLocation = detail + ', ' + fullLocation;
+            }
+            
+            const jobData = {
+                client_id: user.id,
+                title: document.getElementById('jTitle').value.trim(),
+                category: document.getElementById('jCategory').value,
+                description: document.getElementById('jDescription').value.trim(),
+                location: fullLocation,
+                budget: document.getElementById('jBudget').value.trim() || 'Negotiable',
+                status: 'Open'
+            };
+            
+            const { data: insertedJob, error } = await supabaseClient
+                .from('job_posts')
+                .insert([jobData])
+                .select()
+                .single();
+            
+            if (error) {
+                showJobMessage('Error: ' + error.message, 'error');
+                return;
+            }
+            
+            try {
+                const { data: workersInCategory } = await supabaseClient
+                    .from('worker_details')
+                    .select('id')
+                    .eq('category', jobData.category)
+                    .eq('availability', 'Available');
+                
+                if (workersInCategory && workersInCategory.length > 0) {
+                    const notifications = workersInCategory.map(w => ({
+                        user_id: w.id,
+                        title: 'New Job Available',
+                        message: `New ${jobData.category} job posted: "${jobData.title}" in ${jobData.location}`,
+                        job_id: insertedJob.id,
+                        read: false
+                    }));
+                    
+                    await supabaseClient.from('notifications').insert(notifications);
+                }
+            } catch (notifyErr) {
+                console.log('Notification creation skipped:', notifyErr.message);
+            }
+            
+            showJobMessage('Job posted successfully! Workers have been notified. Redirecting...', 'success');
+            setTimeout(() => window.location.href = 'jobs.html', 1500);
+        }
+        
+        function showJobMessage(msg, type) {
+            const el = document.getElementById('jobMessage');
+            el.textContent = msg;
+            el.className = 'message ' + type;
+        }
+    </script>
 </body>
 </html>
