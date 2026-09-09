@@ -1,303 +1,98 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">  
-    <title>My Profile - Handy Man</title>
-    <link rel="stylesheet" href="style.css">
-    <style>
-        .dashboard-section { background: var(--card); padding: 24px; border-radius: 12px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .job-row, .dispute-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px; background: #fff; flex-wrap: wrap; }
-        .photo-upload-box { text-align: center; margin: 16px 0; }
-        .photo-upload-box img { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin-bottom: 12px; border: 3px solid var(--border); }
-        .admin-only-box { background: #eff6ff; border: 2px solid #2563eb; border-radius: 12px; padding: 20px; margin-bottom: 24px; text-align: center; display: none; }
-    </style>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Profile - HandyMan Cameroon</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
 </head>
 <body>
-    <header class="header">
-        <div class="container">
-            <a href="index.html" class="logo">🔧 Handy Man</a>
-            <nav class="nav" id="nav">
-                <a href="index.html" data-i18n="nav_home">Home</a>
-                <a href="workers.html" data-i18n="nav_workers">Find Workers</a>
-                <a href="jobs.html" data-i18n="nav_jobs">Find Jobs</a>
-                <a href="login.html" class="btn-secondary" data-i18n="nav_join">Join as Worker</a>
-                <a href="post-job.html" class="btn-secondary" data-i18n="nav_post">Post a Job</a>
-                <a href="login.html" class="btn-secondary" id="authBtn" data-i18n="nav_login">Login</a>
-            </nav>
-            <button class="menu-toggle" id="menuToggle">☰</button>
-        </div>
-    </header>
+<nav class="navbar"><a href="index.html">🔧 HandyMan</a><a href="workers.html">Find Workers</a><a href="jobs.html">Jobs</a><button onclick="logout()" class="btn-small">Logout</button></nav>
 
-    <main class="dashboard-page">
-        <div class="container">
-            <h1 data-i18n="my_dashboard">My Profile</h1>
+<div class="container">
+<h1>My Profile / Mon Profil</h1>
 
-            <div class="admin-only-box" id="adminOnlyBox">
-                <h2 style="margin-bottom:12px;">⚙️ Administrator</h2>
-                <p style="margin-bottom:16px;color:var(--text-light);">You have admin access. Open the full control panel:</p>
-                <a href="admin.html" class="btn-primary">Open Admin Panel</a>
-            </div>
+<div style="background:white;padding:20px;border-radius:12px;border:1px solid #e2e8f0;margin:16px 0;">
+<h3>Profile Photo</h3>
+<img id="profilePhoto" src="https://via.placeholder.com/120" style="width:120px;height:120px;border-radius:50%;object-fit:cover;">
+<input type="file" id="photoFile" accept="image/*">
+<button onclick="updatePhoto()" class="btn-small">Upload Photo</button>
+<p>Photo uploads to your profile and shows in search - fixed</p>
+</div>
 
-            <div class="dashboard-section">
-                <h2 data-i18n="my_photo">📷 My Profile Photo</h2>
-                <div class="photo-upload-box" id="photoSection">
-                    <p class="loading" data-i18n="loading">Loading...</p>
-                </div>
-            </div>
+<div style="background:white;padding:20px;border-radius:12px;border:1px solid #e2e8f0;">
+<h3>Edit Profile</h3>
+<input type="text" id="fullName" placeholder="Full Name" style="width:100%;padding:10px;margin:6px 0;">
+<input type="text" id="phone" placeholder="Phone" style="width:100%;padding:10px;margin:6px 0;">
+<input type="text" id="whatsapp" placeholder="WhatsApp" style="width:100%;padding:10px;margin:6px 0;">
+<select id="town" style="width:100%;padding:10px;margin:6px 0;"></select>
+<select id="category" style="width:100%;padding:10px;margin:6px 0;"></select>
+<textarea id="bio" placeholder="Bio / Skills" style="width:100%;padding:10px;margin:6px 0;"></textarea>
+<button onclick="saveProfile()" class="btn">Save Profile</button>
+<p id="saveStatus"></p>
+</div>
 
-            <div class="dashboard-section">
-                <h2 data-i18n="my_jobs">📋 My Posted Jobs</h2>
-                <div id="myJobsList"><p class="loading" data-i18n="loading">Loading...</p></div>
-            </div>
+<div style="background:white;padding:20px;border-radius:12px;border:1px solid #e2e8f0;margin:16px 0;">
+<h3>My Jobs by Category</h3><div id="myJobs"></div>
+</div>
 
-            <div class="dashboard-section" id="categoryJobsSection" style="display:none;">
-                <h2 data-i18n="open_jobs_category">🛠️ Open Jobs in My Category</h2>
-                <div id="categoryJobsList"><p class="loading" data-i18n="loading">Loading...</p></div>
-            </div>
+<div style="background:white;padding:20px;border-radius:12px;border:1px solid #e2e8f0;">
+<h3>My Disputes / Reports</h3><div id="myReports"></div>
+</div>
 
-            <div class="dashboard-section">
-                <h2 data-i18n="my_worker_profile">🔧 My Worker Profile</h2>
-                <div id="myWorkerProfile"><p class="loading" data-i18n="loading">Loading...</p></div>
-            </div>
+<div style="background:white;padding:20px;border-radius:12px;border:1px solid #e2e8f0;margin:16px 0;">
+<h3>My Reviews Received - Count Fixed</h3><div id="myReviews"></div>
+</div>
 
-            <div class="dashboard-section">
-                <h2 data-i18n="my_disputes">🚩 My Disputes / Reports</h2>
-                <div id="myDisputesList"><p class="loading" data-i18n="loading">Loading...</p></div>
-            </div>
-        </div>
-    </main>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="config.js"></script>
-    <script src="app.js"></script>
-    <script>
-        let myWorkerCategory = null;
+<script src="app.js"></script>
+<script>
+let currentUserId = null;
+async function loadDashboard(){
+  const {data:{user}} = await supabaseClient.auth.getUser();
+  if(!user){ location.href='login.html'; return; }
+  currentUserId=user.id;
+  const {data:profile} = await supabaseClient.from('profiles').select('*').eq('id', user.id).single();
+  if(!profile) return;
+  document.getElementById('fullName').value=profile.full_name||'';
+  document.getElementById('phone').value=profile.phone||'';
+  document.getElementById('whatsapp').value=profile.whatsapp||'';
+  document.getElementById('bio').value=profile.bio||'';
+  if(profile.photo_url||profile.avatar_url){ document.getElementById('profilePhoto').src=profile.photo_url||profile.avatar_url; }
+  // Towns
+  const townSel=document.getElementById('town'); townSel.innerHTML=''; CAMEROON_TOWNS.forEach(t=>{ const opt=document.createElement('option'); opt.value=t; opt.text=t; if(profile.town===t) opt.selected=true; townSel.appendChild(opt); });
+  const catSel=document.getElementById('category'); catSel.innerHTML=''; CATEGORIES.forEach(c=>{ const opt=document.createElement('option'); opt.value=c; opt.text=c; if(profile.category===c) opt.selected=true; catSel.appendChild(opt); });
 
-        document.addEventListener('DOMContentLoaded', async () => {
-            await checkAuth();
-            if (!currentUser) {
-                window.location.href = 'login.html';
-                return;
-            }
-            if (isAdmin()) {
-                var box = document.getElementById('adminOnlyBox');
-                if (box) box.style.display = 'block';
-            }
-            loadPhotoSection();
-            loadMyJobs();
-            loadMyWorkerProfile();
-            loadMyDisputes();
-        });
+  // Jobs by category
+  const {data: jobs} = await supabaseClient.from('jobs').select('*').eq('user_id', user.id).order('created_at',{ascending:false});
+  document.getElementById('myJobs').innerHTML=(jobs||[]).map(j=>`<div style="padding:8px;border-bottom:1px solid #eee;"><b>${j.title}</b> - ${j.category||''} - ${j.town||''} - ${j.status||'open'} <button onclick="deleteMyJob('${j.id}')">Delete</button></div>`).join('') || 'No jobs posted';
 
-        async function loadPhotoSection() {
-            const container = document.getElementById('photoSection');
-            const { data: profile } = await supabaseClient
-                .from('profiles')
-                .select('avatar_url, full_name')
-                .eq('id', currentUser.id)
-                .single();
+  // Reports
+  const {data: reports} = await supabaseClient.from('reports').select('*, reported:profiles!reports_reported_id_fkey(full_name)').eq('reporter_id', user.id);
+  document.getElementById('myReports').innerHTML=(reports||[]).map(r=>`<div>${r.reason} vs ${r.reported?.full_name||r.reported_id} - ${r.status||'pending'}</div>`).join('') || 'No disputes';
 
-            const avatar = (profile && profile.avatar_url) || 'https://via.placeholder.com/100?text=No+Photo';
-            container.innerHTML = `
-                <img src="${avatar}" id="currentAvatar" onerror="this.src='https://via.placeholder.com/100?text=No+Photo'">
-                <p><strong>${profile ? profile.full_name : ''}</strong></p>
-                <input type="file" id="avatarInput" accept="image/*" style="margin:12px 0;">
-                <br>
-                <button class="btn-primary" onclick="changePhoto()">${t('upload_change_photo')}</button>
-            `;
-        }
+  // Reviews - show fixed count
+  const {data: reviews} = await supabaseClient.from('reviews').select('*').eq('worker_id', user.id);
+  document.getElementById('myReviews').innerHTML=(reviews||[]).map(r=>`<div>⭐${r.rating} - ${r.comment||''} by ${r.reviewer_name||'Anon'} ${r.photo_url?`<a href="${r.photo_url}" target="_blank">Photo</a>`:''}</div>`).join('') + `<p><b>Total: ${profile.total_reviews||reviews.length} reviews, Avg: ${profile.average_rating? Number(profile.average_rating).toFixed(1):'0.0'}</b> - Fixed</p>`;
+}
+loadDashboard();
 
-        async function changePhoto() {
-            const input = document.getElementById('avatarInput');
-            if (!input.files || !input.files[0]) {
-                alert(t('select_photo_first'));
-                return;
-            }
-            const url = await uploadFile(input.files[0], 'profiles', currentUser.id);
-            if (!url) {
-                alert(t('upload_failed'));
-                return;
-            }
-            await supabaseClient.from('profiles').update({ avatar_url: url }).eq('id', currentUser.id);
-            alert(t('photo_updated'));
-            loadPhotoSection();
-            loadMyWorkerProfile();
-        }
-
-        async function loadMyJobs() {
-            const container = document.getElementById('myJobsList');
-            try {
-                const { data: jobs, error } = await supabaseClient
-                    .from('job_posts')
-                    .select('*')
-                    .eq('client_id', currentUser.id)
-                    .order('created_at', { ascending: false });
-
-                if (error || !jobs || jobs.length === 0) {
-                    container.innerHTML = `
-                        <div class="empty-dashboard">
-                            <p>${t('no_jobs_yet')}</p>
-                            <a href="post-job.html" class="btn-primary" style="margin-top:12px;display:inline-block;">${t('post_first_job')}</a>
-                        </div>`;
-                    return;
-                }
-
-                container.innerHTML = jobs.map(job => {
-                    const isOpen = job.status === 'Open';
-                    const statusClass = isOpen ? 'status-available' : 'status-closed';
-                    const postedDate = new Date(job.created_at).toLocaleDateString('en-GB');
-                    return `
-                        <div class="job-row">
-                            <div>
-                                <h4>${job.title}</h4>
-                                <p>${job.category} • ${job.location} • ${postedDate}</p>
-                                <span class="status-badge ${statusClass}">${isOpen ? 'Open' : 'Closed'}</span>
-                            </div>
-                            ${isOpen ? `<button class="btn-close-job" onclick="closeJob('${job.id}')">${t('close_job')}</button>` : ''}
-                        </div>`;
-                }).join('');
-            } catch (err) {
-                container.innerHTML = '<p class="empty-dashboard">' + t('error') + '</p>';
-            }
-        }
-
-        async function closeJob(jobId) {
-            if (!confirm('Are you sure you want to close this job?')) return;
-            await supabaseClient.from('job_posts').update({ status: 'Taken' }).eq('id', jobId).eq('client_id', currentUser.id);
-            alert('Job closed successfully!');
-            loadMyJobs();
-        }
-
-        async function loadMyWorkerProfile() {
-            const container = document.getElementById('myWorkerProfile');
-            const catSection = document.getElementById('categoryJobsSection');
-
-            try {
-                const { data: worker, error } = await supabaseClient
-                    .from('worker_details')
-                    .select('*, profiles(full_name, avatar_url, location, phone)')
-                    .eq('id', currentUser.id)
-                    .single();
-
-                if (error || !worker) {
-                    container.innerHTML = `
-                        <div class="empty-dashboard">
-                            <p>${t('no_worker_profile')}</p>
-                            <a href="join.html" class="btn-primary" style="margin-top:12px;display:inline-block;">${t('create_worker_profile')}</a>
-                        </div>`;
-                    return;
-                }
-
-                myWorkerCategory = worker.category;
-                catSection.style.display = 'block';
-                loadCategoryJobs(worker.category);
-
-                const p = worker.profiles || {};
-                container.innerHTML = `
-                    <div style="text-align:center;margin-bottom:16px;">
-                        <img src="${p.avatar_url || 'https://via.placeholder.com/80'}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;margin-bottom:12px;">
-                        <h3>${p.full_name || 'Your Name'}</h3>
-                        <p style="color:var(--primary);font-weight:600;">${worker.category}</p>
-                    </div>
-                    <p><strong>📍 Location:</strong> ${p.location || 'Cameroon'}</p>
-                    <p><strong>📞 Phone:</strong> ${p.phone || 'Not set'}</p>
-                    <p><strong>⭐ Rating:</strong> ${worker.rating || 0}/5 (${worker.review_count || 0} ${t('reviews')})</p>
-                    <p><strong>🛠️ Experience:</strong> ${worker.experience_years || 0} years</p>
-                    <p><strong>✅ Status:</strong> ${worker.availability || 'Available'}</p>
-                    <p style="margin-top:12px;color:var(--text-light);">${worker.description || 'No description yet.'}</p>
-                    <div style="margin-top:20px;">
-                        <label><strong>Update Portfolio Photos (max 2)</strong></label><br>
-                        <input type="file" id="portfolioInput" accept="image/*" multiple style="margin:8px 0;">
-                        <br>
-                        <button class="btn-primary" onclick="updatePortfolio()">Upload Portfolio Photos</button>
-                    </div>
-                `;
-            } catch (err) {
-                container.innerHTML = '<p class="empty-dashboard">' + t('error') + '</p>';
-            }
-        }
-
-        async function updatePortfolio() {
-            const input = document.getElementById('portfolioInput');
-            if (!input.files || input.files.length === 0) {
-                alert(t('select_photo_first'));
-                return;
-            }
-            const urls = await uploadMultipleFiles(input.files, 'portfolio', currentUser.id, 2);
-            if (urls.length === 0) {
-                alert(t('upload_failed'));
-                return;
-            }
-            await supabaseClient.from('worker_details').update({ portfolio: urls }).eq('id', currentUser.id);
-            alert('Portfolio updated!');
-            loadMyWorkerProfile();
-        }
-
-        async function loadCategoryJobs(category) {
-            const container = document.getElementById('categoryJobsList');
-            if (!category) {
-                container.innerHTML = '<p>No category set on your profile.</p>';
-                return;
-            }
-            const { data: jobs } = await supabaseClient
-                .from('job_posts')
-                .select('*, profiles(full_name, phone)')
-                .eq('category', category)
-                .eq('status', 'Open')
-                .order('created_at', { ascending: false })
-                .limit(40);
-
-            if (!jobs || jobs.length === 0) {
-                container.innerHTML = '<p class="empty-dashboard">No open jobs in your category right now.</p>';
-                return;
-            }
-
-            container.innerHTML = jobs.map(job => {
-                const date = new Date(job.created_at).toLocaleDateString('en-GB');
-                const client = job.profiles || {};
-                return `
-                    <div class="job-row">
-                        <div>
-                            <h4>${job.title}</h4>
-                            <p>${job.location} • ${date} • Budget: ${job.budget || 'Negotiable'}</p>
-                            <p style="font-size:0.85rem;">Client: ${client.full_name || 'Unknown'}</p>
-                        </div>
-                        <a href="job.html?id=${job.id}" class="btn-primary">${t('view_job')}</a>
-                    </div>`;
-            }).join('');
-        }
-
-        async function loadMyDisputes() {
-            const container = document.getElementById('myDisputesList');
-            try {
-                const { data: disputes } = await supabaseClient
-                    .from('disputes')
-                    .select('*')
-                    .or(`reporter_id.eq.${currentUser.id},target_id.eq.${currentUser.id}`)
-                    .order('created_at', { ascending: false });
-
-                if (!disputes || disputes.length === 0) {
-                    container.innerHTML = '<p class="empty-dashboard">You have no disputes or reports.</p>';
-                    return;
-                }
-
-                container.innerHTML = disputes.map(d => {
-                    const date = new Date(d.created_at).toLocaleDateString('en-GB');
-                    const statusClass = d.status === 'Open' ? 'status-available' : 'status-closed';
-                    return `
-                        <div class="dispute-row">
-                            <div>
-                                <h4>${d.reason || 'Report'}</h4>
-                                <p>${d.target_name || ''} (${d.target_type || ''}) • ${date}</p>
-                                <span class="status-badge ${statusClass}">${d.status || ''}</span>
-                            </div>
-                        </div>`;
-                }).join('');
-            } catch (err) {
-                container.innerHTML = '<p class="empty-dashboard">' + t('error') + '</p>';
-            }
-        }
-    </script>
+async function updatePhoto(){
+  const file=document.getElementById('photoFile').files[0]; if(!file){ alert('Select photo'); return; }
+  const url = await uploadFile(file, 'avatars', currentUserId);
+  if(!url){ alert('Upload failed'); return; }
+  await supabaseClient.from('profiles').update({photo_url:url, avatar_url:url}).eq('id', currentUserId);
+  document.getElementById('profilePhoto').src=url; alert('Photo updated!');
+}
+async function saveProfile(){
+  const updates={ full_name:document.getElementById('fullName').value, phone:document.getElementById('phone').value, whatsapp:document.getElementById('whatsapp').value, town:document.getElementById('town').value, category:document.getElementById('category').value, bio:document.getElementById('bio').value, is_worker:true };
+  const {error}=await supabaseClient.from('profiles').update(updates).eq('id', currentUserId);
+  if(error){ document.getElementById('saveStatus').innerText='Error: '+error.message; } else { document.getElementById('saveStatus').innerText='Saved! / Sauvegardé!'; }
+}
+async function deleteMyJob(id){ if(!confirm('Delete job?')) return; await supabaseClient.from('jobs').delete().eq('id',id); loadDashboard(); }
+async function logout(){ await supabaseClient.auth.signOut(); location.href='index.html'; }
+</script>
 </body>
 </html>
