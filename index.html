@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Handy Man Cameroon - Find Trusted Local Workers</title>
-    <meta name="description" content="Find trusted plumbers, electricians, cleaners and skilled workers across Cameroon. Connect with verified local professionals fast.">
-    <meta name="keywords" content="handyman, plumber, electrician, cleaner, Cameroon, Buea, Douala, Yaoundé, workers">
+    <title>Handy Man - Find Trusted Local Help in Cameroon</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -13,104 +11,99 @@
         <div class="container">
             <a href="index.html" class="logo">🔧 Handy Man</a>
             <nav class="nav" id="nav">
-                <a href="index.html" data-i18n="nav_home">Home</a>
-                <a href="workers.html" data-i18n="nav_workers">Find Workers</a>
-                <a href="jobs.html" data-i18n="nav_jobs">Find Jobs</a>
-                <a href="login.html" class="btn-secondary" data-i18n="nav_join">Join as Worker</a>
-                <a href="post-job.html" class="btn-secondary" data-i18n="nav_post">Post a Job</a>
-                <a href="login.html" class="btn-secondary" id="authBtn" data-i18n="nav_login">Login</a>
+                <a href="index.html">Home</a>
+                <a href="workers.html">Find Workers</a>
+                <a href="jobs.html">Find Jobs</a>
+                <a href="login.html" class="btn-secondary">Join as Worker</a>
+                <a href="post-job.html" class="btn-secondary">Post a Job</a>
+                <a href="login.html" class="btn-secondary" id="authBtn">Login</a>
             </nav>
             <button class="menu-toggle" id="menuToggle">☰</button>
         </div>
     </header>
 
-    <!-- HERO SECTION -->
-    <section class="hero-carousel">
-        <div class="carousel-slide active" style="background-image: url('https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=1600');">
+    <section class="hero-carousel" id="heroCarousel">
+        <div class="carousel-slide active" style="background-image: url('https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=1200&q=80')">
             <div class="carousel-content">
-                <h1 data-i18n="hero_title">Find Trusted Local Help in Cameroon</h1>
-                <p data-i18n="hero_sub">Connect with skilled plumbers, electricians, cleaners, and more — anywhere in Cameroon.</p>
-                <div>
-                    <a href="workers.html" class="btn-primary" data-i18n="hero_find">Find a Worker</a>
-                    <a href="post-job.html" class="btn-secondary" style="margin-left:12px;color:white;border-color:white;" data-i18n="hero_post">Post a Job</a>
-                </div>
+                <h1>Find Trusted Local Help in Cameroon</h1>
+                <p>Connect with skilled plumbers, electricians, cleaners, and more — anywhere in Cameroon.</p>
+                <a href="workers.html" class="btn-primary">Find a Worker</a>
+                <a href="post-job.html" class="btn-secondary">Post a Job</a>
             </div>
         </div>
-        <div class="carousel-slide" style="background-image: url('https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=1600');">
+        <div class="carousel-slide" style="background-image: url('https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=1200&q=80')">
             <div class="carousel-content">
-                <h1 data-i18n="hero_title">Find Trusted Local Help in Cameroon</h1>
-                <p data-i18n="hero_sub">Connect with skilled plumbers, electricians, cleaners, and more — anywhere in Cameroon.</p>
-                <div>
-                    <a href="workers.html" class="btn-primary" data-i18n="hero_find">Find a Worker</a>
-                    <a href="post-job.html" class="btn-secondary" style="margin-left:12px;color:white;border-color:white;" data-i18n="hero_post">Post a Job</a>
-                </div>
+                <h1>Skilled Construction Workers</h1>
+                <p>Find masons, carpenters, and builders for your projects.</p>
+                <a href="workers.html?category=Masonry" class="btn-primary">Find Builders</a>
+            </div>
+        </div>
+        <div class="carousel-slide" style="background-image: url('https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=1200&q=80')">
+            <div class="carousel-content">
+                <h1>Professional Cleaning Services</h1>
+                <p>Get your home or office sparkling clean.</p>
+                <a href="workers.html?category=Cleaning" class="btn-primary">Find Cleaners</a>
+            </div>
+        </div>
+        <div class="carousel-slide" style="background-image: url('https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=1200&q=80')">
+            <div class="carousel-content">
+                <h1>Expert Electrical Repairs</h1>
+                <p>Safe and reliable electrical work for your property.</p>
+                <a href="workers.html?category=Electrical" class="btn-primary">Find Electricians</a>
             </div>
         </div>
         <div class="carousel-dots" id="carouselDots"></div>
     </section>
 
-    <!-- POPULAR SERVICES -->
-    <section>
+    <section class="categories">
         <div class="container">
-            <h2 data-i18n="popular_services">Popular Services</h2>
+            <h2>Popular Services</h2>
             <div class="category-grid" id="categoryGrid">
-                <p class="loading" data-i18n="loading">Loading...</p>
+                <p class="loading">Loading categories...</p>
             </div>
         </div>
     </section>
 
-    <!-- FEATURED WORKERS -->
-    <section style="background:#f1f5f9;">
+    <section class="featured">
         <div class="container">
-            <h2 data-i18n="featured_workers">Featured Workers in Cameroon</h2>
+            <h2>Featured Workers in Cameroon</h2>
             <div class="worker-grid" id="workerGrid">
-                <p class="loading" data-i18n="loading">Loading...</p>
+                <p class="loading">Loading workers...</p>
             </div>
         </div>
     </section>
 
-    <!-- HOW IT WORKS -->
     <section class="how-it-works">
         <div class="container">
-            <h2 data-i18n="how_title">How It Works</h2>
+            <h2>How It Works</h2>
             <div class="steps">
                 <div class="step">
                     <div class="step-icon">🔍</div>
-                    <h3 data-i18n="how_search">Search</h3>
-                    <p data-i18n="how_search_p">Find the right worker in your town</p>
+                    <h3>Search</h3>
+                    <p>Find the right worker in your town</p>
                 </div>
                 <div class="step">
                     <div class="step-icon">📞</div>
-                    <h3 data-i18n="how_contact">Contact</h3>
-                    <p data-i18n="how_contact_p">Call or WhatsApp them directly</p>
+                    <h3>Contact</h3>
+                    <p>Call or WhatsApp them directly</p>
                 </div>
                 <div class="step">
                     <div class="step-icon">✅</div>
-                    <h3 data-i18n="how_done">Get It Done</h3>
-                    <p data-i18n="how_done_p">Rate and review after service</p>
+                    <h3>Get It Done</h3>
+                    <p>Rate and review after service</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- FOOTER -->
     <footer class="footer">
         <div class="container">
-            <p data-i18n="footer_text">© 2026 Handy Man. Connecting people with skilled workers across Cameroon.</p>
-            <p style="margin-top:8px;">
-                <a href="#" onclick="openContactModal(); return false;" style="color:#93c5fd;" data-i18n="contact_us">📧 Contact Us</a>
-            </p>
+            <p>© 2026 Handy Man. Connecting people with skilled workers across Cameroon.</p>
         </div>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <script src="app.js"></script>
-    <script>
-        // Simple contact modal (can be expanded later)
-        function openContactModal() {
-            alert('Contact us by email: internationalpimerchant@gmail.com\nor WhatsApp the admin.');
-        }
-    </script>
 </body>
 </html>
