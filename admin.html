@@ -1,195 +1,830 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin - HandyMan Cameroon</title>
-<link rel="stylesheet" href="style.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js"></script>
-<style>
-.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0;}
-.tab{padding:8px 14px;background:white;border:1px solid #cbd5e1;border-radius:8px;cursor:pointer;}
-.tab.active{background:#2563eb;color:white;}
-.admin-section{display:none;} .admin-section.active{display:block;}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Handy Man Cameroon</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .admin-filter-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+        .admin-filter-bar select, .admin-filter-bar input { padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); min-width: 180px; }
+        .user-row, .dispute-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 14px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 10px;
+            background: #fff;
+            flex-wrap: wrap;
+        }
+        .user-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .user-actions a, .user-actions button {
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .btn-whatsapp { background: #25D366; color: white; border: none; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; cursor: pointer; display: inline-block; }
+        .btn-call { background: #0ea5e9; color: white; border: none; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; display: inline-block; }
+        .broadcast-box { background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 24px; }
+        .broadcast-box textarea { width: 100%; min-height: 100px; padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin: 10px 0; }
+        .stat-card.today { border-left: 4px solid #22c55e; }
+        .deleted-user { opacity: 0.65; background: #fef2f2 !important; }
+        .dispute-detail-box { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+        .detail-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+        .mail-row { border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 10px; background: #fff; }
+        .mail-row.unread { border-left: 4px solid #2563eb; }
+
+        /* Profile view modal – keeps the list intact */
+        .user-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            overflow-y: auto;
+        }
+        .user-modal-overlay.active { display: flex; }
+        .user-modal-box {
+            background: #fff;
+            border-radius: 14px;
+            padding: 24px;
+            max-width: 640px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .user-modal-box .close-modal {
+            position: absolute;
+            top: 12px;
+            right: 14px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-light);
+            line-height: 1;
+        }
+        .user-modal-box h3 { margin-bottom: 12px; padding-right: 30px; }
+        .user-modal-box p { margin-bottom: 8px; }
+    </style>
 </head>
 <body>
-<nav class="navbar"><a href="index.html">🔧 HandyMan</a><span>Admin Panel</span><button onclick="logout()" class="btn-small">Logout</button></nav>
+    <header class="header">
+        <div class="container">
+            <a href="index.html" class="logo">🔧 Handy Man</a>
+            <nav class="nav" id="nav">
+                <a href="index.html">Home</a>
+                <a href="workers.html">Find Workers</a>
+                <a href="jobs.html">Find Jobs</a>
+                <a href="dashboard.html" class="btn-secondary">My Profile</a>
+                <a href="login.html" class="btn-secondary" id="authBtn">Login</a>
+            </nav>
+            <button class="menu-toggle" id="menuToggle">☰</button>
+        </div>
+    </header>
 
-<div class="container">
-<h1>Admin Dashboard - All Cameroon</h1>
+    <main class="admin-page">
+        <div class="container">
+            <h1>⚙️ Admin Control Panel</h1>
+            <p style="color: var(--text-light); margin-bottom: 32px;">Welcome back, Administrator.</p>
 
-<div class="admin-stats" id="stats">
-<div class="stat-card"><h3 id="totalVisitors">0</h3><p>Total Visitors</p></div>
-<div class="stat-card"><h3 id="todayVisitors">0</h3><p>Today</p></div>
-<div class="stat-card"><h3 id="weekVisitors">0</h3><p>This Week</p></div>
-<div class="stat-card"><h3 id="monthVisitors">0</h3><p>This Month</p></div>
-<div class="stat-card"><h3 id="totalUsers">0</h3><p>Total Users</p></div>
-<div class="stat-card"><h3 id="todayRegs">0</h3><p>Registrations Today</p></div>
-</div>
+            <div class="admin-stats-grid" id="statsGrid">
+                <div class="stat-card visitors"><h3 id="statVisitors">...</h3><p>Total Visitors</p></div>
+                <div class="stat-card today"><h3 id="statTodayVisitors">...</h3><p>Visitors Today</p></div>
+                <div class="stat-card"><h3 id="statWeekVisitors">...</h3><p>Visitors This Week</p></div>
+                <div class="stat-card"><h3 id="statMonthVisitors">...</h3><p>Visitors This Month</p></div>
+                <div class="stat-card today"><h3 id="statTodayRegs">...</h3><p>Registered Today</p></div>
+                <div class="stat-card workers"><h3 id="statWorkers">...</h3><p>Workers Registered</p></div>
+                <div class="stat-card clients"><h3 id="statClients">...</h3><p>Employers / Clients</p></div>
+                <div class="stat-card jobs"><h3 id="statJobs">...</h3><p>Total Job Posts</p></div>
+                <div class="stat-card disputes"><h3 id="statDisputes">...</h3><p>Open Disputes</p></div>
+            </div>
 
-<div class="tabs">
-<button class="tab active" onclick="showTab('workers')">Workers A-Z</button>
-<button class="tab" onclick="showTab('jobs')">Jobs</button>
-<button class="tab" onclick="showTab('reviews')">Reviews (Rating Fix)</button>
-<button class="tab" onclick="showTab('disputes')">Disputes / Reports</button>
-<button class="tab" onclick="showTab('mails')">Mails / Contact Us</button>
-<button class="tab" onclick="showTab('visitors')">Visitors Log</button>
-</div>
+            <div class="admin-section">
+                <h2>📢 Send Message / Broadcast</h2>
+                <div class="broadcast-box">
+                    <label><strong>Send to:</strong></label>
+                    <select id="broadcastAudience" style="margin-left:8px; padding:8px;">
+                        <option value="all">All Users</option>
+                        <option value="workers">Only Workers</option>
+                        <option value="clients">Only Clients</option>
+                    </select>
+                    <textarea id="broadcastMessage" placeholder="Type your message here..."></textarea>
+                    <button type="button" class="btn-primary" onclick="sendBroadcast()">Send In-App Notification</button>
+                    <p id="broadcastStatus" class="message"></p>
+                </div>
+            </div>
 
-<!-- WORKERS TAB - ALPHABETICAL + SEARCH BY NAME/CATEGORY + VIEW + DELETE/RESTORE -->
-<div id="tab-workers" class="admin-section active">
-<h3>Workers - Alphabetical Order</h3>
-<input type="text" id="searchWorkerName" placeholder="Search by name..." onkeyup="filterAdminWorkers()" style="padding:8px;margin:6px;">
-<select id="searchWorkerCat" onchange="filterAdminWorkers()"><option value="">All Categories</option></select>
-<select id="searchWorkerTown" onchange="filterAdminWorkers()"><option value="">All Towns</option></select>
-<table class="admin-table"><thead><tr><th>Name A-Z</th><th>Category</th><th>Town</th><th>Rating</th><th>Reviews Count</th><th>Actions</th></tr></thead><tbody id="workersTable"></tbody></table>
-</div>
+            <div class="admin-section">
+                <h2>📬 Contact Us Messages</h2>
+                <div id="contactMailsList"><p class="loading">Loading messages...</p></div>
+            </div>
 
-<!-- JOBS TAB -->
-<div id="tab-jobs" class="admin-section">
-<h3>Jobs</h3><table class="admin-table"><thead><tr><th>Title</th><th>Town</th><th>Status</th><th>Actions</th></tr></thead><tbody id="jobsTable"></tbody></table>
-</div>
+            <div class="admin-section">
+                <h2>👥 All Users (Clients & Workers)</h2>
+                <p style="color:var(--text-light);margin-bottom:12px;">Users sorted alphabetically. Use filter <strong>Deleted Accounts</strong> to restore. Click <strong>View</strong> to open details (list stays open).</p>
+                <div class="admin-filter-bar">
+                    <select id="userFilter" onchange="loadAllUsers()">
+                        <option value="all">All Active Users</option>
+                        <option value="workers">Workers only</option>
+                        <option value="clients">Clients only</option>
+                        <option value="deleted">Deleted Accounts</option>
+                    </select>
+                    <input type="text" id="userSearch" placeholder="Search by name, phone or location..." oninput="loadAllUsers()">
+                </div>
+                <div id="allUsersList"><p class="loading">Loading users...</p></div>
+            </div>
 
-<!-- REVIEWS TAB - FIX COUNT -->
-<div id="tab-reviews" class="admin-section">
-<h3>Reviews - Verify total_reviews matches count</h3><table class="admin-table"><thead><tr><th>Worker</th><th>Reviewer</th><th>Stars</th><th>Photo</th><th>Link</th><th>Action</th></tr></thead><tbody id="reviewsTable"></tbody></table>
-</div>
+            <div class="admin-section">
+                <h2>🚩 Disputes & Reports</h2>
+                <div id="disputesList"><p class="loading">Loading disputes...</p></div>
+            </div>
 
-<!-- DISPUTES TAB - SHOW BOTH SIDES + CALL/WHATSAPP/MESSAGE -->
-<div id="tab-disputes" class="admin-section">
-<h3>Disputes / Reports - Reporter vs Reported</h3><div id="disputesList"></div>
-</div>
+            <div class="admin-section">
+                <h2>🐞 Report a Bug or Case</h2>
+                <div class="broadcast-box">
+                    <input type="text" id="bugTitle" placeholder="Short title" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid var(--border);">
+                    <textarea id="bugDetails" placeholder="Describe the problem..."></textarea>
+                    <button type="button" class="btn-primary" onclick="submitBugReport()">Save Bug / Case Report</button>
+                    <p id="bugStatus" class="message"></p>
+                </div>
+            </div>
 
-<!-- MAILS TAB -->
-<div id="tab-mails" class="admin-section">
-<h3>Mails Folder - Contact Us Messages</h3><table class="admin-table"><thead><tr><th>Date</th><th>Name</th><th>Email (click to mail)</th><th>Phone (Call/WhatsApp)</th><th>Message</th><th>Reply</th></tr></thead><tbody id="mailsTable"></tbody></table>
-</div>
+            <div class="admin-section">
+                <h2>👷 All Workers (Quick Delete / Restore)</h2>
+                <div id="allWorkersList"><p class="loading">Loading workers...</p></div>
+            </div>
 
-<!-- VISITORS TAB -->
-<div id="tab-visitors" class="admin-section">
-<h3>Visitors per Day / Week / Month</h3><div id="visitorsList"></div>
-</div>
+            <div class="admin-section">
+                <h2>📋 All Job Posts</h2>
+                <div id="allJobsList"><p class="loading">Loading jobs...</p></div>
+            </div>
+        </div>
+    </main>
 
-</div>
+    <!-- Profile detail modal (does NOT replace the list) -->
+    <div class="user-modal-overlay" id="userModal">
+        <div class="user-modal-box" id="userModalContent">
+            <button type="button" class="close-modal" onclick="closeUserModal()">✕</button>
+            <div id="userModalBody"><p class="loading">Loading...</p></div>
+        </div>
+    </div>
 
-<!-- VIEW MODAL -->
-<div id="viewModal" class="modal" style="display:none;"><div class="modal-content"><span onclick="closeView()" class="close">&times;</span><div id="viewContent"></div></div></div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', async function () {
+        await checkAuth();
 
-<script>
-let allWorkersAdmin = [];
-async function checkAdmin(){
-  const {data:{user}} = await supabaseClient.auth.getUser();
-  if(!user){ location.href='login.html'; return; }
-  const {data:profile} = await supabaseClient.from('profiles').select('*').eq('id', user.id).single();
-  if(!profile || !profile.is_admin){ alert('Not admin'); location.href='index.html'; return; }
-  loadAll();
-}
-checkAdmin();
+        var adminEmail = (window.HANDYMAN_CONFIG && window.HANDYMAN_CONFIG.ADMIN_EMAIL) || 'internationalpimerchant@gmail.com';
+        var emailOk = currentUser && currentUser.email &&
+            currentUser.email.toLowerCase() === adminEmail.toLowerCase();
 
-function showTab(name){
-  document.querySelectorAll('.admin-section').forEach(s=>s.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById('tab-'+name).classList.add('active');
-  event.target.classList.add('active');
-}
+        if (!isAdmin() && !emailOk) {
+            document.body.innerHTML =
+                '<div style="text-align:center;padding:100px 20px;">' +
+                '<h1>Access Denied</h1>' +
+                '<p>You do not have permission to view this page.</p>' +
+                '<p>Logged in as: ' + (currentUser ? currentUser.email : 'not logged in') + '</p>' +
+                '<a href="index.html" class="btn-primary">Go Home</a></div>';
+            return;
+        }
 
-async function loadAll(){
-  // Stats - visitors per day/week/month
-  const {data: visitors} = await supabaseClient.from('visitors').select('*').order('created_at',{ascending:false}).limit(1000);
-  const {data: profiles} = await supabaseClient.from('profiles').select('*');
-  const {data: siteStats} = await supabaseClient.from('site_stats').select('*').eq('id',1).single();
-  if(siteStats){ document.getElementById('totalVisitors').innerText=siteStats.total_visitors||0; document.getElementById('todayVisitors').innerText=siteStats.visitors_today||0; }
-  // Calculate week/month from visitors table
-  const now = new Date(); const weekAgo = new Date(now); weekAgo.setDate(now.getDate()-7); const monthAgo = new Date(now); monthAgo.setMonth(now.getMonth()-1);
-  const weekCount = (visitors||[]).filter(v=> new Date(v.created_at) >= weekAgo).length;
-  const monthCount = (visitors||[]).filter(v=> new Date(v.created_at) >= monthAgo).length;
-  document.getElementById('weekVisitors').innerText=weekCount;
-  document.getElementById('monthVisitors').innerText=monthCount;
-  document.getElementById('totalUsers').innerText=(profiles||[]).length;
-  const todayStr = now.toISOString().slice(0,10);
-  const todayRegs = (profiles||[]).filter(p=> p.created_at && p.created_at.slice(0,10)===todayStr).length;
-  document.getElementById('todayRegs').innerText=todayRegs;
+        loadStats();
+        loadAllUsers();
+        loadDisputes();
+        loadAllWorkers();
+        loadAllJobs();
+        loadContactMails();
 
-  // Workers A-Z alphabetical
-  const {data: workers} = await supabaseClient.from('profiles').select('*').order('full_name',{ascending:true});
-  allWorkersAdmin = workers||[];
-  renderWorkersAdmin(allWorkersAdmin);
-  // Fill category and town filters
-  const catSel=document.getElementById('searchWorkerCat'); catSel.innerHTML='<option value="">All Categories</option>'; CATEGORIES.forEach(c=>catSel.innerHTML+=`<option value="${c}">${c}</option>`);
-  const townSel=document.getElementById('searchWorkerTown'); townSel.innerHTML='<option value="">All Towns</option>'; CAMEROON_TOWNS.forEach(t=>townSel.innerHTML+=`<option value="${t}">${t}</option>`);
+        var modal = document.getElementById('userModal');
+        if (modal) {
+            modal.addEventListener('click', function (e) {
+                if (e.target === modal) closeUserModal();
+            });
+        }
+    });
 
-  // Jobs
-  const {data: jobs} = await supabaseClient.from('jobs').select('*').order('created_at',{ascending:false}).limit(100);
-  document.getElementById('jobsTable').innerHTML=(jobs||[]).map(j=>`<tr><td>${j.title}</td><td>${j.town||''}</td><td>${j.status||'open'}</td><td><button onclick="deleteJob('${j.id}')">Delete</button></td></tr>`).join('');
+    function formatPhone(phone) {
+        if (!phone) return null;
+        var p = phone.toString().replace(/\D/g, '');
+        if (p.indexOf('237') === 0) p = p.substring(3);
+        if (p.length === 9) return '237' + p;
+        return p;
+    }
 
-  // Reviews - fix count display
-  const {data: reviews} = await supabaseClient.from('reviews').select('*, profiles!reviews_worker_id_fkey(full_name)').order('created_at',{ascending:false}).limit(100);
-  document.getElementById('reviewsTable').innerHTML=(reviews||[]).map(r=>`<tr><td>${r.profiles?.full_name||r.worker_id}</td><td>${r.reviewer_name||'Anon'}</td><td>${r.rating} stars - Count should update</td><td>${r.photo_url?`<a href="${r.photo_url}" target="_blank">Photo</a>`:'-'}</td><td>${r.profile_link||'-'}</td><td><button onclick="deleteReview('${r.id}','${r.worker_id}')">Delete & Recalc</button></td></tr>`).join('');
+    function whatsappLink(phone) {
+        var p = formatPhone(phone);
+        if (!p) return '#';
+        return 'https://wa.me/' + p + '?text=' + encodeURIComponent('Hello from Handy Man Admin');
+    }
 
-  // Disputes - show reporter vs reported with call/whatsapp/message
-  const {data: reports} = await supabaseClient.from('reports').select('*, reporter:profiles!reports_reporter_id_fkey(full_name,phone,whatsapp), reported:profiles!reports_reported_id_fkey(full_name,phone,whatsapp)').order('created_at',{ascending:false});
-  document.getElementById('disputesList').innerHTML=(reports||[]).map(rp=>`
-    <div style="background:white;padding:12px;margin:8px 0;border:1px solid #e2e8f0;border-radius:8px;">
-      <b>Reason:</b> ${rp.reason}<br>
-      <b>Reporter:</b> ${rp.reporter?.full_name||rp.reporter_id} - <a href="tel:${rp.reporter?.phone}">Call</a> | <a href="https://wa.me/${rp.reporter?.whatsapp||rp.reporter?.phone}" target="_blank">WhatsApp</a> | <button onclick="messageUser('${rp.reporter_id}','Regarding your report')">Message via Notification</button><br>
-      <b>Reported:</b> ${rp.reported?.full_name||rp.reported_id} - <a href="tel:${rp.reported?.phone}">Call</a> | <a href="https://wa.me/${rp.reported?.whatsapp||rp.reported?.phone}" target="_blank">WhatsApp</a> | <button onclick="messageUser('${rp.reported_id}','Regarding report against you')">Message</button><br>
-      <small>${rp.created_at}</small> <button onclick="resolveReport('${rp.id}')">Resolve</button>
-    </div>`).join('') || 'No disputes';
+    function callLink(phone) {
+        var p = formatPhone(phone);
+        return p ? 'tel:+' + p : '#';
+    }
 
-  // Mails / Contact Us
-  const {data: mails} = await supabaseClient.from('contact_messages').select('*').order('created_at',{ascending:false});
-  document.getElementById('mailsTable').innerHTML=(mails||[]).map(m=>`<tr><td>${m.created_at?.slice(0,10)}</td><td>${m.name}</td><td><a href="mailto:${m.email}">${m.email}</a></td><td><a href="tel:${m.phone}">${m.phone}</a> | <a href="https://wa.me/${m.phone}" target="_blank">WhatsApp</a></td><td>${m.message}</td><td><button onclick="replyMail('${m.email}')">Reply</button></td></tr>`).join('') || '<tr><td colspan=6>No mails - Need to create contact_messages table in Supabase</td></tr>';
+    function setText(id, value) {
+        var el = document.getElementById(id);
+        if (el) el.textContent = value;
+    }
 
-  // Visitors log
-  document.getElementById('visitorsList').innerHTML=(visitors||[]).slice(0,100).map(v=>`<div>${v.created_at} - ${v.page}</div>`).join('');
-}
+    function setHtml(id, html) {
+        var el = document.getElementById(id);
+        if (el) el.innerHTML = html;
+    }
 
-function renderWorkersAdmin(workers){
-  document.getElementById('workersTable').innerHTML=workers.map(w=>{
-    const avg = w.average_rating? Number(w.average_rating).toFixed(1) : '0.0'; const total = w.total_reviews||0;
-    return `<tr><td>${w.full_name}</td><td>${w.category||''}</td><td>${w.town||''}</td><td>${avg}</td><td>${total} reviews - fixed count</td><td><button onclick="viewWorkerAdmin('${w.id}')">View Full</button> ${w.is_deleted?`<button onclick="restoreWorker('${w.id}')">Restore</button>`:`<button onclick="deleteWorker('${w.id}')">Delete</button>`}</td></tr>`;
-  }).join('');
-}
-function filterAdminWorkers(){
-  const name = document.getElementById('searchWorkerName').value.toLowerCase();
-  const cat = document.getElementById('searchWorkerCat').value;
-  const town = document.getElementById('searchWorkerTown').value;
-  let filtered = allWorkersAdmin.filter(w=>{
-    const matchName = !name || (w.full_name && w.full_name.toLowerCase().includes(name));
-    const matchCat = !cat || w.category===cat;
-    const matchTown = !town || w.town===town;
-    return matchName && matchCat && matchTown;
-  });
-  renderWorkersAdmin(filtered);
-}
-async function viewWorkerAdmin(id){
-  const {data:w} = await supabaseClient.from('profiles').select('*').eq('id',id).single();
-  document.getElementById('viewContent').innerHTML=`<h3>${w.full_name}</h3><p><b>Phone:</b> <a href="tel:${w.phone}">${w.phone}</a> | <a href="https://wa.me/${w.whatsapp||w.phone}" target="_blank">WhatsApp</a></p><p><b>Email:</b> ${w.email}</p><p><b>Town:</b> ${w.town}</p><p><b>Category:</b> ${w.category}</p><p><b>Rating:</b> ${w.average_rating} (${w.total_reviews} reviews)</p><p><b>Bio:</b> ${w.bio||''}</p><p><b>Photo:</b> ${w.photo_url?`<img src="${w.photo_url}" style="width:120px;">`:'none'}</p>`;
-  document.getElementById('viewModal').style.display='flex';
-}
-function closeView(){ document.getElementById('viewModal').style.display='none'; }
-async function deleteWorker(id){ if(!confirm('Delete worker?')) return; await supabaseClient.from('profiles').update({is_deleted:true}).eq('id',id); loadAll(); }
-async function restoreWorker(id){ await supabaseClient.from('profiles').update({is_deleted:false}).eq('id',id); loadAll(); }
-async function deleteJob(id){ if(!confirm('Delete job?')) return; await supabaseClient.from('jobs').delete().eq('id',id); loadAll(); }
-async function deleteReview(reviewId, workerId){
-  await supabaseClient.from('reviews').delete().eq('id',reviewId);
-  // Recalc rating and count - FIX
-  const {data: revs} = await supabaseClient.from('reviews').select('rating').eq('worker_id', workerId);
-  const total = revs.length; const avg = total? (revs.reduce((s,r)=>s+r.rating,0)/total) : 0;
-  await supabaseClient.from('profiles').update({average_rating:avg, total_reviews:total}).eq('id', workerId);
-  alert('Deleted and rating recalculated: '+avg.toFixed(1)+' with '+total+' reviews');
-  loadAll();
-}
-async function messageUser(userId, text){
-  const msg = prompt('Message to user:', text);
-  if(!msg) return;
-  await supabaseClient.from('notifications').insert({user_id:userId, message:msg, read:false});
-  alert('Message sent via notification');
-}
-async function resolveReport(id){ await supabaseClient.from('reports').update({status:'resolved'}).eq('id',id); loadAll(); }
-function replyMail(email){ window.location.href='mailto:'+email; }
-async function logout(){ await supabaseClient.auth.signOut(); location.href='index.html'; }
-</script>
+    async function loadStats() {
+        if (!supabaseClient) return;
+        try {
+            var statsRes = await supabaseClient.from('site_stats').select('total_visitors, visitors_today').eq('id', 1).maybeSingle();
+            setText('statVisitors', (statsRes.data && statsRes.data.total_visitors) || 0);
+            setText('statTodayVisitors', (statsRes.data && statsRes.data.visitors_today) || 0);
+
+            var weekStart = new Date();
+            weekStart.setDate(weekStart.getDate() - 7);
+            var monthStart = new Date();
+            monthStart.setDate(1);
+            monthStart.setHours(0, 0, 0, 0);
+
+            try {
+                var weekRes = await supabaseClient.from('visitor_logs').select('*', { count: 'exact', head: true }).gte('visited_at', weekStart.toISOString());
+                setText('statWeekVisitors', weekRes.count || 0);
+            } catch (e) { setText('statWeekVisitors', '—'); }
+
+            try {
+                var monthRes = await supabaseClient.from('visitor_logs').select('*', { count: 'exact', head: true }).gte('visited_at', monthStart.toISOString());
+                setText('statMonthVisitors', monthRes.count || 0);
+            } catch (e) { setText('statMonthVisitors', '—'); }
+
+            var todayStart = new Date();
+            todayStart.setHours(0, 0, 0, 0);
+
+            var todayRes = await supabaseClient.from('profiles').select('*', { count: 'exact', head: true }).gte('created_at', todayStart.toISOString());
+            setText('statTodayRegs', todayRes.count || 0);
+
+            var workerRes = await supabaseClient.from('profiles').select('*', { count: 'exact', head: true }).eq('is_worker', true).eq('is_deleted', false);
+            setText('statWorkers', workerRes.count || 0);
+
+            var clientRes = await supabaseClient.from('profiles').select('*', { count: 'exact', head: true }).eq('is_worker', false).eq('is_deleted', false);
+            setText('statClients', clientRes.count || 0);
+
+            var jobRes = await supabaseClient.from('job_posts').select('*', { count: 'exact', head: true });
+            setText('statJobs', jobRes.count || 0);
+
+            var disputeRes = await supabaseClient.from('disputes').select('*', { count: 'exact', head: true }).eq('status', 'Open');
+            setText('statDisputes', disputeRes.count || 0);
+        } catch (err) {
+            console.error('Stats error:', err);
+        }
+    }
+
+    async function loadAllUsers() {
+        if (!supabaseClient) {
+            setHtml('allUsersList', '<p class="empty-dashboard">Cannot connect.</p>');
+            return;
+        }
+        var filterEl = document.getElementById('userFilter');
+        var searchEl = document.getElementById('userSearch');
+        var filter = filterEl ? filterEl.value : 'all';
+        var search = searchEl ? searchEl.value.toLowerCase().trim() : '';
+
+        try {
+            var query = supabaseClient
+                .from('profiles')
+                .select('id, full_name, phone, is_worker, is_admin, location, created_at, is_deleted, deleted_at, avatar_url')
+                .order('full_name', { ascending: true })
+                .limit(500);
+
+            if (filter === 'workers') query = query.eq('is_worker', true).eq('is_deleted', false);
+            if (filter === 'clients') query = query.eq('is_worker', false).eq('is_deleted', false);
+            if (filter === 'deleted') query = query.eq('is_deleted', true);
+            if (filter === 'all') query = query.eq('is_deleted', false);
+
+            var res = await query;
+            if (res.error) {
+                setHtml('allUsersList', '<p class="empty-dashboard">Error: ' + res.error.message + '</p>');
+                return;
+            }
+
+            var list = res.data || [];
+            if (search) {
+                list = list.filter(function (u) {
+                    var name = (u.full_name || '').toLowerCase();
+                    var phone = (u.phone || '').toLowerCase();
+                    var loc = (u.location || '').toLowerCase();
+                    return name.indexOf(search) !== -1 || phone.indexOf(search) !== -1 || loc.indexOf(search) !== -1;
+                });
+            }
+
+            if (list.length === 0) {
+                setHtml('allUsersList', '<p class="empty-dashboard">No users found for this filter.</p>');
+                return;
+            }
+
+            setHtml('allUsersList', list.map(function (u) {
+                var type = u.is_admin ? 'Admin' : (u.is_worker ? 'Worker' : 'Client');
+                var phone = u.phone || '';
+                var safeName = (u.full_name || 'User').replace(/'/g, "\\'");
+                var isDeleted = u.is_deleted === true;
+
+                var contact = phone
+                    ? '<a class="btn-call" href="' + callLink(phone) + '">Call</a>' +
+                      '<a class="btn-whatsapp" href="' + whatsappLink(phone) + '" target="_blank">WhatsApp</a>'
+                    : '';
+
+                var actionBtn = isDeleted
+                    ? '<button type="button" class="btn-primary" onclick="restoreUser(\'' + u.id + '\',\'' + safeName + '\')">Restore</button>'
+                    : '<button type="button" class="btn-close-job" onclick="deleteUser(\'' + u.id + '\',\'' + safeName + '\')">Delete</button>';
+
+                return '<div class="user-row ' + (isDeleted ? 'deleted-user' : '') + '">' +
+                    '<div style="min-width:0;flex:1;">' +
+                    '<h4 style="margin:0 0 4px;">' + (u.full_name || 'No name') +
+                    (isDeleted ? ' <span style="color:#ef4444;">(Deleted)</span>' : '') +
+                    '</h4>' +
+                    '<p style="margin:0;font-size:0.9rem;">' + type + ' • ' + (u.location || 'Cameroon') + ' • ' + (phone || 'No phone') + '</p>' +
+                    '</div>' +
+                    '<div class="user-actions">' +
+                    '<button type="button" class="btn-small" onclick="viewUserDetail(\'' + u.id + '\')">View</button>' +
+                    contact +
+                    '<button type="button" class="btn-small" onclick="sendSingleNotification(\'' + u.id + '\',\'' + safeName + '\')">Notify</button>' +
+                    actionBtn +
+                    '</div></div>';
+            }).join(''));
+        } catch (err) {
+            setHtml('allUsersList', '<p class="empty-dashboard">Error loading users.</p>');
+        }
+    }
+
+    function closeUserModal() {
+        var modal = document.getElementById('userModal');
+        if (modal) modal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    async function viewUserDetail(userId) {
+        if (!supabaseClient || !userId) return;
+
+        var modal = document.getElementById('userModal');
+        var body = document.getElementById('userModalBody');
+        if (!modal || !body) return;
+
+        body.innerHTML = '<p class="loading">Loading account details...</p>';
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+
+        try {
+            var profileRes = await supabaseClient.from('profiles').select('*').eq('id', userId).single();
+            var profile = profileRes.data;
+            if (profileRes.error || !profile) {
+                body.innerHTML = '<p class="empty-dashboard">Could not load user.</p>';
+                return;
+            }
+
+            var type = profile.is_admin ? 'Admin' : (profile.is_worker ? 'Worker' : 'Client');
+            var phone = profile.phone || '';
+            var created = profile.created_at ? new Date(profile.created_at).toLocaleString('en-GB') : '—';
+            var deleted = profile.is_deleted ? (profile.deleted_at ? new Date(profile.deleted_at).toLocaleString('en-GB') : 'Yes') : 'No';
+            var safeName = (profile.full_name || 'User').replace(/'/g, "\\'");
+
+            var workerHtml = '';
+            if (profile.is_worker) {
+                var wRes = await supabaseClient.from('worker_details').select('*').eq('id', userId).maybeSingle();
+                var w = wRes.data;
+                if (w) {
+                    workerHtml = '<hr style="margin:16px 0;"><h4>Worker Details</h4>' +
+                        '<p><strong>Category:</strong> ' + (w.category || '—') + '</p>' +
+                        '<p><strong>Rating:</strong> ' + (w.rating || 0) + '/5 (' + (w.review_count || 0) + ' reviews)</p>' +
+                        '<p><strong>Experience:</strong> ' + (w.experience_years || 0) + ' years</p>' +
+                        '<p><strong>Availability:</strong> ' + (w.availability || '—') + '</p>' +
+                        '<p><strong>Description:</strong> ' + (w.description || '—') + '</p>';
+                }
+            }
+
+            var jobsRes = await supabaseClient
+                .from('job_posts')
+                .select('id, title, category, status, created_at, location')
+                .eq('client_id', userId)
+                .order('created_at', { ascending: false })
+                .limit(20);
+
+            var jobs = jobsRes.data || [];
+            var jobsHtml = '';
+            if (jobs.length) {
+                jobsHtml = '<hr style="margin:16px 0;"><h4>Posted Jobs (' + jobs.length + ')</h4><ul style="padding-left:18px;margin:0;">';
+                jobs.forEach(function (j) {
+                    var d = j.created_at ? new Date(j.created_at).toLocaleString('en-GB') : '';
+                    jobsHtml += '<li style="margin-bottom:6px;"><a href="job.html?id=' + j.id + '" target="_blank">' + (j.title || 'Job') + '</a> — ' +
+                        (j.category || '') + ' • ' + (j.status || '') + ' • ' + d + '</li>';
+                });
+                jobsHtml += '</ul>';
+            } else {
+                jobsHtml = '<hr style="margin:16px 0;"><p>No job posts by this user.</p>';
+            }
+
+            var contactBtns = phone
+                ? '<a class="btn-call" href="' + callLink(phone) + '">Call</a> ' +
+                  '<a class="btn-whatsapp" href="' + whatsappLink(phone) + '" target="_blank">WhatsApp</a> '
+                : '';
+
+            var actionBtn = profile.is_deleted
+                ? '<button type="button" class="btn-primary" onclick="restoreUser(\'' + profile.id + '\',\'' + safeName + '\'); closeUserModal();">Restore Account</button>'
+                : '<button type="button" class="btn-close-job" onclick="deleteUser(\'' + profile.id + '\',\'' + safeName + '\'); closeUserModal();">Delete Account</button>';
+
+            body.innerHTML =
+                '<h3>👤 Account Details</h3>' +
+                '<p style="font-size:0.8rem;color:var(--text-light);">ID: ' + profile.id + '</p>' +
+                '<p><strong>Name:</strong> ' + (profile.full_name || '—') + '</p>' +
+                '<p><strong>Type:</strong> ' + type + '</p>' +
+                '<p><strong>Phone:</strong> ' + (phone || '—') + '</p>' +
+                '<p><strong>Location:</strong> ' + (profile.location || '—') + '</p>' +
+                '<p><strong>Registered:</strong> ' + created + '</p>' +
+                '<p><strong>Deleted:</strong> ' + deleted + '</p>' +
+                (profile.avatar_url ? '<p><img src="' + profile.avatar_url + '" style="width:80px;height:80px;border-radius:50%;object-fit:cover;margin-top:8px;" alt=""></p>' : '') +
+                workerHtml +
+                jobsHtml +
+                '<div class="detail-actions" style="margin-top:16px;">' +
+                contactBtns +
+                '<button type="button" class="btn-small" onclick="sendSingleNotification(\'' + profile.id + '\',\'' + safeName + '\')">Send Notification</button> ' +
+                actionBtn +
+                '<button type="button" class="btn-secondary" onclick="closeUserModal()">Close</button>' +
+                '</div>';
+        } catch (err) {
+            console.error(err);
+            body.innerHTML = '<p class="empty-dashboard">Error loading details.</p>';
+        }
+    }
+
+    async function sendSingleNotification(userId, userName) {
+        var message = prompt('Write a message for ' + userName + ':');
+        if (!message || !message.trim()) return;
+        var res = await supabaseClient.from('notifications').insert([{
+            user_id: userId,
+            title: 'Message from Admin',
+            message: message.trim(),
+            read: false
+        }]);
+        if (res.error) alert('Error: ' + res.error.message);
+        else alert('Notification sent to ' + userName);
+    }
+
+    async function deleteUser(userId, name) {
+        if (!confirm('Delete (deactivate) ' + name + '?\n\nThey will NOT be able to log in or appear on the site.\nYou can restore them later from "Deleted Accounts".')) return;
+
+        var res = await supabaseClient
+            .from('profiles')
+            .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+            .eq('id', userId)
+            .select('id, is_deleted');
+
+        if (res.error) {
+            alert('Error deleting: ' + res.error.message);
+            return;
+        }
+        if (!res.data || res.data.length === 0) {
+            alert('Delete did not apply. Check is_admin and SQL policies.');
+            return;
+        }
+
+        await supabaseClient.from('worker_details').update({ availability: 'Deleted' }).eq('id', userId);
+        alert(name + ' has been deleted (deactivated).');
+        closeUserModal();
+        loadAllUsers();
+        loadAllWorkers();
+        loadStats();
+    }
+
+    async function restoreUser(userId, name) {
+        if (!confirm('Restore ' + name + '? They will be able to log in again.')) return;
+
+        var res = await supabaseClient
+            .from('profiles')
+            .update({ is_deleted: false, deleted_at: null })
+            .eq('id', userId)
+            .select('id, is_deleted');
+
+        if (res.error) {
+            alert('Error restoring: ' + res.error.message);
+            return;
+        }
+        if (!res.data || res.data.length === 0) {
+            alert('Restore did not apply. Check admin policies.');
+            return;
+        }
+
+        await supabaseClient.from('worker_details').update({ availability: 'Available' }).eq('id', userId);
+        alert(name + ' restored successfully!');
+        closeUserModal();
+        loadAllUsers();
+        loadAllWorkers();
+        loadStats();
+    }
+
+    async function sendBroadcast() {
+        var audience = document.getElementById('broadcastAudience').value;
+        var message = document.getElementById('broadcastMessage').value.trim();
+        var status = document.getElementById('broadcastStatus');
+        if (!message) {
+            status.textContent = 'Please type a message first.';
+            status.className = 'message error';
+            return;
+        }
+        status.textContent = 'Sending...';
+        status.className = 'message';
+
+        var query = supabaseClient.from('profiles').select('id').eq('is_deleted', false);
+        if (audience === 'workers') query = query.eq('is_worker', true);
+        if (audience === 'clients') query = query.eq('is_worker', false);
+
+        var res = await query;
+        if (res.error || !res.data || res.data.length === 0) {
+            status.textContent = 'No users found for this group.';
+            status.className = 'message error';
+            return;
+        }
+
+        var rows = res.data.map(function (u) {
+            return { user_id: u.id, title: 'Message from Admin', message: message, read: false };
+        });
+        var insertRes = await supabaseClient.from('notifications').insert(rows);
+        if (insertRes.error) {
+            status.textContent = 'Error: ' + insertRes.error.message;
+            status.className = 'message error';
+        } else {
+            status.textContent = 'Message sent to ' + res.data.length + ' user(s)!';
+            status.className = 'message success';
+            document.getElementById('broadcastMessage').value = '';
+        }
+    }
+
+    async function submitBugReport() {
+        var title = document.getElementById('bugTitle').value.trim();
+        var details = document.getElementById('bugDetails').value.trim();
+        var status = document.getElementById('bugStatus');
+        if (!title) {
+            status.textContent = 'Please enter a title.';
+            status.className = 'message error';
+            return;
+        }
+        var res = await supabaseClient.from('disputes').insert([{
+            reason: 'Bug/Case: ' + title,
+            details: details || 'No details',
+            target_name: 'Internal',
+            target_type: 'Bug',
+            reporter_name: (currentProfile && currentProfile.full_name) || (currentUser && currentUser.email) || 'Admin',
+            status: 'Open'
+        }]);
+        if (res.error) {
+            status.textContent = 'Error: ' + res.error.message;
+            status.className = 'message error';
+        } else {
+            status.textContent = 'Bug/Case saved!';
+            status.className = 'message success';
+            document.getElementById('bugTitle').value = '';
+            document.getElementById('bugDetails').value = '';
+            loadDisputes();
+            loadStats();
+        }
+    }
+
+    async function loadDisputes() {
+        if (!supabaseClient) {
+            setHtml('disputesList', '<p class="empty-dashboard">Cannot connect.</p>');
+            return;
+        }
+        try {
+            var res = await supabaseClient.from('disputes').select('*').order('created_at', { ascending: false });
+            if (res.error || !res.data || res.data.length === 0) {
+                setHtml('disputesList', '<p class="empty-dashboard">No disputes yet.</p>');
+                return;
+            }
+            setHtml('disputesList', res.data.map(function (d) {
+                var date = new Date(d.created_at).toLocaleDateString('en-GB');
+                var statusClass = d.status === 'Open' ? 'status-available' : 'status-closed';
+                var preview = (d.details || '').substring(0, 100);
+                if ((d.details || '').length > 100) preview += '...';
+                return '<div class="dispute-row" style="cursor:pointer;" onclick="openDisputeDetail(\'' + d.id + '\')">' +
+                    '<div class="dispute-info">' +
+                    '<h4>' + (d.reason || 'Report') + '</h4>' +
+                    '<p><strong>Target:</strong> ' + (d.target_name || '') + ' (' + (d.target_type || '') + ')</p>' +
+                    '<p><strong>Reporter:</strong> ' + (d.reporter_name || 'Anonymous') + '</p>' +
+                    '<p style="font-size:0.85rem;">' + preview + '</p>' +
+                    '<p style="font-size:0.8rem;">' + date + ' • <span class="status-badge ' + statusClass + '">' + (d.status || '') + '</span></p>' +
+                    '</div>' +
+                    '<div><button type="button" class="btn-small" onclick="event.stopPropagation(); openDisputeDetail(\'' + d.id + '\')">Open</button></div>' +
+                    '</div>';
+            }).join(''));
+        } catch (err) {
+            setHtml('disputesList', '<p class="empty-dashboard">Error loading disputes.</p>');
+        }
+    }
+
+    async function openDisputeDetail(disputeId) {
+        var { data: d, error } = await supabaseClient.from('disputes').select('*').eq('id', disputeId).single();
+        if (error || !d) {
+            alert('Could not load dispute.');
+            return;
+        }
+
+        var date = new Date(d.created_at).toLocaleString('en-GB');
+        var reporterId = d.reporter_id || '';
+        var targetId = d.target_id || '';
+        var safeReporter = (d.reporter_name || 'Reporter').replace(/'/g, "\\'");
+        var safeTarget = (d.target_name || 'User').replace(/'/g, "\\'");
+
+        var msgReporterBtn = reporterId
+            ? '<button type="button" class="btn-primary" onclick="messageUser(\'' + reporterId + '\',\'' + safeReporter + '\')">Message Reporter</button>'
+            : '';
+        var msgTargetBtn = (targetId && d.target_type !== 'Bug' && d.target_type !== 'job')
+            ? '<button type="button" class="btn-primary" onclick="messageUser(\'' + targetId + '\',\'' + safeTarget + '\')">Message Reported Person</button>'
+            : '';
+        var resolveBtn = d.status === 'Open'
+            ? '<button type="button" class="btn-small" onclick="resolveDispute(\'' + d.id + '\')">Mark Resolved</button>'
+            : '';
+
+        var phonesHtml = '';
+        try {
+            var ids = [];
+            if (reporterId) ids.push(reporterId);
+            if (targetId && targetId.length > 10) ids.push(targetId);
+            if (ids.length) {
+                var pr = await supabaseClient.from('profiles').select('id, full_name, phone').in('id', ids);
+                if (pr.data) {
+                    phonesHtml = pr.data.map(function (p) {
+                        var ph = p.phone || '';
+                        if (!ph) return '';
+                        return '<p><strong>' + (p.full_name || 'User') + ':</strong> ' +
+                            '<a class="btn-call" href="' + callLink(ph) + '">Call</a> ' +
+                            '<a class="btn-whatsapp" href="' + whatsappLink(ph) + '" target="_blank">WhatsApp</a></p>';
+                    }).join('');
+                }
+            }
+        } catch (e) {}
+
+        var html = '<div class="dispute-detail-box">' +
+            '<h3>🚩 Dispute Detail</h3>' +
+            '<p><strong>Reason:</strong> ' + (d.reason || '') + '</p>' +
+            '<p><strong>Target:</strong> ' + (d.target_name || '') + ' (' + (d.target_type || '') + ') — ID: ' + (targetId || 'n/a') + '</p>' +
+            '<p><strong>Reporter:</strong> ' + (d.reporter_name || 'Anonymous') + ' — ID: ' + (reporterId || 'n/a') + '</p>' +
+            '<p><strong>Status:</strong> ' + (d.status || '') + '</p>' +
+            '<p><strong>Date:</strong> ' + date + '</p>' +
+            phonesHtml +
+            '<p style="margin-top:12px;"><strong>Full details:</strong></p>' +
+            '<p style="background:#f8fafc;padding:12px;border-radius:8px;white-space:pre-wrap;">' + (d.details || 'No details') + '</p>' +
+            '<div class="detail-actions">' +
+            msgReporterBtn + msgTargetBtn + resolveBtn +
+            '<button type="button" class="btn-secondary" onclick="loadDisputes()">← Back to list</button>' +
+            '</div></div>';
+
+        setHtml('disputesList', html);
+    }
+
+    async function messageUser(userId, userName) {
+        if (!userId || userId === 'null' || userId === 'undefined') {
+            alert('No user ID available for this person.');
+            return;
+        }
+        var message = prompt('Write a message for ' + userName + ':');
+        if (!message || !message.trim()) return;
+        var res = await supabaseClient.from('notifications').insert([{
+            user_id: userId,
+            title: 'Message from Admin (Dispute)',
+            message: message.trim(),
+            read: false
+        }]);
+        if (res.error) alert('Error: ' + res.error.message);
+        else alert('Notification sent to ' + userName);
+    }
+
+    async function resolveDispute(disputeId) {
+        if (!confirm('Mark as resolved?')) return;
+        var res = await supabaseClient.from('disputes').update({ status: 'Resolved' }).eq('id', disputeId);
+        if (res.error) alert('Error: ' + res.error.message);
+        else {
+            alert('Resolved.');
+            loadDisputes();
+            loadStats();
+        }
+    }
+
+    async function loadAllWorkers() {
+        if (!supabaseClient) {
+            setHtml('allWorkersList', '<p class="empty-dashboard">Cannot connect.</p>');
+            return;
+        }
+        try {
+            var res = await supabaseClient
+                .from('worker_details')
+                .select('*, profiles(full_name, phone, location, is_deleted)')
+                .order('created_at', { ascending: false });
+            if (res.error || !res.data || res.data.length === 0) {
+                setHtml('allWorkersList', '<p class="empty-dashboard">No workers yet.</p>');
+                return;
+            }
+            setHtml('allWorkersList', res.data.map(function (w) {
+                var p = w.profiles || {};
+                var safeName = (p.full_name || 'worker').replace(/'/g, "\\'");
+                var isDeleted = p.is_deleted === true || w.availability === 'Deleted';
+                return '<div class="dispute-row ' + (isDeleted ? 'deleted-user' : '') + '">' +
+                    '<div class="dispute-info"><h4>' + (p.full_name || 'Unknown') +
+                    (isDeleted ? ' <span style="color:#ef4444;">(Deleted)</span>' : '') +
+                    '</h4><p>' + (w.category || '') + ' • ' + (p.phone || 'No phone') + ' • ' + (p.location || 'Cameroon') +
+                    '</p></div>' +
+                    '<div class="user-actions">' +
+                    '<button type="button" class="btn-small" onclick="viewUserDetail(\'' + w.id + '\')">View</button> ' +
+                    (isDeleted
+                        ? '<button type="button" class="btn-primary" onclick="restoreUser(\'' + w.id + '\',\'' + safeName + '\')">Restore</button>'
+                        : '<button type="button" class="btn-close-job" onclick="deleteUser(\'' + w.id + '\',\'' + safeName + '\')">Delete</button>') +
+                    '</div></div>';
+            }).join(''));
+        } catch (err) {
+            setHtml('allWorkersList', '<p class="empty-dashboard">Error loading workers.</p>');
+        }
+    }
+
+    async function loadAllJobs() {
+        if (!supabaseClient) {
+            setHtml('allJobsList', '<p class="empty-dashboard">Cannot connect.</p>');
+            return;
+        }
+        try {
+            var res = await supabaseClient
+                .from('job_posts')
+                .select('*, profiles(full_name)')
+                .order('created_at', { ascending: false });
+            if (res.error || !res.data || res.data.length === 0) {
+                setHtml('allJobsList', '<p class="empty-dashboard">No jobs yet.</p>');
+                return;
+            }
+            setHtml('allJobsList', res.data.map(function (job) {
+                var date = new Date(job.created_at).toLocaleDateString('en-GB');
+                var poster = (job.profiles && job.profiles.full_name) || 'Unknown';
+                return '<div class="dispute-row"><div class="dispute-info"><h4>' + (job.title || '') +
+                    '</h4><p>' + (job.category || '') + ' • ' + (job.location || '') + ' • ' + poster + ' • ' + date +
+                    ' • ' + (job.status || '') + '</p></div>' +
+                    '<a href="job.html?id=' + job.id + '" class="btn-small">View</a></div>';
+            }).join(''));
+        } catch (err) {
+            setHtml('allJobsList', '<p class="empty-dashboard">Error loading jobs.</p>');
+        }
+    }
+
+    async function loadContactMails() {
+        if (!supabaseClient) {
+            setHtml('contactMailsList', '<p class="empty-dashboard">Cannot connect.</p>');
+            return;
+        }
+        try {
+            var res = await supabaseClient
+                .from('contact_messages')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(100);
+
+            if (res.error) {
+                setHtml('contactMailsList', '<p class="empty-dashboard">Table contact_messages not found. Run the SQL migration.</p>');
+                return;
+            }
+            if (!res.data || res.data.length === 0) {
+                setHtml('contactMailsList', '<p class="empty-dashboard">No contact messages yet.</p>');
+                return;
+            }
+
+            setHtml('contactMailsList', res.data.map(function (m) {
+                var date = m.created_at ? new Date(m.created_at).toLocaleString('en-GB') : '';
+                var unreadClass = m.read ? '' : 'unread';
+                return '<div class="mail-row ' + unreadClass + '">' +
+                    '<p><strong>From:</strong> ' + (m.name || 'Anonymous') + ' &lt;' + (m.email || '') + '&gt;</p>' +
+                    '<p><strong>Phone:</strong> ' + (m.phone || '—') + '</p>' +
+                    '<p><strong>Date:</strong> ' + date + '</p>' +
+                    '<p style="white-space:pre-wrap;background:#f8fafc;padding:10px;border-radius:8px;">' + (m.message || '') + '</p>' +
+                    (m.read ? '' : '<button type="button" class="btn-small" onclick="markMailRead(\'' + m.id + '\')">Mark as Read</button>') +
+                    '</div>';
+            }).join(''));
+        } catch (err) {
+            setHtml('contactMailsList', '<p class="empty-dashboard">Error loading messages.</p>');
+        }
+    }
+
+    async function markMailRead(id) {
+        await supabaseClient.from('contact_messages').update({ read: true }).eq('id', id);
+        loadContactMails();
+    }
+    </script>
 </body>
 </html>
