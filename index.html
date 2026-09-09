@@ -1,109 +1,93 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Handy Man - Find Trusted Local Help in Cameroon</title>
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HandyMan Cameroon - Find Trusted Plumbers, Electricians, Cleaners in Buea, Douala, Yaounde</title>
+<meta name="description" content="Find verified plumbers, electricians, cleaners, carpenters, painters in Buea, Limbe, Douala, Yaounde, Bamenda, Bafoussam and all Cameroon towns. Ratings, WhatsApp, direct call.">
+<meta name="keywords" content="plumber buea, electrician douala, cleaner yaounde, handyman cameroon, artisan buea, plombier douala, menuisier yaounde">
+<meta name="author" content="HandyMan Cameroon">
+<link rel="canonical" href="https://handyman-buea.vercel.app/">
+<meta property="og:title" content="HandyMan Cameroon - Trusted Artisans">
+<meta property="og:description" content="Verified workers across Cameroon. Call or WhatsApp directly.">
+<meta property="og:url" content="https://handyman-buea.vercel.app/">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://handyman-buea.vercel.app/logo.png">
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"LocalBusiness","name":"HandyMan Cameroon","url":"https://handyman-buea.vercel.app","description":"Find plumbers, electricians, cleaners across Cameroon","areaServed":["Buea","Limbe","Douala","Yaounde","Bamenda","Bafoussam","Garoua"],"address":{"@type":"PostalAddress","addressLocality":"Buea","addressCountry":"CM"}}
+</script>
 </head>
 <body>
-    <header class="header">
-        <div class="container">
-            <a href="index.html" class="logo">🔧 Handy Man</a>
-            <nav class="nav" id="nav">
-                <a href="index.html">Home</a>
-                <a href="workers.html">Find Workers</a>
-                <a href="jobs.html">Find Jobs</a>
-                <a href="login.html" class="btn-secondary">Join as Worker</a>
-                <a href="post-job.html" class="btn-secondary">Post a Job</a>
-                <a href="login.html" class="btn-secondary" id="authBtn">Login</a>
-            </nav>
-            <button class="menu-toggle" id="menuToggle">☰</button>
-        </div>
-    </header>
+<nav class="navbar">
+  <div class="nav-brand"><a href="index.html" style="text-decoration:none;color:inherit;">🔧 HandyMan Cameroon</a></div>
+  <div class="nav-links">
+    <a href="workers.html" id="nav-workers">Find Workers</a>
+    <a href="jobs.html" id="nav-jobs">Jobs</a>
+    <a href="post-job.html" id="nav-post">Post Job</a>
+    <a href="dashboard.html" id="nav-dashboard">My Profile</a>
+    <button onclick="openContact()" class="btn btn-outline" id="nav-contact">Contact Us</button>
+    <select onchange="changeLang(this.value)" id="langSelect" class="lang-select">
+      <option value="en">EN</option><option value="fr">FR</option>
+    </select>
+    <a href="login.html" id="nav-login" class="btn btn-primary uniform">Login</a>
+    <a href="join.html" id="nav-join" class="btn btn-secondary uniform">Join</a>
+  </div>
+</nav>
 
-    <section class="hero-carousel" id="heroCarousel">
-        <div class="carousel-slide active" style="background-image: url('https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=1200&q=80')">
-            <div class="carousel-content">
-                <h1>Find Trusted Local Help in Cameroon</h1>
-                <p>Connect with skilled plumbers, electricians, cleaners, and more — anywhere in Cameroon.</p>
-                <a href="workers.html" class="btn-primary">Find a Worker</a>
-                <a href="post-job.html" class="btn-secondary">Post a Job</a>
-            </div>
-        </div>
-        <div class="carousel-slide" style="background-image: url('https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=1200&q=80')">
-            <div class="carousel-content">
-                <h1>Skilled Construction Workers</h1>
-                <p>Find masons, carpenters, and builders for your projects.</p>
-                <a href="workers.html?category=Masonry" class="btn-primary">Find Builders</a>
-            </div>
-        </div>
-        <div class="carousel-slide" style="background-image: url('https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=1200&q=80')">
-            <div class="carousel-content">
-                <h1>Professional Cleaning Services</h1>
-                <p>Get your home or office sparkling clean.</p>
-                <a href="workers.html?category=Cleaning" class="btn-primary">Find Cleaners</a>
-            </div>
-        </div>
-        <div class="carousel-slide" style="background-image: url('https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=1200&q=80')">
-            <div class="carousel-content">
-                <h1>Expert Electrical Repairs</h1>
-                <p>Safe and reliable electrical work for your property.</p>
-                <a href="workers.html?category=Electrical" class="btn-primary">Find Electricians</a>
-            </div>
-        </div>
-        <div class="carousel-dots" id="carouselDots"></div>
-    </section>
+<header class="hero">
+  <h1 id="hero-title">Find Trusted Plumbers, Electricians & Cleaners in Buea, Douala, Yaounde - HandyMan Cameroon</h1>
+  <h2 id="hero-subtitle">Trouvez des artisans vérifiés dans tout le Cameroun - Plombier, Électricien, Ménage, Menuisier</h2>
+  <p id="hero-desc">Verified workers • Star ratings • WhatsApp & Call • All towns in Cameroon</p>
+  <div class="search-box">
+    <input type="text" id="searchName" placeholder="Search by name, skill..." onkeyup="filterWorkers()">
+    <select id="searchTown" onchange="filterWorkers()"></select>
+    <select id="searchCategory" onchange="filterWorkers()"></select>
+    <button onclick="filterWorkers()" class="btn btn-primary uniform">Search</button>
+  </div>
+</header>
 
-    <section class="categories">
-        <div class="container">
-            <h2>Popular Services</h2>
-            <div class="category-grid" id="categoryGrid">
-                <p class="loading">Loading categories...</p>
-            </div>
-        </div>
-    </section>
+<main class="container">
+  <div id="workersList" class="workers-grid">Loading workers...</div>
+  <div id="noResults" style="display:none;">No workers found in this town/category.</div>
+</main>
 
-    <section class="featured">
-        <div class="container">
-            <h2>Featured Workers in Cameroon</h2>
-            <div class="worker-grid" id="workerGrid">
-                <p class="loading">Loading workers...</p>
-            </div>
-        </div>
-    </section>
+<!-- CONTACT US MODAL -->
+<div id="contactModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <span onclick="closeContact()" class="close">&times;</span>
+    <h3>Contact Us / Contactez-Nous</h3>
+    <input type="text" id="cName" placeholder="Your Name / Votre Nom" required>
+    <input type="email" id="cEmail" placeholder="Your Email (required)" required>
+    <input type="tel" id="cPhone" placeholder="Phone / Téléphone (required)" required>
+    <textarea id="cMessage" placeholder="Your message..." required></textarea>
+    <button onclick="sendContact()" class="btn btn-primary uniform">Send Message</button>
+    <p id="cStatus"></p>
+  </div>
+</div>
 
-    <section class="how-it-works">
-        <div class="container">
-            <h2>How It Works</h2>
-            <div class="steps">
-                <div class="step">
-                    <div class="step-icon">🔍</div>
-                    <h3>Search</h3>
-                    <p>Find the right worker in your town</p>
-                </div>
-                <div class="step">
-                    <div class="step-icon">📞</div>
-                    <h3>Contact</h3>
-                    <p>Call or WhatsApp them directly</p>
-                </div>
-                <div class="step">
-                    <div class="step-icon">✅</div>
-                    <h3>Get It Done</h3>
-                    <p>Rate and review after service</p>
-                </div>
-            </div>
-        </div>
-    </section>
+<footer><p>© 2026 HandyMan Cameroon - Buea • Douala • Yaounde • Bamenda • All Cameroon</p></footer>
 
-    <footer class="footer">
-        <div class="container">
-            <p>© 2026 Handy Man. Connecting people with skilled workers across Cameroon.</p>
-        </div>
-    </footer>
-
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="config.js"></script>
-    <script src="app.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+document.getElementById('langSelect').value = currentLang;
+function changeLang(l){ localStorage.setItem('hm_lang', l); location.reload(); }
+function openContact(){ document.getElementById('contactModal').style.display='block'; }
+function closeContact(){ document.getElementById('contactModal').style.display='none'; }
+async function sendContact(){
+  const name=document.getElementById('cName').value, email=document.getElementById('cEmail').value, phone=document.getElementById('cPhone').value, message=document.getElementById('cMessage').value;
+  if(!email || !phone || !message){ document.getElementById('cStatus').innerText='Email, phone and message required'; return; }
+  const {error} = await supabaseClient.from('contact_messages').insert({name,email,phone,message});
+  if(error){ document.getElementById('cStatus').innerText='Error: '+error.message; } else { document.getElementById('cStatus').innerText='Sent! We will contact you. / Envoyé!'; setTimeout(closeContact,2000); }
+}
+window.onload = function(){ 
+  const townSel=document.getElementById('searchTown'); const catSel=document.getElementById('searchCategory');
+  townSel.innerHTML='<option value="">'+t('allTowns')+'</option>'; CAMEROON_TOWNS.forEach(town=>{ townSel.innerHTML+=`<option value="${town}">${town}</option>`; });
+  catSel.innerHTML='<option value="">'+t('allCategories')+'</option>'; CATEGORIES.forEach(c=>{ catSel.innerHTML+=`<option value="${c}">${c}</option>`; });
+  loadWorkers();
+}
+</script>
 </body>
 </html>
