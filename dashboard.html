@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Dashboard - Handy Man</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">  
+    <title>My Profile - Handy Man</title>
     <link rel="stylesheet" href="style.css">
     <style>
         .dashboard-section { background: var(--card); padding: 24px; border-radius: 12px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
@@ -18,12 +18,12 @@
         <div class="container">
             <a href="index.html" class="logo">🔧 Handy Man</a>
             <nav class="nav" id="nav">
-                <a href="index.html">Home</a>
-                <a href="workers.html">Find Workers</a>
-                <a href="jobs.html">Find Jobs</a>
-                <a href="login.html" class="btn-secondary">Join as Worker</a>
-                <a href="post-job.html" class="btn-secondary">Post a Job</a>
-                <a href="login.html" class="btn-secondary" id="authBtn">Login</a>
+                <a href="index.html" data-i18n="nav_home">Home</a>
+                <a href="workers.html" data-i18n="nav_workers">Find Workers</a>
+                <a href="jobs.html" data-i18n="nav_jobs">Find Jobs</a>
+                <a href="login.html" class="btn-secondary" data-i18n="nav_join">Join as Worker</a>
+                <a href="post-job.html" class="btn-secondary" data-i18n="nav_post">Post a Job</a>
+                <a href="login.html" class="btn-secondary" id="authBtn" data-i18n="nav_login">Login</a>
             </nav>
             <button class="menu-toggle" id="menuToggle">☰</button>
         </div>
@@ -31,7 +31,7 @@
 
     <main class="dashboard-page">
         <div class="container">
-            <h1>My Dashboard</h1>
+            <h1 data-i18n="my_dashboard">My Profile</h1>
 
             <div class="admin-only-box" id="adminOnlyBox">
                 <h2 style="margin-bottom:12px;">⚙️ Administrator</h2>
@@ -40,30 +40,30 @@
             </div>
 
             <div class="dashboard-section">
-                <h2>📷 My Profile Photo</h2>
+                <h2 data-i18n="my_photo">📷 My Profile Photo</h2>
                 <div class="photo-upload-box" id="photoSection">
-                    <p class="loading">Loading...</p>
+                    <p class="loading" data-i18n="loading">Loading...</p>
                 </div>
             </div>
 
             <div class="dashboard-section">
-                <h2>📋 My Posted Jobs</h2>
-                <div id="myJobsList"><p class="loading">Loading your jobs...</p></div>
+                <h2 data-i18n="my_jobs">📋 My Posted Jobs</h2>
+                <div id="myJobsList"><p class="loading" data-i18n="loading">Loading...</p></div>
             </div>
 
             <div class="dashboard-section" id="categoryJobsSection" style="display:none;">
-                <h2>🛠️ Open Jobs in My Category</h2>
-                <div id="categoryJobsList"><p class="loading">Loading jobs...</p></div>
+                <h2 data-i18n="open_jobs_category">🛠️ Open Jobs in My Category</h2>
+                <div id="categoryJobsList"><p class="loading" data-i18n="loading">Loading...</p></div>
             </div>
 
             <div class="dashboard-section">
-                <h2>🔧 My Worker Profile</h2>
-                <div id="myWorkerProfile"><p class="loading">Loading profile...</p></div>
+                <h2 data-i18n="my_worker_profile">🔧 My Worker Profile</h2>
+                <div id="myWorkerProfile"><p class="loading" data-i18n="loading">Loading...</p></div>
             </div>
 
             <div class="dashboard-section">
-                <h2>🚩 My Disputes / Reports</h2>
-                <div id="myDisputesList"><p class="loading">Loading disputes...</p></div>
+                <h2 data-i18n="my_disputes">🚩 My Disputes / Reports</h2>
+                <div id="myDisputesList"><p class="loading" data-i18n="loading">Loading...</p></div>
             </div>
         </div>
     </main>
@@ -104,23 +104,23 @@
                 <p><strong>${profile ? profile.full_name : ''}</strong></p>
                 <input type="file" id="avatarInput" accept="image/*" style="margin:12px 0;">
                 <br>
-                <button class="btn-primary" onclick="changePhoto()">Upload / Change Photo</button>
+                <button class="btn-primary" onclick="changePhoto()">${t('upload_change_photo')}</button>
             `;
         }
 
         async function changePhoto() {
             const input = document.getElementById('avatarInput');
             if (!input.files || !input.files[0]) {
-                alert('Please select a photo first.');
+                alert(t('select_photo_first'));
                 return;
             }
             const url = await uploadFile(input.files[0], 'profiles', currentUser.id);
             if (!url) {
-                alert('Upload failed. Try again.');
+                alert(t('upload_failed'));
                 return;
             }
             await supabaseClient.from('profiles').update({ avatar_url: url }).eq('id', currentUser.id);
-            alert('Photo updated successfully!');
+            alert(t('photo_updated'));
             loadPhotoSection();
             loadMyWorkerProfile();
         }
@@ -137,8 +137,8 @@
                 if (error || !jobs || jobs.length === 0) {
                     container.innerHTML = `
                         <div class="empty-dashboard">
-                            <p>You haven't posted any jobs yet.</p>
-                            <a href="post-job.html" class="btn-primary" style="margin-top:12px;display:inline-block;">Post Your First Job</a>
+                            <p>${t('no_jobs_yet')}</p>
+                            <a href="post-job.html" class="btn-primary" style="margin-top:12px;display:inline-block;">${t('post_first_job')}</a>
                         </div>`;
                     return;
                 }
@@ -154,11 +154,11 @@
                                 <p>${job.category} • ${job.location} • ${postedDate}</p>
                                 <span class="status-badge ${statusClass}">${isOpen ? 'Open' : 'Closed'}</span>
                             </div>
-                            ${isOpen ? `<button class="btn-close-job" onclick="closeJob('${job.id}')">Close Job</button>` : ''}
+                            ${isOpen ? `<button class="btn-close-job" onclick="closeJob('${job.id}')">${t('close_job')}</button>` : ''}
                         </div>`;
                 }).join('');
             } catch (err) {
-                container.innerHTML = '<p class="empty-dashboard">Error loading jobs.</p>';
+                container.innerHTML = '<p class="empty-dashboard">' + t('error') + '</p>';
             }
         }
 
@@ -183,8 +183,8 @@
                 if (error || !worker) {
                     container.innerHTML = `
                         <div class="empty-dashboard">
-                            <p>You don't have a worker profile yet.</p>
-                            <a href="join.html" class="btn-primary" style="margin-top:12px;display:inline-block;">Create Worker Profile</a>
+                            <p>${t('no_worker_profile')}</p>
+                            <a href="join.html" class="btn-primary" style="margin-top:12px;display:inline-block;">${t('create_worker_profile')}</a>
                         </div>`;
                     return;
                 }
@@ -202,7 +202,7 @@
                     </div>
                     <p><strong>📍 Location:</strong> ${p.location || 'Cameroon'}</p>
                     <p><strong>📞 Phone:</strong> ${p.phone || 'Not set'}</p>
-                    <p><strong>⭐ Rating:</strong> ${worker.rating || 0}/5 (${worker.review_count || 0} reviews)</p>
+                    <p><strong>⭐ Rating:</strong> ${worker.rating || 0}/5 (${worker.review_count || 0} ${t('reviews')})</p>
                     <p><strong>🛠️ Experience:</strong> ${worker.experience_years || 0} years</p>
                     <p><strong>✅ Status:</strong> ${worker.availability || 'Available'}</p>
                     <p style="margin-top:12px;color:var(--text-light);">${worker.description || 'No description yet.'}</p>
@@ -214,19 +214,19 @@
                     </div>
                 `;
             } catch (err) {
-                container.innerHTML = '<p class="empty-dashboard">Error loading profile.</p>';
+                container.innerHTML = '<p class="empty-dashboard">' + t('error') + '</p>';
             }
         }
 
         async function updatePortfolio() {
             const input = document.getElementById('portfolioInput');
             if (!input.files || input.files.length === 0) {
-                alert('Please select at least one photo.');
+                alert(t('select_photo_first'));
                 return;
             }
             const urls = await uploadMultipleFiles(input.files, 'portfolio', currentUser.id, 2);
             if (urls.length === 0) {
-                alert('Upload failed. Try again.');
+                alert(t('upload_failed'));
                 return;
             }
             await supabaseClient.from('worker_details').update({ portfolio: urls }).eq('id', currentUser.id);
@@ -263,7 +263,7 @@
                             <p>${job.location} • ${date} • Budget: ${job.budget || 'Negotiable'}</p>
                             <p style="font-size:0.85rem;">Client: ${client.full_name || 'Unknown'}</p>
                         </div>
-                        <a href="job.html?id=${job.id}" class="btn-primary">View Job</a>
+                        <a href="job.html?id=${job.id}" class="btn-primary">${t('view_job')}</a>
                     </div>`;
             }).join('');
         }
@@ -295,7 +295,7 @@
                         </div>`;
                 }).join('');
             } catch (err) {
-                container.innerHTML = '<p class="empty-dashboard">Error loading disputes.</p>';
+                container.innerHTML = '<p class="empty-dashboard">' + t('error') + '</p>';
             }
         }
     </script>
