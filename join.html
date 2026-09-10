@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Join as Worker - Handy Man</title>
+    <title>Join as Worker - Handy Man Cameroon</title>
+    <meta name="description" content="Create your worker profile on Handy Man and start receiving jobs anywhere in Cameroon. Free registration for plumbers, electricians, cleaners and more.">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,12 +12,12 @@
         <div class="container">
             <a href="index.html" class="logo">🔧 Handy Man</a>
             <nav class="nav" id="nav">
-                <a href="index.html">Home</a>
-                <a href="workers.html">Find Workers</a>
-                <a href="jobs.html">Find Jobs</a>
-                <a href="login.html" class="btn-secondary">Join as Worker</a>
-                <a href="post-job.html" class="btn-secondary">Post a Job</a>
-                <a href="login.html" class="btn-secondary" id="authBtn">Login</a>
+                <a href="index.html" data-i18n="nav_home">Home</a>
+                <a href="workers.html" data-i18n="nav_workers">Find Workers</a>
+                <a href="jobs.html" data-i18n="nav_jobs">Find Jobs</a>
+                <a href="join.html" class="btn-secondary" data-i18n="nav_join">Join as Worker</a>
+                <a href="post-job.html" class="btn-secondary" data-i18n="nav_post">Post a Job</a>
+                <a href="login.html" class="btn-secondary" id="authBtn" data-i18n="nav_login">Login</a>
             </nav>
             <button class="menu-toggle" id="menuToggle">☰</button>
         </div>
@@ -25,12 +26,13 @@
     <main class="auth-page">
         <div class="container">
             <div class="auth-box">
-                <h2>Join as a Service Provider</h2>
-                <p>Create your worker profile to receive jobs anywhere in Cameroon.</p>
+                <h2 data-i18n="join_title">Join as a Service Provider</h2>
+                <p data-i18n="join_sub">Create your worker profile to receive jobs anywhere in Cameroon.</p>
 
                 <form id="workerForm" onsubmit="handleWorkerJoin(event)">
+                    <!-- Town -->
                     <div class="form-group">
-                        <label>Town where you work *</label>
+                        <label data-i18n="town_label">Town where you work *</label>
                         <select id="wTown" required>
                             <option value="">Select town</option>
                             <option value="Buea">Buea</option>
@@ -55,8 +57,9 @@
                         </select>
                     </div>
 
+                    <!-- Category -->
                     <div class="form-group">
-                        <label>Service Category *</label>
+                        <label data-i18n="category_label">Service Category *</label>
                         <select id="wCategory" required>
                             <option value="">Select your main skill</option>
                             <option value="Plumbing">Plumbing</option>
@@ -73,27 +76,43 @@
                         </select>
                     </div>
 
+                    <!-- Description -->
                     <div class="form-group">
-                        <label>Description of Services *</label>
+                        <label data-i18n="description_label">Description of Services *</label>
                         <textarea id="wDescription" required rows="4" placeholder="Describe what you do, your skills, and experience..."></textarea>
                     </div>
 
+                    <!-- Experience -->
                     <div class="form-group">
-                        <label>Years of Experience</label>
+                        <label data-i18n="experience_label">Years of Experience</label>
                         <input type="number" id="wExperience" min="0" value="0">
                     </div>
 
+                    <!-- Phone -->
                     <div class="form-group">
-                        <label>Phone for Calls</label>
+                        <label data-i18n="phone_label">Phone for Calls</label>
                         <input type="tel" id="wPhone" placeholder="6XX XXX XXX">
                     </div>
 
+                    <!-- WhatsApp -->
                     <div class="form-group">
-                        <label>WhatsApp Number</label>
+                        <label data-i18n="whatsapp_label">WhatsApp Number</label>
                         <input type="tel" id="wWhatsapp" placeholder="6XX XXX XXX">
                     </div>
 
-                    <button type="submit" class="btn-primary full">Create Profile</button>
+                    <!-- Profile Photo -->
+                    <div class="form-group">
+                        <label>Profile Photo (optional)</label>
+                        <input type="file" id="wAvatar" accept="image/*">
+                    </div>
+
+                    <!-- Portfolio Photos -->
+                    <div class="form-group">
+                        <label>Portfolio Photos (up to 2, optional)</label>
+                        <input type="file" id="wPortfolio" accept="image/*" multiple>
+                    </div>
+
+                    <button type="submit" class="btn-primary full" data-i18n="create_profile">Create Profile</button>
                 </form>
 
                 <p id="joinMessage" class="message"></p>
@@ -107,6 +126,8 @@
     <script>
         document.addEventListener('DOMContentLoaded', async function () {
             await checkAuth();
+            applyLanguage();
+
             if (!currentUser) {
                 window.location.href = 'login.html';
                 return;
@@ -115,53 +136,88 @@
 
         async function handleWorkerJoin(e) {
             e.preventDefault();
+            const msgEl = document.getElementById('joinMessage');
+            msgEl.textContent = 'Creating profile...';
+            msgEl.className = 'message';
 
-            var userResult = await supabaseClient.auth.getUser();
-            var user = userResult.data && userResult.data.user;
+            try {
+                if (!supabaseClient || !currentUser) {
+                    showJoinMessage('Please login first.', 'error');
+                    return;
+                }
 
-            if (!user) {
-                showJoinMessage('Please login first.', 'error');
-                return;
-            }
+                const userId = currentUser.id;
+                const town = document.getElementById('wTown').value;
+                const category = document.getElementById('wCategory').value;
+                const description = document.getElementById('wDescription').value.trim();
+                const experience = parseInt(document.getElementById('wExperience').value) || 0;
+                const phone = document.getElementById('wPhone').value.trim();
+                const whatsapp = document.getElementById('wWhatsapp').value.trim();
 
-            var town = document.getElementById('wTown').value;
-            if (town) {
+                if (!town || !category || !description) {
+                    showJoinMessage('Please fill all required fields.', 'error');
+                    return;
+                }
+
+                // Update profile
                 await supabaseClient.from('profiles').update({
                     location: town,
                     is_worker: true
-                }).eq('id', user.id);
-            }
+                }).eq('id', userId);
 
-            var details = {
-                id: user.id,
-                category: document.getElementById('wCategory').value,
-                description: document.getElementById('wDescription').value,
-                experience_years: parseInt(document.getElementById('wExperience').value) || 0,
-                contact_phone: document.getElementById('wPhone').value,
-                whatsapp_number: document.getElementById('wWhatsapp').value,
-                availability: 'Available',
-                rating: 0,
-                review_count: 0
-            };
+                // Upload avatar if selected
+                let avatarUrl = null;
+                const avatarFile = document.getElementById('wAvatar').files[0];
+                if (avatarFile) {
+                    avatarUrl = await uploadFile(avatarFile, 'avatars', userId);
+                    if (avatarUrl) {
+                        await supabaseClient.from('profiles').update({ avatar_url: avatarUrl }).eq('id', userId);
+                    }
+                }
 
-            var result = await supabaseClient
-                .from('worker_details')
-                .upsert([details], { onConflict: 'id' });
+                // Upload portfolio photos
+                const portfolioFiles = document.getElementById('wPortfolio').files;
+                let portfolioUrls = [];
+                if (portfolioFiles && portfolioFiles.length > 0) {
+                    portfolioUrls = await uploadMultipleFiles(portfolioFiles, 'portfolio', userId, 2);
+                }
 
-            if (result.error) {
-                showJoinMessage('Error: ' + result.error.message, 'error');
-            } else {
-                showJoinMessage('Profile created successfully! Redirecting...', 'success');
-                setTimeout(function () {
-                    window.location.href = 'dashboard.html';
-                }, 1500);
+                // Create / update worker_details
+                const details = {
+                    id: userId,
+                    category: category,
+                    description: description,
+                    experience_years: experience,
+                    contact_phone: phone || null,
+                    whatsapp_number: whatsapp || null,
+                    availability: 'Available',
+                    rating: 0,
+                    review_count: 0,
+                    portfolio: portfolioUrls.length > 0 ? portfolioUrls : null
+                };
+
+                const { error } = await supabaseClient
+                    .from('worker_details')
+                    .upsert([details], { onConflict: 'id' });
+
+                if (error) {
+                    showJoinMessage('Error: ' + error.message, 'error');
+                } else {
+                    showJoinMessage('Profile created successfully! Redirecting...', 'success');
+                    setTimeout(function () {
+                        window.location.href = 'dashboard.html';
+                    }, 1500);
+                }
+            } catch (err) {
+                console.error(err);
+                showJoinMessage('Something went wrong. Please try again.', 'error');
             }
         }
 
         function showJoinMessage(msg, type) {
-            var el = document.getElementById('joinMessage');
+            const el = document.getElementById('joinMessage');
             el.textContent = msg;
-            el.className = 'message ' + type;
+            el.className = 'message ' + (type || '');
         }
     </script>
 </body>
