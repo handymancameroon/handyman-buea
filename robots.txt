@@ -4,5 +4,6 @@ Allow: /
 Disallow: /admin.html
 Disallow: /dashboard.html
 Disallow: /config.js
+Disallow: /config.template.js
 
 Sitemap: https://handyman-buea.vercel.app/sitemap.xml
