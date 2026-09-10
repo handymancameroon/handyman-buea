@@ -129,7 +129,6 @@
                             </select>
                         </div>
 
-                        <!-- TOWN SELECTOR -->
                         <div class="form-group">
                             <label data-i18n="town_label">Town / City *</label>
                             <select id="regTown" required onchange="handleTownChange()">
@@ -190,7 +189,6 @@
                             </div>
                         </div>
 
-                        <!-- WORKER FIELDS -->
                         <div id="workerFields" class="worker-fields">
                             <div class="form-group">
                                 <label data-i18n="description_label">Description of Services *</label>
@@ -211,7 +209,6 @@
                             </div>
                         </div>
 
-                        <!-- CLIENT FIELDS -->
                         <div id="clientFields" class="client-fields">
                             <div class="form-group">
                                 <label data-i18n="job_title_label">Job Title *</label>
@@ -255,46 +252,295 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             toggleFields();
+            setupFilePreviews();
+            setupAvatarPreview();
             applyLanguage();
         });
 
         function showTab(tab) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(tab + 'Tab').classList.add('active');
-            event.target.classList.add('active');
+            if (event && event.target) event.target.classList.add('active');
+            else {
+                document.querySelectorAll('.tab-btn').forEach(b => {
+                    if (b.textContent.toLowerCase().includes(tab)) b.classList.add('active');
+                });
+            }
         }
 
         function toggleFields() {
-            var type = document.getElementById('regType').value;
-            var workerFields = document.getElementById('workerFields');
-            var clientFields = document.getElementById('clientFields');
+            const type = document.getElementById('regType').value;
+            const workerFields = document.getElementById('workerFields');
+            const clientFields = document.getElementById('clientFields');
+
             if (type === 'worker') {
                 workerFields.classList.add('active');
                 clientFields.classList.remove('active');
+                document.getElementById('wDescription').required = true;
+                document.getElementById('cJobTitle').required = false;
+                document.getElementById('cJobDesc').required = false;
             } else {
                 workerFields.classList.remove('active');
                 clientFields.classList.add('active');
+                document.getElementById('wDescription').required = false;
+                document.getElementById('cJobTitle').required = true;
+                document.getElementById('cJobDesc').required = true;
+            }
+        }
+
+        function handleCategoryChange() {
+            const cat = document.getElementById('serviceCategory').value;
+            const field = document.getElementById('customCategoryField');
+            const input = document.getElementById('customCategory');
+            if (cat === 'Others') {
+                field.classList.add('active');
+                input.required = true;
+            } else {
+                field.classList.remove('active');
+                input.required = false;
             }
         }
 
         function handleTownChange() {
-            var val = document.getElementById('regTown').value;
-            var custom = document.getElementById('customTownField');
-            if (val === 'Other') custom.classList.add('active');
-            else custom.classList.remove('active');
+            const town = document.getElementById('regTown').value;
+            const field = document.getElementById('customTownField');
+            const input = document.getElementById('customTown');
+            if (town === 'Other') {
+                field.classList.add('active');
+                input.required = true;
+            } else {
+                field.classList.remove('active');
+                input.required = false;
+            }
         }
 
-        function handleCategoryChange() {
-            var val = document.getElementById('serviceCategory').value;
-            var custom = document.getElementById('customCategoryField');
-            if (val === 'Others') custom.classList.add('active');
-            else custom.classList.remove('active');
+        function getSelectedTown() {
+            const town = document.getElementById('regTown').value;
+            if (town === 'Other') {
+                return document.getElementById('customTown').value.trim() || 'Cameroon';
+            }
+            return town || 'Cameroon';
         }
 
-        // Keep the original handleLogin and handleRegister functions that were already in your file.
-        // (They are not changed so the form continues to work exactly as before.)
-        // If your original login.html had longer versions of these functions, they remain compatible.
+        function setupAvatarPreview() {
+            const input = document.getElementById('regPhotoFile');
+            const preview = document.getElementById('regAvatarPreview');
+            if (!input || !preview) return;
+            input.addEventListener('change', function () {
+                const file = this.files && this.files[0];
+                if (file && file.type.startsWith('image/')) {
+                    preview.src = URL.createObjectURL(file);
+                    preview.classList.add('show');
+                } else {
+                    preview.classList.remove('show');
+                    preview.src = '';
+                }
+            });
+        }
+
+        function setupFilePreviews() {
+            ['wPortfolio', 'cPortfolio'].forEach(id => {
+                const input = document.getElementById(id);
+                if (!input) return;
+                input.addEventListener('change', function () {
+                    const preview = document.getElementById(id + 'Preview');
+                    if (!preview) return;
+                    preview.innerHTML = '';
+                    const files = Array.from(this.files || []).slice(0, 2);
+                    if (this.files && this.files.length > 2) {
+                        alert('Maximum 2 photos. Only the first 2 will be used.');
+                    }
+                    files.forEach(file => {
+                        if (file.type.startsWith('image/')) {
+                            const img = document.createElement('img');
+                            img.className = 'file-preview-item';
+                            img.src = URL.createObjectURL(file);
+                            preview.appendChild(img);
+                        }
+                    });
+                });
+            });
+        }
+
+        function showMessage(msg, type) {
+            const el = document.getElementById('authMessage');
+            el.textContent = msg;
+            el.className = 'message ' + type;
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            if (!supabaseClient) {
+                showMessage('Cannot connect. Please refresh.', 'error');
+                return;
+            }
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+            if (error) {
+                showMessage(error.message, 'error');
+            } else {
+                showMessage('Login successful! Redirecting...', 'success');
+                setTimeout(() => window.location.href = 'index.html', 1000);
+            }
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            if (!supabaseClient) {
+                showMessage('Cannot connect. Please refresh.', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('regSubmitBtn');
+            btn.disabled = true;
+            btn.textContent = 'Creating account...';
+
+            try {
+                const email = document.getElementById('regEmail').value.trim();
+                const password = document.getElementById('regPassword').value;
+                const fullName = document.getElementById('regName').value.trim();
+                const phone = document.getElementById('regPhone').value.trim();
+                const isWorker = document.getElementById('regType').value === 'worker';
+                const selectedTown = getSelectedTown();
+
+                let category = document.getElementById('serviceCategory').value;
+                if (category === 'Others') {
+                    category = document.getElementById('customCategory').value.trim() || 'Others';
+                }
+
+                const { data, error } = await supabaseClient.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: { full_name: fullName, phone: phone, is_worker: isWorker }
+                    }
+                });
+
+                if (error) {
+                    showMessage(error.message, 'error');
+                    btn.disabled = false;
+                    btn.textContent = 'Create Account';
+                    return;
+                }
+
+                if (!data.user) {
+                    showMessage('Account created. Please check your email to confirm, then login.', 'success');
+                    btn.disabled = false;
+                    btn.textContent = 'Create Account';
+                    return;
+                }
+
+                const userId = data.user.id;
+                currentUser = data.user;
+
+                // Upload profile photo
+                let photoUrl = null;
+                const photoFile = document.getElementById('regPhotoFile').files[0];
+                if (photoFile) {
+                    showMessage('Uploading profile photo...', 'success');
+                    photoUrl = await uploadFile(photoFile, 'profiles', userId);
+                }
+
+                const profileData = {
+                    id: userId,
+                    full_name: fullName,
+                    phone: phone,
+                    is_worker: isWorker,
+                    location: selectedTown,
+                    avatar_url: photoUrl,
+                    portfolio: []
+                };
+
+                const { error: profileError } = await supabaseClient
+                    .from('profiles')
+                    .upsert([profileData], { onConflict: 'id' });
+
+                if (profileError) {
+                    showMessage('Account created but profile error: ' + profileError.message, 'warning');
+                    btn.disabled = false;
+                    btn.textContent = 'Create Account';
+                    return;
+                }
+
+                if (isWorker) {
+                    showMessage('Uploading portfolio...', 'success');
+                    const portfolioFiles = document.getElementById('wPortfolio').files;
+                    const portfolioUrls = await uploadMultipleFiles(portfolioFiles, 'portfolio', userId, 2);
+
+                    const workerDetails = {
+                        id: userId,
+                        category: category,
+                        description: document.getElementById('wDescription').value.trim(),
+                        experience_years: parseInt(document.getElementById('wExperience').value, 10) || 0,
+                        contact_phone: phone,
+                        whatsapp_number: phone,
+                        availability: 'Available',
+                        portfolio: portfolioUrls
+                    };
+
+                    const { error: workerError } = await supabaseClient
+                        .from('worker_details')
+                        .upsert([workerDetails], { onConflict: 'id' });
+
+                    if (workerError) {
+                        showMessage('Account created but worker profile error: ' + workerError.message, 'warning');
+                        btn.disabled = false;
+                        btn.textContent = 'Create Account';
+                        return;
+                    }
+
+                    if (portfolioUrls.length > 0) {
+                        await supabaseClient.from('profiles').update({ portfolio: portfolioUrls }).eq('id', userId);
+                    }
+                } else {
+                    // Client path – create first job
+                    showMessage('Uploading reference photos...', 'success');
+                    const portfolioFiles = document.getElementById('cPortfolio').files;
+                    const portfolioUrls = await uploadMultipleFiles(portfolioFiles, 'portfolio', userId, 2);
+
+                    if (portfolioUrls.length > 0) {
+                        await supabaseClient.from('profiles')
+                            .update({ portfolio: portfolioUrls })
+                            .eq('id', userId);
+                    }
+
+                    const area = document.getElementById('cArea').value.trim();
+                    const fullLocation = area ? (area + ', ' + selectedTown) : selectedTown;
+
+                    const jobData = {
+                        client_id: userId,
+                        title: document.getElementById('cJobTitle').value.trim(),
+                        description: document.getElementById('cJobDesc').value.trim(),
+                        category: category,
+                        location: fullLocation,
+                        budget: document.getElementById('cBudget').value.trim() || 'Not specified',
+                        status: 'Open'
+                    };
+
+                    if (portfolioUrls.length > 0) {
+                        jobData.images = portfolioUrls;
+                    }
+
+                    const { error: jobError } = await supabaseClient.from('job_posts').insert([jobData]);
+                    if (jobError) {
+                        if (jobData.images) {
+                            delete jobData.images;
+                            await supabaseClient.from('job_posts').insert([jobData]);
+                        }
+                    }
+                }
+
+                showMessage('Account created successfully! Redirecting...', 'success');
+                setTimeout(() => window.location.href = 'index.html', 1500);
+            } catch (err) {
+                console.error(err);
+                showMessage('Unexpected error: ' + (err.message || 'Please try again'), 'error');
+                btn.disabled = false;
+                btn.textContent = 'Create Account';
+            }
+        }
     </script>
 </body>
 </html>
