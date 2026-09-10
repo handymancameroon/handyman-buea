@@ -3,16 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Profile - Handy Man Cameroon</title>
-    <meta name="robots" content="noindex, nofollow">
+    <title>Find Workers - Handy Man Cameroon</title>
+    <meta name="description" content="Find trusted plumbers, electricians, cleaners, carpenters and more skilled workers across Cameroon. Search by category and town.">
+    <meta name="keywords" content="handyman Cameroon, find workers Buea, Douala, Yaoundé, plumber, electrician, cleaner">
     <link rel="stylesheet" href="style.css">
-    <style>
-        .dashboard-section { background: var(--card); padding: 24px; border-radius: 12px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .job-row, .dispute-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px; background: #fff; flex-wrap: wrap; }
-        .photo-upload-box { text-align: center; margin: 16px 0; }
-        .photo-upload-box img { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin-bottom: 12px; border: 3px solid var(--border); }
-        .admin-only-box { background: #eff6ff; border: 2px solid #2563eb; border-radius: 12px; padding: 20px; margin-bottom: 24px; text-align: center; display: none; }
-    </style>
 </head>
 <body>
     <header class="header">
@@ -30,276 +24,153 @@
         </div>
     </header>
 
-    <main class="dashboard-page">
+    <main class="search-page">
         <div class="container">
-            <h1 data-i18n="my_dashboard">My Profile</h1>
+            <h1 data-i18n="workers_title">Find Workers in Cameroon</h1>
 
-            <!-- Admin button – ONLY visible to real admin -->
-            <div class="admin-only-box" id="adminOnlyBox">
-                <h2 style="margin-bottom:12px;">⚙️ Administrator</h2>
-                <p style="margin-bottom:16px;color:var(--text-light);">You have admin access. Open the full control panel:</p>
-                <a href="admin.html" class="btn-primary">Open Admin Panel</a>
+            <div class="search-filters">
+                <input type="text" id="searchQuery" placeholder="Search by name, skill or town..." data-i18n-placeholder="search_placeholder">
+                <select id="categoryFilter">
+                    <option value="" data-i18n="all_categories">All Categories</option>
+                </select>
+                <select id="townFilter">
+                    <option value="" data-i18n="all_towns">All Towns</option>
+                </select>
+                <button class="btn-primary" onclick="searchWorkers()" data-i18n="search">Search</button>
             </div>
 
-            <div class="dashboard-section">
-                <h2 data-i18n="my_photo">📷 My Profile Photo</h2>
-                <div class="photo-upload-box" id="photoSection">
-                    <p class="loading" data-i18n="loading">Loading...</p>
-                </div>
-            </div>
-
-            <div class="dashboard-section">
-                <h2 data-i18n="my_jobs">📋 My Posted Jobs</h2>
-                <div id="myJobsList"><p class="loading" data-i18n="loading">Loading...</p></div>
-            </div>
-
-            <div class="dashboard-section" id="categoryJobsSection" style="display:none;">
-                <h2 data-i18n="open_jobs_category">🛠️ Open Jobs in My Category</h2>
-                <div id="categoryJobsList"><p class="loading" data-i18n="loading">Loading...</p></div>
-            </div>
-
-            <div class="dashboard-section">
-                <h2 data-i18n="my_worker_profile">🔧 My Worker Profile</h2>
-                <div id="myWorkerProfile"><p class="loading" data-i18n="loading">Loading...</p></div>
-            </div>
-
-            <div class="dashboard-section">
-                <h2 data-i18n="my_disputes">🚩 My Disputes / Reports</h2>
-                <div id="myDisputesList"><p class="loading" data-i18n="loading">Loading...</p></div>
+            <div class="worker-grid" id="workerResults">
+                <p class="loading" data-i18n="loading">Loading workers...</p>
             </div>
         </div>
     </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>© 2026 Handy Man. Connecting people with skilled workers across Cameroon.</p>
+        </div>
+    </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <script src="app.js"></script>
     <script>
-        let myWorkerCategory = null;
-
         document.addEventListener('DOMContentLoaded', async () => {
             await checkAuth();
-            if (!currentUser) {
-                window.location.href = 'login.html';
-                return;
-            }
-            // Show admin box ONLY for real admin
-            if (isAdmin()) {
-                var box = document.getElementById('adminOnlyBox');
-                if (box) box.style.display = 'block';
-            }
-            loadPhotoSection();
-            loadMyJobs();
-            loadMyWorkerProfile();
-            loadMyDisputes();
+            applyLanguage();
+            await populateFilters();
+            await searchWorkers();
         });
 
-        async function loadPhotoSection() {
-            const container = document.getElementById('photoSection');
-            const { data: profile } = await supabaseClient
-                .from('profiles')
-                .select('avatar_url, full_name')
-                .eq('id', currentUser.id)
-                .single();
+        async function populateFilters() {
+            const catSelect = document.getElementById('categoryFilter');
+            const townSelect = document.getElementById('townFilter');
 
-            const avatar = (profile && profile.avatar_url) || 'https://via.placeholder.com/100?text=No+Photo';
-            container.innerHTML = `
-                <img src="${avatar}" id="currentAvatar" onerror="this.src='https://via.placeholder.com/100?text=No+Photo'">
-                <p><strong>${profile ? profile.full_name : ''}</strong></p>
-                <input type="file" id="avatarInput" accept="image/*" style="margin:12px 0;">
-                <br>
-                <button class="btn-primary" onclick="changePhoto()">${t('upload_change_photo')}</button>
-            `;
-        }
+            // Categories
+            FALLBACK_CATEGORIES.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.name;
+                opt.textContent = c.name;
+                catSelect.appendChild(opt);
+            });
 
-        async function changePhoto() {
-            const input = document.getElementById('avatarInput');
-            if (!input.files || !input.files[0]) {
-                alert(t('select_photo_first'));
-                return;
-            }
-            const url = await uploadFile(input.files[0], 'profiles', currentUser.id);
-            if (!url) {
-                alert(t('upload_failed'));
-                return;
-            }
-            await supabaseClient.from('profiles').update({ avatar_url: url }).eq('id', currentUser.id);
-            alert(t('photo_updated'));
-            loadPhotoSection();
-            loadMyWorkerProfile();
-        }
+            // Towns
+            const towns = ['Buea','Limbe','Douala','Yaoundé','Bamenda','Bafoussam','Kribi','Garoua','Maroua','Ngaoundéré','Bertoua','Ebolowa','Kumba','Dschang','Nkongsamba','Edéa','Mutengene','Tiko','Other'];
+            towns.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t;
+                opt.textContent = t;
+                townSelect.appendChild(opt);
+            });
 
-        async function loadMyJobs() {
-            const container = document.getElementById('myJobsList');
-            try {
-                const { data: jobs, error } = await supabaseClient
-                    .from('job_posts')
-                    .select('*')
-                    .eq('client_id', currentUser.id)
-                    .order('created_at', { ascending: false });
-
-                if (error || !jobs || jobs.length === 0) {
-                    container.innerHTML = `
-                        <div class="empty-dashboard">
-                            <p>${t('no_jobs_yet')}</p>
-                            <a href="post-job.html" class="btn-primary" style="margin-top:12px;display:inline-block;">${t('post_first_job')}</a>
-                        </div>`;
-                    return;
-                }
-
-                container.innerHTML = jobs.map(job => {
-                    const isOpen = job.status === 'Open';
-                    const statusClass = isOpen ? 'status-available' : 'status-closed';
-                    const postedDate = new Date(job.created_at).toLocaleDateString('en-GB');
-                    return `
-                        <div class="job-row">
-                            <div>
-                                <h4>${job.title}</h4>
-                                <p>${job.category} • ${job.location} • ${postedDate}</p>
-                                <span class="status-badge ${statusClass}">${isOpen ? 'Open' : 'Closed'}</span>
-                            </div>
-                            ${isOpen ? `<button class="btn-close-job" onclick="closeJob('${job.id}')">${t('close_job')}</button>` : ''}
-                        </div>`;
-                }).join('');
-            } catch (err) {
-                container.innerHTML = '<p class="empty-dashboard">' + t('error') + '</p>';
+            // Pre-select from URL
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('category')) {
+                catSelect.value = params.get('category');
             }
         }
 
-        async function closeJob(jobId) {
-            if (!confirm('Are you sure you want to close this job?')) return;
-            await supabaseClient.from('job_posts').update({ status: 'Taken' }).eq('id', jobId).eq('client_id', currentUser.id);
-            alert('Job closed successfully!');
-            loadMyJobs();
-        }
+        async function searchWorkers() {
+            const container = document.getElementById('workerResults');
+            container.innerHTML = '<p class="loading">' + t('loading') + '</p>';
 
-        async function loadMyWorkerProfile() {
-            const container = document.getElementById('myWorkerProfile');
-            const catSection = document.getElementById('categoryJobsSection');
+            const query = (document.getElementById('searchQuery').value || '').trim().toLowerCase();
+            const category = document.getElementById('categoryFilter').value;
+            const town = document.getElementById('townFilter').value;
 
             try {
-                const { data: worker, error } = await supabaseClient
+                let q = supabaseClient
                     .from('worker_details')
-                    .select('*, profiles(full_name, avatar_url, location, phone)')
-                    .eq('id', currentUser.id)
-                    .single();
+                    .select(`
+                        *,
+                        profiles!inner (
+                            full_name,
+                            avatar_url,
+                            location,
+                            phone,
+                            is_worker
+                        )
+                    `)
+                    .eq('profiles.is_worker', true)
+                    .order('rating', { ascending: false });
 
-                if (error || !worker) {
-                    container.innerHTML = `
-                        <div class="empty-dashboard">
-                            <p>${t('no_worker_profile')}</p>
-                            <a href="join.html" class="btn-primary" style="margin-top:12px;display:inline-block;">${t('create_worker_profile')}</a>
-                        </div>`;
+                if (category) q = q.eq('category', category);
+
+                const { data, error } = await q.limit(100);
+
+                if (error) {
+                    console.error(error);
+                    container.innerHTML = '<p class="empty-dashboard">' + t('no_workers') + '</p>';
                     return;
                 }
 
-                myWorkerCategory = worker.category;
-                catSection.style.display = 'block';
-                loadCategoryJobs(worker.category);
+                let workers = data || [];
 
-                const p = worker.profiles || {};
-                container.innerHTML = `
-                    <div style="text-align:center;margin-bottom:16px;">
-                        <img src="${p.avatar_url || 'https://via.placeholder.com/80'}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;margin-bottom:12px;">
-                        <h3>${p.full_name || 'Your Name'}</h3>
-                        <p style="color:var(--primary);font-weight:600;">${worker.category}</p>
-                    </div>
-                    <p><strong>📍 Location:</strong> ${p.location || 'Cameroon'}</p>
-                    <p><strong>📞 Phone:</strong> ${p.phone || 'Not set'}</p>
-                    <p><strong>⭐ Rating:</strong> ${worker.rating || 0}/5 (${worker.review_count || 0} ${t('reviews')})</p>
-                    <p><strong>🛠️ Experience:</strong> ${worker.experience_years || 0} years</p>
-                    <p><strong>✅ Status:</strong> ${worker.availability || 'Available'}</p>
-                    <p style="margin-top:12px;color:var(--text-light);">${worker.description || 'No description yet.'}</p>
-                    <div style="margin-top:20px;">
-                        <label><strong>Update Portfolio Photos (max 2)</strong></label><br>
-                        <input type="file" id="portfolioInput" accept="image/*" multiple style="margin:8px 0;">
-                        <br>
-                        <button class="btn-primary" onclick="updatePortfolio()">Upload Portfolio Photos</button>
-                    </div>
-                `;
-            } catch (err) {
-                container.innerHTML = '<p class="empty-dashboard">' + t('error') + '</p>';
-            }
-        }
+                // Client-side filtering for town + text search
+                if (town) {
+                    workers = workers.filter(w => (w.profiles?.location || '').toLowerCase().includes(town.toLowerCase()));
+                }
+                if (query) {
+                    workers = workers.filter(w => {
+                        const name = (w.profiles?.full_name || '').toLowerCase();
+                        const cat = (w.category || '').toLowerCase();
+                        const loc = (w.profiles?.location || '').toLowerCase();
+                        const desc = (w.description || '').toLowerCase();
+                        return name.includes(query) || cat.includes(query) || loc.includes(query) || desc.includes(query);
+                    });
+                }
 
-        async function updatePortfolio() {
-            const input = document.getElementById('portfolioInput');
-            if (!input.files || input.files.length === 0) {
-                alert(t('select_photo_first'));
-                return;
-            }
-            const urls = await uploadMultipleFiles(input.files, 'portfolio', currentUser.id, 2);
-            if (urls.length === 0) {
-                alert(t('upload_failed'));
-                return;
-            }
-            await supabaseClient.from('worker_details').update({ portfolio: urls }).eq('id', currentUser.id);
-            alert('Portfolio updated!');
-            loadMyWorkerProfile();
-        }
-
-        async function loadCategoryJobs(category) {
-            const container = document.getElementById('categoryJobsList');
-            if (!category) {
-                container.innerHTML = '<p>No category set on your profile.</p>';
-                return;
-            }
-            const { data: jobs } = await supabaseClient
-                .from('job_posts')
-                .select('*, profiles(full_name, phone)')
-                .eq('category', category)
-                .eq('status', 'Open')
-                .order('created_at', { ascending: false })
-                .limit(40);
-
-            if (!jobs || jobs.length === 0) {
-                container.innerHTML = '<p class="empty-dashboard">No open jobs in your category right now.</p>';
-                return;
-            }
-
-            container.innerHTML = jobs.map(job => {
-                const date = new Date(job.created_at).toLocaleDateString('en-GB');
-                const client = job.profiles || {};
-                return `
-                    <div class="job-row">
-                        <div>
-                            <h4>${job.title}</h4>
-                            <p>${job.location} • ${date} • Budget: ${job.budget || 'Negotiable'}</p>
-                            <p style="font-size:0.85rem;">Client: ${client.full_name || 'Unknown'}</p>
-                        </div>
-                        <a href="job.html?id=${job.id}" class="btn-primary">${t('view_job')}</a>
-                    </div>`;
-            }).join('');
-        }
-
-        async function loadMyDisputes() {
-            const container = document.getElementById('myDisputesList');
-            try {
-                const { data: disputes } = await supabaseClient
-                    .from('disputes')
-                    .select('*')
-                    .or(`reporter_id.eq.${currentUser.id},target_id.eq.${currentUser.id}`)
-                    .order('created_at', { ascending: false });
-
-                if (!disputes || disputes.length === 0) {
-                    container.innerHTML = '<p class="empty-dashboard">No disputes or reports involving you.</p>';
+                if (workers.length === 0) {
+                    container.innerHTML = '<p class="empty-dashboard">' + t('no_workers') + '</p>';
                     return;
                 }
 
-                container.innerHTML = disputes.map(d => {
-                    const date = new Date(d.created_at).toLocaleDateString('en-GB');
+                container.innerHTML = workers.map(w => {
+                    const p = w.profiles || {};
+                    const rating = Number(w.rating || 0).toFixed(1);
+                    const reviews = w.review_count || 0;
+                    const avatar = p.avatar_url || 'https://via.placeholder.com/120?text=Worker';
                     return `
-                        <div class="dispute-row">
-                            <div>
-                                <strong>${d.reason || 'Report'}</strong>
-                                <p style="font-size:0.9rem;color:var(--text-light);">${d.details || ''}</p>
-                                <p style="font-size:0.8rem;">${date} • Status: ${d.status || 'Open'}</p>
+                        <div class="worker-card">
+                            <img src="${avatar}" alt="${p.full_name || 'Worker'}" class="worker-avatar" onerror="this.src='https://via.placeholder.com/120?text=Worker'">
+                            <div class="worker-info">
+                                <h3>${p.full_name || 'Worker'}</h3>
+                                <p class="worker-category">${w.category || 'General'}</p>
+                                <p class="worker-location">📍 ${p.location || 'Cameroon'}</p>
+                                <p class="worker-rating">⭐ ${rating}/5 (${reviews} ${t('reviews')})</p>
+                                <a href="worker.html?id=${w.id}" class="btn-primary">${t('view_profile')}</a>
                             </div>
-                        </div>`;
+                        </div>
+                    `;
                 }).join('');
             } catch (err) {
-                container.innerHTML = '<p class="empty-dashboard">' + t('error') + '</p>';
+                console.error(err);
+                container.innerHTML = '<p class="empty-dashboard">' + t('no_workers') + '</p>';
             }
         }
+
+        // Make available globally
+        window.searchWorkers = searchWorkers;
     </script>
 </body>
 </html>
