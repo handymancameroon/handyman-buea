@@ -3,20 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Find Workers in Cameroon - Handy Man</title>
+
+    <!-- Primary SEO -->
+    <title>Find Workers in Cameroon | Plumbers, Electricians, Cleaners - Handy Man</title>
+    <meta name="description" content="Search and contact trusted local workers across Cameroon: plumbers, electricians, cleaners, carpenters, painters, masons and more in Buea, Douala, Yaoundé, Bamenda, Limbe and all towns. Free to use.">
+    <meta name="keywords" content="find workers Cameroon, plumber Buea, electrician Douala, cleaner Yaoundé, carpenter Bamenda, handyman Cameroon, artisan Cameroun, plombier, électricien, find local help">
+    <meta name="author" content="Handy Man Cameroon">
+    <meta name="robots" content="index, follow, max-image-preview:large">
+    <link rel="canonical" href="https://handyman-buea.vercel.app/workers.html">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="en_CM">
+    <meta property="og:locale:alternate" content="fr_CM">
+    <meta property="og:site_name" content="Handy Man Cameroon">
+    <meta property="og:title" content="Find Trusted Workers in Cameroon | Handy Man">
+    <meta property="og:description" content="Browse plumbers, electricians, cleaners and skilled workers near you. Contact via WhatsApp or call.">
+    <meta property="og:url" content="https://handyman-buea.vercel.app/workers.html">
+    <meta property="og:image" content="https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=1200&q=80">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Find Workers in Cameroon | Handy Man">
+    <meta name="twitter:description" content="Search skilled local workers by category and town across Cameroon.">
+    <meta name="twitter:image" content="https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=1200&q=80">
+
+    <!-- Geo -->
+    <meta name="geo.region" content="CM">
+    <meta name="geo.placename" content="Cameroon">
+
     <link rel="stylesheet" href="style.css">
+
+    <!-- Structured data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "name": "Find Workers in Cameroon",
+      "description": "Directory of trusted local service providers across Cameroon.",
+      "url": "https://handyman-buea.vercel.app/workers.html",
+      "isPartOf": {
+        "@type": "WebSite",
+        "name": "Handy Man Cameroon",
+        "url": "https://handyman-buea.vercel.app/"
+      }
+    }
+    </script>
 </head>
 <body>
     <header class="header">
         <div class="container">
             <a href="index.html" class="logo">🔧 Handy Man</a>
             <nav class="nav" id="nav">
-                <a href="index.html">Home</a>
-                <a href="workers.html">Find Workers</a>
-                <a href="jobs.html">Find Jobs</a>
-                <a href="login.html" class="btn-secondary">Join as Worker</a>
-                <a href="post-job.html" class="btn-secondary">Post a Job</a>
-                <a href="login.html" class="btn-secondary" id="authBtn">Login</a>
+                <a href="index.html" data-i18n="nav_home">Home</a>
+                <a href="workers.html" data-i18n="nav_workers">Find Workers</a>
+                <a href="jobs.html" data-i18n="nav_jobs">Find Jobs</a>
+                <a href="login.html" class="btn-secondary" data-i18n="nav_join">Join as Worker</a>
+                <a href="post-job.html" class="btn-secondary" data-i18n="nav_post">Post a Job</a>
+                <a href="login.html" class="btn-secondary" id="authBtn" data-i18n="nav_login">Login</a>
             </nav>
             <button class="menu-toggle" id="menuToggle">☰</button>
         </div>
@@ -24,49 +68,30 @@
 
     <main class="search-page">
         <div class="container">
-            <h1>Find Workers in Cameroon</h1>
+            <h1 data-i18n="workers_title">Find Workers in Cameroon</h1>
+
             <div class="search-filters">
-                <input type="text" id="searchQuery" placeholder="Search by name, skill or town...">
+                <input type="text" id="searchQuery" placeholder="Search by name, skill or town..." data-i18n-placeholder="search_placeholder">
                 <select id="categoryFilter">
-                    <option value="">All Categories</option>
-                    <option value="Plumbing">Plumbing</option>
-                    <option value="Electrical">Electrical</option>
-                    <option value="Carpentry">Carpentry</option>
-                    <option value="Cleaning">Cleaning</option>
-                    <option value="Painting">Painting</option>
-                    <option value="Masonry">Masonry</option>
-                    <option value="Auto Mechanics">Auto Mechanics</option>
-                    <option value="Phone/Laptop Repair">Phone/Laptop Repair</option>
-                    <option value="Hairdressing">Hairdressing</option>
-                    <option value="Catering">Catering</option>
-                    <option value="Others">Others</option>
+                    <option value="" data-i18n="all_categories">All Categories</option>
                 </select>
                 <select id="townFilter">
-                    <option value="">All Towns</option>
-                    <option value="Buea">Buea</option>
-                    <option value="Limbe">Limbe</option>
-                    <option value="Douala">Douala</option>
-                    <option value="Yaoundé">Yaoundé</option>
-                    <option value="Bamenda">Bamenda</option>
-                    <option value="Bafoussam">Bafoussam</option>
-                    <option value="Kribi">Kribi</option>
-                    <option value="Garoua">Garoua</option>
-                    <option value="Maroua">Maroua</option>
-                    <option value="Ngaoundéré">Ngaoundéré</option>
-                    <option value="Bertoua">Bertoua</option>
-                    <option value="Ebolowa">Ebolowa</option>
-                    <option value="Kumba">Kumba</option>
-                    <option value="Dschang">Dschang</option>
-                    <option value="Nkongsamba">Nkongsamba</option>
-                    <option value="Edéa">Edéa</option>
+                    <option value="" data-i18n="all_towns">All Towns</option>
                 </select>
-                <button onclick="performSearch()" class="btn-primary">Search</button>
+                <button class="btn-primary" onclick="searchWorkers()" data-i18n="search">Search</button>
             </div>
-            <div class="worker-grid" id="searchResults">
-                <p class="loading">Loading workers...</p>
+
+            <div class="worker-grid" id="workerResults">
+                <p class="loading" data-i18n="loading">Loading workers...</p>
             </div>
         </div>
     </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>© 2026 Handy Man. Connecting people with skilled workers across Cameroon.</p>
+        </div>
+    </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
@@ -74,70 +99,120 @@
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             await checkAuth();
-            const params = new URLSearchParams(window.location.search);
-            const q = params.get('q');
-            const cat = params.get('category');
-            if (q) document.getElementById('searchQuery').value = q;
-            if (cat) document.getElementById('categoryFilter').value = cat;
-            performSearch();
+            applyLanguage();
+            await populateFilters();
+            await searchWorkers();
         });
 
-        async function performSearch() {
-            const query = (document.getElementById('searchQuery').value || '').toLowerCase().trim();
-            const category = document.getElementById('categoryFilter').value;
-            const town = document.getElementById('townFilter').value;
-            const container = document.getElementById('searchResults');
+        async function populateFilters() {
+            const catSelect = document.getElementById('categoryFilter');
+            const townSelect = document.getElementById('townFilter');
 
-            container.innerHTML = '<p class="loading">Searching...</p>';
-
-            if (!supabaseClient) {
-                container.innerHTML = '<p class="empty">Cannot load workers. Please refresh.</p>';
-                return;
-            }
-
-            let dbQuery = supabaseClient
-                .from('worker_details')
-                .select('*, profiles(full_name, avatar_url, location, phone, is_deleted)')
-                .eq('availability', 'Available');
-
-            if (category) dbQuery = dbQuery.eq('category', category);
-
-            const { data: workers, error } = await dbQuery;
-
-            if (error) {
-                container.innerHTML = '<p class="error">Error loading workers.</p>';
-                return;
-            }
-
-            let filtered = (workers || []).filter(function (w) {
-                return !(w.profiles && w.profiles.is_deleted === true);
+            // Categories
+            FALLBACK_CATEGORIES.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.name;
+                opt.textContent = c.name;
+                catSelect.appendChild(opt);
             });
 
-            if (town) {
-                filtered = filtered.filter(function (w) {
-                    var loc = ((w.profiles && w.profiles.location) || '').toLowerCase();
-                    return loc.indexOf(town.toLowerCase()) !== -1;
-                });
-            }
+            // Towns
+            const towns = ['Buea','Limbe','Douala','Yaoundé','Bamenda','Bafoussam','Kribi','Garoua','Maroua','Ngaoundéré','Bertoua','Ebolowa','Kumba','Dschang','Nkongsamba','Edéa','Mutengene','Tiko','Other'];
+            towns.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t;
+                opt.textContent = t;
+                townSelect.appendChild(opt);
+            });
 
-            if (query) {
-                filtered = filtered.filter(function (w) {
-                    var name = ((w.profiles && w.profiles.full_name) || '').toLowerCase();
-                    var cat = (w.category || '').toLowerCase();
-                    var desc = (w.description || '').toLowerCase();
-                    var loc = ((w.profiles && w.profiles.location) || '').toLowerCase();
-                    return name.indexOf(query) !== -1 || cat.indexOf(query) !== -1 ||
-                        desc.indexOf(query) !== -1 || loc.indexOf(query) !== -1;
-                });
+            // Pre-select from URL
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('category')) {
+                catSelect.value = params.get('category');
             }
-
-            if (filtered.length === 0) {
-                container.innerHTML = '<p class="empty">No workers found. Try a different search.</p>';
-                return;
-            }
-
-            renderWorkers(filtered, container);
         }
+
+        async function searchWorkers() {
+            const container = document.getElementById('workerResults');
+            container.innerHTML = '<p class="loading">' + t('loading') + '</p>';
+
+            const query = (document.getElementById('searchQuery').value || '').trim().toLowerCase();
+            const category = document.getElementById('categoryFilter').value;
+            const town = document.getElementById('townFilter').value;
+
+            try {
+                let q = supabaseClient
+                    .from('worker_details')
+                    .select(`
+                        *,
+                        profiles!inner (
+                            full_name,
+                            avatar_url,
+                            location,
+                            phone,
+                            is_worker
+                        )
+                    `)
+                    .eq('profiles.is_worker', true)
+                    .order('rating', { ascending: false });
+
+                if (category) q = q.eq('category', category);
+
+                const { data, error } = await q.limit(100);
+
+                if (error) {
+                    console.error(error);
+                    container.innerHTML = '<p class="empty-dashboard">' + t('no_workers') + '</p>';
+                    return;
+                }
+
+                let workers = data || [];
+
+                // Client-side filtering for town + text search
+                if (town) {
+                    workers = workers.filter(w => (w.profiles?.location || '').toLowerCase().includes(town.toLowerCase()));
+                }
+                if (query) {
+                    workers = workers.filter(w => {
+                        const name = (w.profiles?.full_name || '').toLowerCase();
+                        const cat = (w.category || '').toLowerCase();
+                        const loc = (w.profiles?.location || '').toLowerCase();
+                        const desc = (w.description || '').toLowerCase();
+                        return name.includes(query) || cat.includes(query) || loc.includes(query) || desc.includes(query);
+                    });
+                }
+
+                if (workers.length === 0) {
+                    container.innerHTML = '<p class="empty-dashboard">' + t('no_workers') + '</p>';
+                    return;
+                }
+
+                container.innerHTML = workers.map(w => {
+                    const p = w.profiles || {};
+                    const rating = Number(w.rating || 0).toFixed(1);
+                    const reviews = w.review_count || 0;
+                    const avatar = p.avatar_url || 'https://via.placeholder.com/120?text=Worker';
+                    return `
+                        <div class="worker-card">
+                            <img src="${avatar}" alt="${p.full_name || 'Worker'}" class="worker-avatar" onerror="this.src='https://via.placeholder.com/120?text=Worker'">
+                            <div class="worker-info">
+                                <h3>${p.full_name || 'Worker'}</h3>
+                                <p class="worker-category">${w.category || 'General'}</p>
+                                <p class="worker-location">📍 ${p.location || 'Cameroon'}</p>
+                                <p class="worker-rating">⭐ ${rating}/5 (${reviews} ${t('reviews')})</p>
+                                <a href="worker.html?id=${w.id}" class="btn-primary">${t('view_profile')}</a>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (err) {
+                console.error(err);
+                container.innerHTML = '<p class="empty-dashboard">' + t('no_workers') + '</p>';
+            }
+        }
+
+        // Make available globally
+        window.searchWorkers = searchWorkers;
     </script>
 </body>
 </html>
