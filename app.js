@@ -1,7 +1,7 @@
 /**
- * Handy Man Buea — Core Application Logic
- * Version: 1.3.0 (Stable + Working EN/FR switcher + My Profile)
- * Date: 8 September 2026
+ * Handy Man Cameroon — Core Application Logic
+ * Version: 1.5.0 (Full EN/FR + Ratings + SEO helpers + Soft-delete)
+ * Date: 10 September 2026
  *
  * SECURITY NOTES:
  * - Supabase credentials are loaded from config.js
@@ -36,8 +36,14 @@ const FALLBACK_CATEGORIES = [
     {name: 'Others', icon: '✨', description: 'Other services not listed above'}
 ];
 
+const CAMEROON_TOWNS = [
+    'Buea', 'Limbe', 'Douala', 'Yaoundé', 'Bamenda', 'Bafoussam',
+    'Kribi', 'Garoua', 'Maroua', 'Ngaoundéré', 'Bertoua', 'Ebolowa',
+    'Kumba', 'Dschang', 'Nkongsamba', 'Edéa', 'Mutengene', 'Tiko', 'Other'
+];
+
 // ============================================================================
-// TRANSLATIONS
+// FULL TRANSLATIONS (EN + FR)
 // ============================================================================
 const I18N = {
     en: {
@@ -57,7 +63,42 @@ const I18N = {
         workers_title: "Find Workers in Cameroon",
         search_placeholder: "Search by name, skill or town...",
         all_categories: "All Categories",
-        all_towns: "All Towns"
+        all_towns: "All Towns",
+        hero_title: "Find Trusted Local Help in Cameroon",
+        hero_sub: "Connect with skilled plumbers, electricians, cleaners, and more — anywhere in Cameroon.",
+        hero_find: "Find a Worker",
+        hero_post: "Post a Job",
+        popular_services: "Popular Services",
+        featured_workers: "Featured Workers in Cameroon",
+        how_title: "How It Works",
+        how_search: "Search",
+        how_search_p: "Find the right worker in your town",
+        how_contact: "Contact",
+        how_contact_p: "Call or WhatsApp them directly",
+        how_done: "Get It Done",
+        how_done_p: "Rate and review after service",
+        my_dashboard: "My Profile",
+        my_photo: "My Profile Photo",
+        my_jobs: "My Posted Jobs",
+        open_jobs_category: "Open Jobs in My Category",
+        my_worker_profile: "My Worker Profile",
+        my_disputes: "My Disputes / Reports",
+        upload_change_photo: "Upload / Change Photo",
+        select_photo_first: "Please select a photo first",
+        upload_failed: "Upload failed. Please try again.",
+        photo_updated: "Photo updated successfully!",
+        no_jobs_yet: "You have not posted any jobs yet.",
+        post_first_job: "Post your first job",
+        close_job: "Close Job",
+        no_worker_profile: "You do not have a worker profile yet.",
+        create_worker_profile: "Create Worker Profile",
+        view_job: "View Job",
+        error: "Something went wrong. Please try again.",
+        jobs_title: "Find Jobs in Cameroon",
+        jobs_placeholder: "Search jobs or town...",
+        no_jobs: "No jobs found.",
+        contact_us: "Contact Us",
+        send_message: "Send Message"
     },
     fr: {
         nav_home: "Accueil",
@@ -76,7 +117,42 @@ const I18N = {
         workers_title: "Trouver des ouvriers au Cameroun",
         search_placeholder: "Rechercher par nom, compétence ou ville...",
         all_categories: "Toutes les catégories",
-        all_towns: "Toutes les villes"
+        all_towns: "Toutes les villes",
+        hero_title: "Trouvez de l'aide locale de confiance au Cameroun",
+        hero_sub: "Connectez-vous avec des plombiers, électriciens, agents d'entretien et plus — partout au Cameroun.",
+        hero_find: "Trouver un ouvrier",
+        hero_post: "Publier un emploi",
+        popular_services: "Services populaires",
+        featured_workers: "Ouvriers en vedette au Cameroun",
+        how_title: "Comment ça marche",
+        how_search: "Rechercher",
+        how_search_p: "Trouvez le bon ouvrier dans votre ville",
+        how_contact: "Contacter",
+        how_contact_p: "Appelez ou WhatsApp directement",
+        how_done: "Faites-le faire",
+        how_done_p: "Notez et commentez après le service",
+        my_dashboard: "Mon Profil",
+        my_photo: "Ma photo de profil",
+        my_jobs: "Mes emplois publiés",
+        open_jobs_category: "Emplois ouverts dans ma catégorie",
+        my_worker_profile: "Mon profil d'ouvrier",
+        my_disputes: "Mes litiges / signalements",
+        upload_change_photo: "Télécharger / Changer la photo",
+        select_photo_first: "Veuillez d'abord sélectionner une photo",
+        upload_failed: "Échec du téléchargement. Réessayez.",
+        photo_updated: "Photo mise à jour avec succès !",
+        no_jobs_yet: "Vous n'avez encore publié aucun emploi.",
+        post_first_job: "Publiez votre premier emploi",
+        close_job: "Fermer l'emploi",
+        no_worker_profile: "Vous n'avez pas encore de profil d'ouvrier.",
+        create_worker_profile: "Créer un profil d'ouvrier",
+        view_job: "Voir l'emploi",
+        error: "Une erreur s'est produite. Réessayez.",
+        jobs_title: "Trouver des emplois au Cameroun",
+        jobs_placeholder: "Rechercher emplois ou ville...",
+        no_jobs: "Aucun emploi trouvé.",
+        contact_us: "Contactez-nous",
+        send_message: "Envoyer un message"
     }
 };
 
@@ -94,13 +170,25 @@ function setLanguage(lang) {
 function applyLanguage() {
     var lang = localStorage.getItem('handyman_lang') || 'en';
 
-    // Update language buttons
+    // Language buttons
     var enBtn = document.getElementById('langEn');
     var frBtn = document.getElementById('langFr');
     if (enBtn) enBtn.classList.toggle('active', lang === 'en');
     if (frBtn) frBtn.classList.toggle('active', lang === 'fr');
 
-    // Update navigation links that exist on every page
+    // data-i18n attributes (best method)
+    document.querySelectorAll('[data-i18n]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n');
+        if (key) el.textContent = t(key);
+    });
+
+    // data-i18n-placeholder
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n-placeholder');
+        if (key) el.placeholder = t(key);
+    });
+
+    // Navigation links fallback
     var nav = document.getElementById('nav');
     if (nav) {
         var links = nav.querySelectorAll('a');
@@ -112,31 +200,30 @@ function applyLanguage() {
                 a.textContent = t('nav_workers');
             } else if (href.includes('jobs.html')) {
                 a.textContent = t('nav_jobs');
-            } else if (href.includes('login.html') && a.id !== 'authBtn' && !a.id) {
-                a.textContent = t('nav_join');
+            } else if (href.includes('login.html') && a.id !== 'authBtn') {
+                if (!a.id || a.id === '') a.textContent = t('nav_join');
             } else if (href.includes('post-job.html')) {
                 a.textContent = t('nav_post');
             }
         });
     }
 
-    // Update injected My Profile button
+    // Injected My Profile button
     var dash = document.getElementById('navDashboard');
     if (dash) dash.textContent = t('nav_profile');
 
-    // Update auth button
+    // Auth button
     var authBtn = document.getElementById('authBtn');
     if (authBtn) {
-        if (currentUser) {
-            authBtn.textContent = t('nav_logout');
-        } else {
-            authBtn.textContent = t('nav_login');
-        }
+        authBtn.textContent = currentUser ? t('nav_logout') : t('nav_login');
     }
 
-    // Update common texts on workers page
-    var title = document.querySelector('.search-page h1');
-    if (title) title.textContent = t('workers_title');
+    // Common page titles
+    var title = document.querySelector('.search-page h1, .jobs-page h1');
+    if (title) {
+        if (document.querySelector('.search-page')) title.textContent = t('workers_title');
+        if (document.querySelector('.jobs-page')) title.textContent = t('jobs_title');
+    }
 
     var searchInput = document.getElementById('searchQuery');
     if (searchInput) searchInput.placeholder = t('search_placeholder');
@@ -151,7 +238,7 @@ function applyLanguage() {
         townSelect.options[0].text = t('all_towns');
     }
 
-    var searchBtn = document.querySelector('.search-filters .btn-primary');
+    var searchBtn = document.querySelector('.search-filters .btn-primary, .jobs-filters .btn-primary');
     if (searchBtn) searchBtn.textContent = t('search');
 }
 
@@ -403,7 +490,7 @@ function fallbackCopy(text) {
 }
 
 // ============================================================================
-// ANALYTICS
+// ANALYTICS / VISITORS
 // ============================================================================
 async function trackVisitor() {
     if (!supabaseClient || sessionStorage.getItem('visitorTracked')) return;
@@ -413,7 +500,7 @@ async function trackVisitor() {
             .from('site_stats')
             .select('total_visitors, visitors_today, visitors_today_date')
             .eq('id', 1)
-            .single();
+            .maybeSingle();
 
         if (stats) {
             var visitorsToday = stats.visitors_today || 0;
@@ -429,6 +516,15 @@ async function trackVisitor() {
                 last_updated: new Date().toISOString()
             }).eq('id', 1);
         }
+
+        // Also log individual visit for week/month stats
+        try {
+            await supabaseClient.from('visitor_logs').insert({
+                page: window.location.pathname || '/',
+                user_agent: navigator.userAgent ? navigator.userAgent.substring(0, 200) : null
+            });
+        } catch (e) { /* table may not exist yet – ignore */ }
+
         sessionStorage.setItem('visitorTracked', 'true');
     } catch (e) {
         console.log('[HandyMan] Visitor tracking skipped');
@@ -446,9 +542,20 @@ async function checkAuth() {
         if (user) {
             var { data: profile } = await supabaseClient
                 .from('profiles')
-                .select('is_admin, full_name, phone, avatar_url')
+                .select('is_admin, full_name, phone, avatar_url, is_deleted')
                 .eq('id', user.id)
-                .single();
+                .maybeSingle();
+
+            // Soft-delete protection
+            if (profile && profile.is_deleted === true) {
+                await supabaseClient.auth.signOut();
+                currentUser = null;
+                currentProfile = null;
+                alert('This account has been deactivated by the administrator.');
+                window.location.href = 'login.html';
+                return;
+            }
+
             currentProfile = profile;
             loadNotifications();
             startNotificationPolling();
@@ -461,6 +568,8 @@ async function checkAuth() {
 
 function isAdmin() {
     if (currentProfile && currentProfile.is_admin === true) return true;
+    var adminEmail = (CONFIG.ADMIN_EMAIL || 'internationalpimerchant@gmail.com').toLowerCase();
+    if (currentUser && currentUser.email && currentUser.email.toLowerCase() === adminEmail) return true;
     return false;
 }
 
@@ -581,7 +690,7 @@ async function loadCategories() {
         return;
     }
     try {
-        var { data: categories, error } = await supabaseClient.from('categories').select('*').limit(11);
+        var { data: categories, error } = await supabaseClient.from('categories').select('*').limit(12);
         if (error || !categories || categories.length === 0) {
             renderCategories(FALLBACK_CATEGORIES);
             return;
@@ -614,11 +723,22 @@ async function loadFeaturedWorkers() {
     try {
         var { data: workers, error } = await supabaseClient
             .from('worker_details')
-            .select('*, profiles(full_name, avatar_url, location)')
+            .select('*, profiles!inner(full_name, avatar_url, location, is_deleted)')
             .eq('availability', 'Available')
+            .eq('profiles.is_deleted', false)
             .order('rating', { ascending: false })
             .limit(6);
         if (error || !workers || workers.length === 0) {
+            // Fallback without inner join
+            var res2 = await supabaseClient
+                .from('worker_details')
+                .select('*, profiles(full_name, avatar_url, location)')
+                .eq('availability', 'Available')
+                .order('rating', { ascending: false })
+                .limit(6);
+            workers = res2.data || [];
+        }
+        if (!workers || workers.length === 0) {
             grid.innerHTML = '<p class="empty">No workers yet.</p>';
             return;
         }
@@ -631,20 +751,53 @@ async function loadFeaturedWorkers() {
 function renderWorkers(workers, container) {
     if (!container) return;
     container.innerHTML = workers.map(function(w) {
-        var avatar = (w.profiles && w.profiles.avatar_url) ? w.profiles.avatar_url : 'https://via.placeholder.com/80?text=No+Photo';
-        var name = (w.profiles && w.profiles.full_name) ? w.profiles.full_name : 'Unknown';
-        var location = (w.profiles && w.profiles.location) ? w.profiles.location : 'Cameroon';
+        var p = w.profiles || {};
+        if (p.is_deleted === true) return '';
+        var avatar = p.avatar_url || 'https://via.placeholder.com/80?text=No+Photo';
+        var name = p.full_name || 'Unknown';
+        var location = p.location || 'Cameroon';
+        var rating = Number(w.rating) || 0;
+        var count = Number(w.review_count) || 0;
         return '<div class="worker-card" onclick="viewWorker(\'' + w.id + '\')">' +
             '<div class="worker-avatar">' +
-            '<img src="' + avatar + '" alt="' + name + '" onerror="this.src=\'https://via.placeholder.com/80?text=No+Photo\'">' +
+            '<img src="' + avatar + '" alt="' + escapeHtml(name) + '" onerror="this.src=\'https://via.placeholder.com/80?text=No+Photo\'">' +
             '</div>' +
-            '<h3>' + name + '</h3>' +
+            '<h3>' + escapeHtml(name) + '</h3>' +
             '<p class="worker-category">' + (w.category || 'General') + '</p>' +
-            '<p class="worker-location">📍 ' + location + '</p>' +
-            '<div class="worker-rating">' + '⭐'.repeat(Math.round(w.rating || 0)) + ' (' + (w.review_count || 0) + ' ' + t('reviews') + ')</div>' +
+            '<p class="worker-location">📍 ' + escapeHtml(location) + '</p>' +
+            '<div class="worker-rating">' + '⭐'.repeat(Math.min(5, Math.round(rating))) +
+            ' ' + rating.toFixed(1) + '/5 (' + count + ' ' + t('reviews') + ')</div>' +
             '<button class="btn-small">' + t('view_profile') + '</button>' +
             '</div>';
     }).join('');
+}
+
+// ============================================================================
+// RATING HELPER (call this after inserting a review)
+// ============================================================================
+async function recalculateWorkerRating(workerId) {
+    if (!supabaseClient || !workerId) return;
+    try {
+        var { data: reviews } = await supabaseClient
+            .from('reviews')
+            .select('rating')
+            .eq('worker_id', workerId);
+        if (!reviews || reviews.length === 0) {
+            await supabaseClient.from('worker_details').update({
+                rating: 0,
+                review_count: 0
+            }).eq('id', workerId);
+            return;
+        }
+        var total = reviews.reduce(function(sum, r) { return sum + (Number(r.rating) || 0); }, 0);
+        var avg = Math.round((total / reviews.length) * 10) / 10;
+        await supabaseClient.from('worker_details').update({
+            rating: avg,
+            review_count: reviews.length
+        }).eq('id', workerId);
+    } catch (e) {
+        console.error('[HandyMan] Rating recalculation failed', e);
+    }
 }
 
 // ============================================================================
@@ -674,13 +827,6 @@ function initCarousel() {
             d.classList.toggle('active', i === index);
         });
         current = index;
-    }
-}
-
-function searchWorkers() {
-    var query = document.getElementById('searchInput');
-    if (query && query.value) {
-        window.location.href = 'workers.html?q=' + encodeURIComponent(query.value);
     }
 }
 
@@ -719,7 +865,7 @@ function timeAgo(dateString) {
 function buildContactLinks(phone) {
     var digits = (phone || '').replace(/\D/g, '');
     var local = digits;
-    if (local.startsWith('237')) local = local.slice(3);
+    if (local.indexOf('237') === 0) local = local.substring(3);
     if (local.length < 8) return { wa: '#', call: '#' };
     return {
         wa: 'https://wa.me/237' + local,
@@ -727,13 +873,19 @@ function buildContactLinks(phone) {
     };
 }
 
-// Expose needed functions
+// Expose needed functions globally
 window.setLanguage = setLanguage;
 window.t = t;
 window.checkAuth = checkAuth;
 window.isAdmin = isAdmin;
 window.updateAuthUI = updateAuthUI;
 window.uploadFile = uploadFile;
+window.uploadMultipleFiles = uploadMultipleFiles;
 window.renderWorkers = renderWorkers;
 window.viewWorker = viewWorker;
+window.viewJob = viewJob;
 window.searchByCategory = searchByCategory;
+window.recalculateWorkerRating = recalculateWorkerRating;
+window.CAMEROON_TOWNS = CAMEROON_TOWNS;
+window.buildContactLinks = buildContactLinks;
+window.escapeHtml = escapeHtml;
