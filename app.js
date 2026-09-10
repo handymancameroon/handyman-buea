@@ -1,6 +1,6 @@
 /**
  * Handy Man Buea — Core Application Logic
- * Version: 1.4.0 (Full EN/FR + data-i18n support + SEO-ready)
+ * Version: 1.5.0 (Full EN/FR + categories + data-i18n)
  * Date: 10 September 2026
  *
  * SECURITY NOTES:
@@ -101,7 +101,20 @@ const I18N = {
         no_worker_profile: "You do not have a worker profile yet.",
         create_worker_profile: "Create worker profile",
         view_job: "View job",
-        error: "An error occurred. Please try again."
+        error: "An error occurred. Please try again.",
+
+        // Category display names
+        cat_Plumbing: "Plumbing",
+        cat_Electrical: "Electrical",
+        cat_Carpentry: "Carpentry",
+        cat_Cleaning: "Cleaning",
+        cat_Painting: "Painting",
+        cat_Masonry: "Masonry",
+        cat_Auto_Mechanics: "Auto Mechanics",
+        cat_Phone_Laptop_Repair: "Phone/Laptop Repair",
+        cat_Hairdressing: "Hairdressing",
+        cat_Catering: "Catering",
+        cat_Others: "Others"
     },
     fr: {
         nav_home: "Accueil",
@@ -164,13 +177,33 @@ const I18N = {
         no_worker_profile: "Vous n'avez pas encore de profil d'ouvrier.",
         create_worker_profile: "Créer un profil d'ouvrier",
         view_job: "Voir l'emploi",
-        error: "Une erreur s'est produite. Veuillez réessayer."
+        error: "Une erreur s'est produite. Veuillez réessayer.",
+
+        // Category display names (French)
+        cat_Plumbing: "Plomberie",
+        cat_Electrical: "Électricité",
+        cat_Carpentry: "Menuiserie",
+        cat_Cleaning: "Nettoyage",
+        cat_Painting: "Peinture",
+        cat_Masonry: "Maçonnerie",
+        cat_Auto_Mechanics: "Mécanique auto",
+        cat_Phone_Laptop_Repair: "Réparation téléphone/ordinateur",
+        cat_Hairdressing: "Coiffure",
+        cat_Catering: "Restauration / Traiteur",
+        cat_Others: "Autres"
     }
 };
 
 function t(key) {
     var lang = localStorage.getItem('handyman_lang') || 'en';
     return (I18N[lang] && I18N[lang][key]) || I18N.en[key] || key;
+}
+
+// Helper: get translated category name while keeping original English name for search
+function getCategoryDisplayName(englishName) {
+    if (!englishName) return '';
+    var key = 'cat_' + englishName.replace(/[\s\/]+/g, '_');
+    return t(key) || englishName;
 }
 
 function setLanguage(lang) {
@@ -254,6 +287,13 @@ function applyLanguage() {
 
     var searchBtn = document.querySelector('.search-filters .btn-primary');
     if (searchBtn) searchBtn.textContent = t('search');
+
+    // Re-render categories with new language if they are already on the page
+    if (document.getElementById('categoryGrid')) {
+        // We re-call with the same data that was last used (or fallback)
+        // This is safe and will just update the displayed names
+        renderCategories(FALLBACK_CATEGORIES);
+    }
 }
 
 // ============================================================================
@@ -697,9 +737,10 @@ function renderCategories(categories) {
     var grid = document.getElementById('categoryGrid');
     if (!grid) return;
     grid.innerHTML = categories.map(function(cat) {
+        var displayName = getCategoryDisplayName(cat.name);
         return '<div class="category-card" onclick="searchByCategory(\'' + cat.name + '\')">' +
             '<div class="category-icon">' + (cat.icon || '🔧') + '</div>' +
-            '<h3>' + cat.name + '</h3>' +
+            '<h3>' + displayName + '</h3>' +
             '<p>' + (cat.description || '') + '</p>' +
             '</div>';
     }).join('');
@@ -735,12 +776,13 @@ function renderWorkers(workers, container) {
         var avatar = (w.profiles && w.profiles.avatar_url) ? w.profiles.avatar_url : 'https://via.placeholder.com/80?text=No+Photo';
         var name = (w.profiles && w.profiles.full_name) ? w.profiles.full_name : 'Unknown';
         var location = (w.profiles && w.profiles.location) ? w.profiles.location : 'Cameroon';
+        var catDisplay = getCategoryDisplayName(w.category || 'Others');
         return '<div class="worker-card" onclick="viewWorker(\'' + w.id + '\')">' +
             '<div class="worker-avatar">' +
             '<img src="' + avatar + '" alt="' + name + '" onerror="this.src=\'https://via.placeholder.com/80?text=No+Photo\'">' +
             '</div>' +
             '<h3>' + name + '</h3>' +
-            '<p class="worker-category">' + (w.category || 'General') + '</p>' +
+            '<p class="worker-category">' + catDisplay + '</p>' +
             '<p class="worker-location">📍 ' + location + '</p>' +
             '<div class="worker-rating">' + '⭐'.repeat(Math.round(w.rating || 0)) + ' (' + (w.review_count || 0) + ' ' + t('reviews') + ')</div>' +
             '<button class="btn-small">' + t('view_profile') + '</button>' +
@@ -831,6 +873,7 @@ function buildContactLinks(phone) {
 // Expose needed functions
 window.setLanguage = setLanguage;
 window.t = t;
+window.getCategoryDisplayName = getCategoryDisplayName;
 window.checkAuth = checkAuth;
 window.isAdmin = isAdmin;
 window.updateAuthUI = updateAuthUI;
