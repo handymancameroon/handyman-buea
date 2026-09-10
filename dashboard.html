@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">  
-    <title>My Profile - Handy Man</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - Handy Man Cameroon</title>
+    <meta name="robots" content="noindex, nofollow">
     <link rel="stylesheet" href="style.css">
     <style>
         .dashboard-section { background: var(--card); padding: 24px; border-radius: 12px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
@@ -33,6 +34,7 @@
         <div class="container">
             <h1 data-i18n="my_dashboard">My Profile</h1>
 
+            <!-- Admin button – ONLY visible to real admin -->
             <div class="admin-only-box" id="adminOnlyBox">
                 <h2 style="margin-bottom:12px;">⚙️ Administrator</h2>
                 <p style="margin-bottom:16px;color:var(--text-light);">You have admin access. Open the full control panel:</p>
@@ -80,6 +82,7 @@
                 window.location.href = 'login.html';
                 return;
             }
+            // Show admin box ONLY for real admin
             if (isAdmin()) {
                 var box = document.getElementById('adminOnlyBox');
                 if (box) box.style.display = 'block';
@@ -278,19 +281,18 @@
                     .order('created_at', { ascending: false });
 
                 if (!disputes || disputes.length === 0) {
-                    container.innerHTML = '<p class="empty-dashboard">You have no disputes or reports.</p>';
+                    container.innerHTML = '<p class="empty-dashboard">No disputes or reports involving you.</p>';
                     return;
                 }
 
                 container.innerHTML = disputes.map(d => {
                     const date = new Date(d.created_at).toLocaleDateString('en-GB');
-                    const statusClass = d.status === 'Open' ? 'status-available' : 'status-closed';
                     return `
                         <div class="dispute-row">
                             <div>
-                                <h4>${d.reason || 'Report'}</h4>
-                                <p>${d.target_name || ''} (${d.target_type || ''}) • ${date}</p>
-                                <span class="status-badge ${statusClass}">${d.status || ''}</span>
+                                <strong>${d.reason || 'Report'}</strong>
+                                <p style="font-size:0.9rem;color:var(--text-light);">${d.details || ''}</p>
+                                <p style="font-size:0.8rem;">${date} • Status: ${d.status || 'Open'}</p>
                             </div>
                         </div>`;
                 }).join('');
