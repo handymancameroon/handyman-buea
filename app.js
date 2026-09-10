@@ -1,7 +1,7 @@
 /**
  * Handy Man Buea — Core Application Logic
- * Version: 1.3.0 (Stable + Working EN/FR switcher + My Profile)
- * Date: 8 September 2026
+ * Version: 1.6.0 (Full EN/FR + Categories + All Forms ready)
+ * Date: 10 September 2026
  *
  * SECURITY NOTES:
  * - Supabase credentials are loaded from config.js
@@ -36,26 +36,12 @@ const FALLBACK_CATEGORIES = [
     {name: 'Others', icon: '✨', description: 'Other services not listed above'}
 ];
 
-// French names for categories (values stay in English for the database)
-const CATEGORY_FR = {
-    'Plumbing': 'Plomberie',
-    'Electrical': 'Électricité',
-    'Carpentry': 'Menuiserie',
-    'Cleaning': 'Nettoyage',
-    'Painting': 'Peinture',
-    'Masonry': 'Maçonnerie',
-    'Auto Mechanics': 'Mécanique auto',
-    'Phone/Laptop Repair': 'Réparation téléphone/ordinateur',
-    'Hairdressing': 'Coiffure',
-    'Catering': 'Restauration / Traiteur',
-    'Others': 'Autres'
-};
-
 // ============================================================================
-// TRANSLATIONS
+// FULL TRANSLATIONS (EN + FR) - ALL FORMS INCLUDED
 // ============================================================================
 const I18N = {
     en: {
+        // Navigation
         nav_home: "Home",
         nav_workers: "Find Workers",
         nav_jobs: "Find Jobs",
@@ -64,6 +50,8 @@ const I18N = {
         nav_login: "Login",
         nav_logout: "Logout",
         nav_profile: "My Profile",
+
+        // Common
         search: "Search",
         loading: "Loading...",
         view_profile: "View Profile",
@@ -73,6 +61,9 @@ const I18N = {
         search_placeholder: "Search by name, skill or town...",
         all_categories: "All Categories",
         all_towns: "All Towns",
+        error: "An error occurred. Please try again.",
+
+        // Homepage
         hero_title: "Find Trusted Local Help in Cameroon",
         hero_sub: "Connect with skilled plumbers, electricians, cleaners, and more — anywhere in Cameroon.",
         hero_find: "Find a Worker",
@@ -95,13 +86,90 @@ const I18N = {
         how_contact_p: "Call or WhatsApp them directly",
         how_done: "Get It Done",
         how_done_p: "Rate and review after service",
+
+        // Jobs page
         jobs_title: "Find Jobs in Cameroon",
         jobs_placeholder: "Search for a job or town...",
         no_jobs: "No jobs found.",
+
+        // Join form
+        join_title: "Join as a Service Provider",
+        join_sub: "Create your worker profile to receive jobs anywhere in Cameroon.",
+        town_label: "Town where you work *",
+        category_label: "Service Category *",
+        description_label: "Description of Services *",
+        experience_label: "Years of Experience",
+        phone_label: "Phone for Calls",
+        whatsapp_label: "WhatsApp Number",
+        create_profile: "Create Profile",
+        select_town: "Select town",
+        select_skill: "Select your main skill",
+        desc_placeholder: "Describe what you do, your skills, and experience...",
+
+        // Login / Register form
+        login_title: "Login / Register",
+        login_tab: "Login",
+        register_tab: "Register",
+        email_label: "Email",
+        password_label: "Password",
+        fullname_label: "Full Name",
+        phone_reg_label: "Phone Number",
+        login_btn: "Login",
+        register_btn: "Create Account",
+        already_account: "Already have an account? Login",
+        no_account: "Don't have an account? Register",
+        client_type: "I need a worker (Client)",
+        worker_type: "I want to offer services (Worker)",
+
+        // Post Job form
+        post_title: "Post a Job",
+        post_sub: "Describe what you need and workers will contact you.",
+        job_title_label: "Job Title *",
+        job_category_label: "Category needed *",
+        job_description_label: "Job Description *",
+        job_location_label: "Location (Town + Quarter) *",
+        job_budget_label: "Budget (or Negotiable)",
+        post_job_btn: "Post Job",
+        job_title_placeholder: "e.g. Fix leaking toilet",
+        job_desc_placeholder: "Describe the problem in detail...",
+        job_location_placeholder: "e.g. Molyko, Buea",
+        job_budget_placeholder: "e.g. 5000 FCFA or Negotiable",
+
+        // Dashboard & others
+        my_dashboard: "My Profile",
+        my_photo: "My profile photo",
+        my_jobs: "My posted jobs",
+        open_jobs_category: "Open jobs in my category",
+        my_worker_profile: "My worker profile",
+        my_disputes: "My disputes / reports",
+        upload_change_photo: "Upload / Change photo",
+        select_photo_first: "Please select a photo first",
+        upload_failed: "Upload failed. Please try again.",
+        photo_updated: "Photo updated successfully!",
+        no_jobs_yet: "You have not posted any jobs yet.",
+        post_first_job: "Post your first job",
+        close_job: "Close job",
+        no_worker_profile: "You do not have a worker profile yet.",
+        create_worker_profile: "Create worker profile",
+        view_job: "View job",
         contact_us: "Contact Us",
-        send_message: "Send Message"
+        send_message: "Send Message",
+
+        // Category display names
+        cat_Plumbing: "Plumbing",
+        cat_Electrical: "Electrical",
+        cat_Carpentry: "Carpentry",
+        cat_Cleaning: "Cleaning",
+        cat_Painting: "Painting",
+        cat_Masonry: "Masonry",
+        cat_Auto_Mechanics: "Auto Mechanics",
+        cat_Phone_Laptop_Repair: "Phone/Laptop Repair",
+        cat_Hairdressing: "Hairdressing",
+        cat_Catering: "Catering",
+        cat_Others: "Others"
     },
     fr: {
+        // Navigation
         nav_home: "Accueil",
         nav_workers: "Trouver des ouvriers",
         nav_jobs: "Trouver des emplois",
@@ -110,6 +178,8 @@ const I18N = {
         nav_login: "Connexion",
         nav_logout: "Déconnexion",
         nav_profile: "Mon profil",
+
+        // Common
         search: "Rechercher",
         loading: "Chargement...",
         view_profile: "Voir le profil",
@@ -119,6 +189,9 @@ const I18N = {
         search_placeholder: "Rechercher par nom, métier ou ville...",
         all_categories: "Toutes les catégories",
         all_towns: "Toutes les villes",
+        error: "Une erreur s'est produite. Veuillez réessayer.",
+
+        // Homepage
         hero_title: "Trouvez de l'aide locale de confiance au Cameroun",
         hero_sub: "Connectez-vous avec des plombiers, électriciens, agents d'entretien et bien d'autres — partout au Cameroun.",
         hero_find: "Trouver un ouvrier",
@@ -141,17 +214,100 @@ const I18N = {
         how_contact_p: "Appelez ou écrivez sur WhatsApp directement",
         how_done: "Faites réaliser vos travaux",
         how_done_p: "Notez et commentez après le service",
+
+        // Jobs page
         jobs_title: "Trouver des emplois au Cameroun",
         jobs_placeholder: "Rechercher un emploi ou une ville...",
         no_jobs: "Aucun emploi trouvé.",
+
+        // Join form
+        join_title: "Devenir prestataire de services",
+        join_sub: "Créez votre profil d'ouvrier pour recevoir des emplois partout au Cameroun.",
+        town_label: "Ville où vous travaillez *",
+        category_label: "Catégorie de service *",
+        description_label: "Description des services *",
+        experience_label: "Années d'expérience",
+        phone_label: "Téléphone pour les appels",
+        whatsapp_label: "Numéro WhatsApp",
+        create_profile: "Créer le profil",
+        select_town: "Sélectionnez la ville",
+        select_skill: "Sélectionnez votre compétence principale",
+        desc_placeholder: "Décrivez ce que vous faites, vos compétences et votre expérience...",
+
+        // Login / Register form
+        login_title: "Connexion / Inscription",
+        login_tab: "Connexion",
+        register_tab: "Inscription",
+        email_label: "Email",
+        password_label: "Mot de passe",
+        fullname_label: "Nom complet",
+        phone_reg_label: "Numéro de téléphone",
+        login_btn: "Se connecter",
+        register_btn: "Créer un compte",
+        already_account: "Vous avez déjà un compte ? Connexion",
+        no_account: "Pas encore de compte ? Inscription",
+        client_type: "J'ai besoin d'un ouvrier (Client)",
+        worker_type: "Je veux offrir des services (Ouvrier)",
+
+        // Post Job form
+        post_title: "Publier un emploi",
+        post_sub: "Décrivez ce dont vous avez besoin et les ouvriers vous contacteront.",
+        job_title_label: "Titre de l'emploi *",
+        job_category_label: "Catégorie nécessaire *",
+        job_description_label: "Description de l'emploi *",
+        job_location_label: "Lieu (Ville + Quartier) *",
+        job_budget_label: "Budget (ou Négociable)",
+        post_job_btn: "Publier l'emploi",
+        job_title_placeholder: "ex. Réparer une toilette qui fuit",
+        job_desc_placeholder: "Décrivez le problème en détail...",
+        job_location_placeholder: "ex. Molyko, Buea",
+        job_budget_placeholder: "ex. 5000 FCFA ou Négociable",
+
+        // Dashboard & others
+        my_dashboard: "Mon profil",
+        my_photo: "Ma photo de profil",
+        my_jobs: "Mes emplois publiés",
+        open_jobs_category: "Emplois ouverts dans ma catégorie",
+        my_worker_profile: "Mon profil d'ouvrier",
+        my_disputes: "Mes litiges / signalements",
+        upload_change_photo: "Télécharger / Changer la photo",
+        select_photo_first: "Veuillez d'abord sélectionner une photo",
+        upload_failed: "Échec du téléchargement. Veuillez réessayer.",
+        photo_updated: "Photo mise à jour avec succès !",
+        no_jobs_yet: "Vous n'avez encore publié aucun emploi.",
+        post_first_job: "Publiez votre premier emploi",
+        close_job: "Fermer l'emploi",
+        no_worker_profile: "Vous n'avez pas encore de profil d'ouvrier.",
+        create_worker_profile: "Créer un profil d'ouvrier",
+        view_job: "Voir l'emploi",
         contact_us: "Contactez-nous",
-        send_message: "Envoyer le message"
+        send_message: "Envoyer le message",
+
+        // Category display names
+        cat_Plumbing: "Plomberie",
+        cat_Electrical: "Électricité",
+        cat_Carpentry: "Menuiserie",
+        cat_Cleaning: "Nettoyage",
+        cat_Painting: "Peinture",
+        cat_Masonry: "Maçonnerie",
+        cat_Auto_Mechanics: "Mécanique auto",
+        cat_Phone_Laptop_Repair: "Réparation téléphone/ordinateur",
+        cat_Hairdressing: "Coiffure",
+        cat_Catering: "Restauration / Traiteur",
+        cat_Others: "Autres"
     }
 };
 
 function t(key) {
     var lang = localStorage.getItem('handyman_lang') || 'en';
     return (I18N[lang] && I18N[lang][key]) || I18N.en[key] || key;
+}
+
+// Helper: get translated category name while keeping original English name for search
+function getCategoryDisplayName(englishName) {
+    if (!englishName) return '';
+    var key = 'cat_' + englishName.replace(/[\s\/]+/g, '_');
+    return t(key) || englishName;
 }
 
 function setLanguage(lang) {
@@ -162,6 +318,7 @@ function setLanguage(lang) {
 
 function applyLanguage() {
     var lang = localStorage.getItem('handyman_lang') || 'en';
+    document.documentElement.lang = lang;
 
     // Update language buttons
     var enBtn = document.getElementById('langEn');
@@ -169,21 +326,39 @@ function applyLanguage() {
     if (enBtn) enBtn.classList.toggle('active', lang === 'en');
     if (frBtn) frBtn.classList.toggle('active', lang === 'fr');
 
-    // Update navigation links that exist on every page
+    // Translate everything that has data-i18n attribute
+    document.querySelectorAll('[data-i18n]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n');
+        if (!key) return;
+        var text = t(key);
+        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+            el.placeholder = text;
+        } else {
+            el.textContent = text;
+        }
+    });
+
+    // Translate placeholders
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n-placeholder');
+        if (key) el.placeholder = t(key);
+    });
+
+    // Keep the old nav logic as extra safety
     var nav = document.getElementById('nav');
     if (nav) {
         var links = nav.querySelectorAll('a');
         links.forEach(function(a) {
             var href = (a.getAttribute('href') || '').toLowerCase();
             if (href.includes('index.html') || href === '/' || href === '') {
-                if (!a.classList.contains('logo')) a.textContent = t('nav_home');
-            } else if (href.includes('workers.html')) {
+                if (!a.classList.contains('logo') && !a.hasAttribute('data-i18n')) a.textContent = t('nav_home');
+            } else if (href.includes('workers.html') && !a.hasAttribute('data-i18n')) {
                 a.textContent = t('nav_workers');
-            } else if (href.includes('jobs.html')) {
+            } else if (href.includes('jobs.html') && !a.hasAttribute('data-i18n')) {
                 a.textContent = t('nav_jobs');
-            } else if (href.includes('login.html') && a.id !== 'authBtn' && !a.id) {
+            } else if ((href.includes('join.html') || (href.includes('login.html') && a.id !== 'authBtn')) && !a.hasAttribute('data-i18n')) {
                 a.textContent = t('nav_join');
-            } else if (href.includes('post-job.html')) {
+            } else if (href.includes('post-job.html') && !a.hasAttribute('data-i18n')) {
                 a.textContent = t('nav_post');
             }
         });
@@ -203,9 +378,9 @@ function applyLanguage() {
         }
     }
 
-    // Update common texts on workers page
+    // Workers page extras
     var title = document.querySelector('.search-page h1');
-    if (title) title.textContent = t('workers_title');
+    if (title && !title.hasAttribute('data-i18n')) title.textContent = t('workers_title');
 
     var searchInput = document.getElementById('searchQuery');
     if (searchInput) searchInput.placeholder = t('search_placeholder');
@@ -223,16 +398,10 @@ function applyLanguage() {
     var searchBtn = document.querySelector('.search-filters .btn-primary');
     if (searchBtn) searchBtn.textContent = t('search');
 
-    // ===== TRANSLATE CATEGORY DROPDOWN LABELS (safe addition) =====
-    document.querySelectorAll('select').forEach(function(select) {
-        for (var i = 0; i < select.options.length; i++) {
-            var opt = select.options[i];
-            var val = opt.value;
-            if (val && CATEGORY_FR[val]) {
-                opt.text = (lang === 'fr') ? CATEGORY_FR[val] : val;
-            }
-        }
-    });
+    // Re-render categories with new language if they are already on the page
+    if (document.getElementById('categoryGrid')) {
+        renderCategories(FALLBACK_CATEGORIES);
+    }
 }
 
 // ============================================================================
@@ -676,9 +845,10 @@ function renderCategories(categories) {
     var grid = document.getElementById('categoryGrid');
     if (!grid) return;
     grid.innerHTML = categories.map(function(cat) {
+        var displayName = getCategoryDisplayName(cat.name);
         return '<div class="category-card" onclick="searchByCategory(\'' + cat.name + '\')">' +
             '<div class="category-icon">' + (cat.icon || '🔧') + '</div>' +
-            '<h3>' + cat.name + '</h3>' +
+            '<h3>' + displayName + '</h3>' +
             '<p>' + (cat.description || '') + '</p>' +
             '</div>';
     }).join('');
@@ -714,12 +884,13 @@ function renderWorkers(workers, container) {
         var avatar = (w.profiles && w.profiles.avatar_url) ? w.profiles.avatar_url : 'https://via.placeholder.com/80?text=No+Photo';
         var name = (w.profiles && w.profiles.full_name) ? w.profiles.full_name : 'Unknown';
         var location = (w.profiles && w.profiles.location) ? w.profiles.location : 'Cameroon';
+        var catDisplay = getCategoryDisplayName(w.category || 'Others');
         return '<div class="worker-card" onclick="viewWorker(\'' + w.id + '\')">' +
             '<div class="worker-avatar">' +
             '<img src="' + avatar + '" alt="' + name + '" onerror="this.src=\'https://via.placeholder.com/80?text=No+Photo\'">' +
             '</div>' +
             '<h3>' + name + '</h3>' +
-            '<p class="worker-category">' + (w.category || 'General') + '</p>' +
+            '<p class="worker-category">' + catDisplay + '</p>' +
             '<p class="worker-location">📍 ' + location + '</p>' +
             '<div class="worker-rating">' + '⭐'.repeat(Math.round(w.rating || 0)) + ' (' + (w.review_count || 0) + ' ' + t('reviews') + ')</div>' +
             '<button class="btn-small">' + t('view_profile') + '</button>' +
@@ -810,6 +981,7 @@ function buildContactLinks(phone) {
 // Expose needed functions
 window.setLanguage = setLanguage;
 window.t = t;
+window.getCategoryDisplayName = getCategoryDisplayName;
 window.checkAuth = checkAuth;
 window.isAdmin = isAdmin;
 window.updateAuthUI = updateAuthUI;
