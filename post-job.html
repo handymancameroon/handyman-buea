@@ -30,18 +30,18 @@
     <main class="auth-page">
         <div class="container">
             <div class="auth-box" id="postJobBox">
-                <h2 data-i18n="nav_post">Post a Job</h2>
-                <p>Describe what you need and skilled workers will contact you.</p>
+                <h2 data-i18n="post_title">Post a Job</h2>
+                <p data-i18n="post_sub">Describe what you need and skilled workers will contact you.</p>
                 
                 <form id="jobForm" onsubmit="handlePostJob(event)">
                     <div class="form-group">
-                        <label>Job Title *</label>
-                        <input type="text" id="jTitle" required placeholder="e.g. Fix leaking kitchen pipe">
+                        <label data-i18n="job_title_label">Job Title *</label>
+                        <input type="text" id="jTitle" required data-i18n-placeholder="job_title_placeholder" placeholder="e.g. Fix leaking kitchen pipe">
                     </div>
                     <div class="form-group">
-                        <label data-i18n="service_category">Service Category *</label>
+                        <label data-i18n="job_category_label">Service Category *</label>
                         <select id="jCategory" required>
-                            <option value="">Select category</option>
+                            <option value="" data-i18n="select_skill">Select category</option>
                             <option value="Plumbing">Plumbing</option>
                             <option value="Electrical">Electrical</option>
                             <option value="Carpentry">Carpentry</option>
@@ -56,12 +56,12 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Description *</label>
-                        <textarea id="jDescription" required rows="4" placeholder="Describe the job in detail..."></textarea>
+                        <label data-i18n="job_description_label">Description *</label>
+                        <textarea id="jDescription" required rows="4" data-i18n-placeholder="job_desc_placeholder" placeholder="Describe the job in detail..."></textarea>
                     </div>
 
                     <div class="form-group">
-                        <label data-i18n="town">Town / City *</label>
+                        <label data-i18n="town_label">Town / City *</label>
                         <select id="jTown" required onchange="handleJobTownChange()">
                             <option value="" data-i18n="select_town">Select town</option>
                             <option value="Buea">Buea</option>
@@ -79,7 +79,7 @@
                             <option value="Ebolowa">Ebolowa</option>
                             <option value="Mutengene">Mutengene</option>
                             <option value="Tiko">Tiko</option>
-                            <option value="Other" data-i18n="other_specify">Other (specify below)</option>
+                            <option value="Other">Other (specify below)</option>
                         </select>
                         <div id="jCustomTownField" class="custom-town-field">
                             <input type="text" id="jCustomTown" placeholder="Enter your town">
@@ -87,16 +87,16 @@
                     </div>
 
                     <div class="form-group">
-                        <label>More precise location (optional)</label>
-                        <input type="text" id="jLocationDetail" placeholder="e.g. Molyko, opposite Total">
+                        <label data-i18n="job_location_label">More precise location (optional)</label>
+                        <input type="text" id="jLocationDetail" data-i18n-placeholder="job_location_placeholder" placeholder="e.g. Molyko, opposite Total">
                         <small class="upload-hint">Quarter or landmark (optional).</small>
                     </div>
 
                     <div class="form-group">
-                        <label>Budget (optional)</label>
-                        <input type="text" id="jBudget" placeholder="e.g. 10,000 FCFA or Negotiable">
+                        <label data-i18n="job_budget_label">Budget (optional)</label>
+                        <input type="text" id="jBudget" data-i18n-placeholder="job_budget_placeholder" placeholder="e.g. 10,000 FCFA or Negotiable">
                     </div>
-                    <button type="submit" class="btn-primary full" data-i18n="nav_post">Post Job</button>
+                    <button type="submit" class="btn-primary full" data-i18n="post_job_btn">Post Job</button>
                 </form>
                 
                 <p id="jobMessage" class="message"></p>
@@ -110,6 +110,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             await checkAuth();
+            applyLanguage();
             
             if (!currentUser) {
                 document.getElementById('postJobBox').innerHTML = `
