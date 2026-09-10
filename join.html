@@ -11,12 +11,12 @@
         <div class="container">
             <a href="index.html" class="logo">🔧 Handy Man</a>
             <nav class="nav" id="nav">
-                <a href="index.html">Home</a>
-                <a href="workers.html">Find Workers</a>
-                <a href="jobs.html">Find Jobs</a>
-                <a href="login.html" class="btn-secondary">Join as Worker</a>
-                <a href="post-job.html" class="btn-secondary">Post a Job</a>
-                <a href="login.html" class="btn-secondary" id="authBtn">Login</a>
+                <a href="index.html" data-i18n="nav_home">Home</a>
+                <a href="workers.html" data-i18n="nav_workers">Find Workers</a>
+                <a href="jobs.html" data-i18n="nav_jobs">Find Jobs</a>
+                <a href="login.html" class="btn-secondary" data-i18n="nav_join">Join as Worker</a>
+                <a href="post-job.html" class="btn-secondary" data-i18n="nav_post">Post a Job</a>
+                <a href="login.html" class="btn-secondary" id="authBtn" data-i18n="nav_login">Login</a>
             </nav>
             <button class="menu-toggle" id="menuToggle">☰</button>
         </div>
@@ -25,12 +25,12 @@
     <main class="auth-page">
         <div class="container">
             <div class="auth-box">
-                <h2>Join as a Service Provider</h2>
-                <p>Create your worker profile to receive jobs anywhere in Cameroon.</p>
+                <h2 data-i18n="join_title">Join as a Service Provider</h2>
+                <p data-i18n="join_sub">Create your worker profile to receive jobs anywhere in Cameroon.</p>
 
                 <form id="workerForm" onsubmit="handleWorkerJoin(event)">
                     <div class="form-group">
-                        <label>Town where you work *</label>
+                        <label data-i18n="town_label">Town where you work *</label>
                         <select id="wTown" required>
                             <option value="">Select town</option>
                             <option value="Buea">Buea</option>
@@ -49,11 +49,14 @@
                             <option value="Dschang">Dschang</option>
                             <option value="Nkongsamba">Nkongsamba</option>
                             <option value="Edéa">Edéa</option>
+                            <option value="Mutengene">Mutengene</option>
+                            <option value="Tiko">Tiko</option>
                             <option value="Other">Other</option>
                         </select>
                     </div>
+
                     <div class="form-group">
-                        <label>Service Category *</label>
+                        <label data-i18n="category_label">Service Category *</label>
                         <select id="wCategory" required>
                             <option value="">Select your main skill</option>
                             <option value="Plumbing">Plumbing</option>
@@ -69,23 +72,28 @@
                             <option value="Others">Others</option>
                         </select>
                     </div>
+
                     <div class="form-group">
-                        <label>Description of Services *</label>
+                        <label data-i18n="description_label">Description of Services *</label>
                         <textarea id="wDescription" required rows="4" placeholder="Describe what you do, your skills, and experience..."></textarea>
                     </div>
+
                     <div class="form-group">
-                        <label>Years of Experience</label>
+                        <label data-i18n="experience_label">Years of Experience</label>
                         <input type="number" id="wExperience" min="0" value="0">
                     </div>
+
                     <div class="form-group">
-                        <label>Phone for Calls</label>
+                        <label data-i18n="phone_label">Phone for Calls</label>
                         <input type="tel" id="wPhone" placeholder="6XX XXX XXX">
                     </div>
+
                     <div class="form-group">
-                        <label>WhatsApp Number</label>
+                        <label data-i18n="whatsapp_label">WhatsApp Number</label>
                         <input type="tel" id="wWhatsapp" placeholder="6XX XXX XXX">
                     </div>
-                    <button type="submit" class="btn-primary full">Create Profile</button>
+
+                    <button type="submit" class="btn-primary full" data-i18n="create_profile">Create Profile</button>
                 </form>
 
                 <p id="joinMessage" class="message"></p>
@@ -99,6 +107,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             await checkAuth();
+            applyLanguage();
             if (!currentUser) {
                 window.location.href = 'login.html';
                 return;
@@ -116,7 +125,10 @@
 
             const town = document.getElementById('wTown').value;
             if (town) {
-                await supabaseClient.from('profiles').update({ location: town, is_worker: true }).eq('id', user.id);
+                await supabaseClient.from('profiles').update({ 
+                    location: town, 
+                    is_worker: true 
+                }).eq('id', user.id);
             }
 
             const details = {
@@ -126,16 +138,20 @@
                 experience_years: parseInt(document.getElementById('wExperience').value) || 0,
                 contact_phone: document.getElementById('wPhone').value,
                 whatsapp_number: document.getElementById('wWhatsapp').value,
-                availability: 'Available'
+                availability: 'Available',
+                rating: 0,
+                review_count: 0
             };
 
-            const { error } = await supabaseClient.from('worker_details').upsert([details], { onConflict: 'id' });
+            const { error } = await supabaseClient
+                .from('worker_details')
+                .upsert([details], { onConflict: 'id' });
 
             if (error) {
                 showJoinMessage('Error: ' + error.message, 'error');
             } else {
                 showJoinMessage('Profile created successfully! Redirecting...', 'success');
-                setTimeout(() => window.location.href = 'index.html', 1500);
+                setTimeout(() => window.location.href = 'dashboard.html', 1500);
             }
         }
 
