@@ -1,7 +1,7 @@
 /**
  * Handy Man Buea — Core Application Logic
- * Version: 1.3.0 (Stable + Working EN/FR switcher + My Profile)
- * Date: 8 September 2026
+ * Version: 1.4.0 (Full EN/FR + data-i18n support + SEO-ready)
+ * Date: 10 September 2026
  *
  * SECURITY NOTES:
  * - Supabase credentials are loaded from config.js
@@ -37,7 +37,7 @@ const FALLBACK_CATEGORIES = [
 ];
 
 // ============================================================================
-// TRANSLATIONS
+// FULL TRANSLATIONS (EN + FR)
 // ============================================================================
 const I18N = {
     en: {
@@ -84,7 +84,24 @@ const I18N = {
         jobs_placeholder: "Search for a job or town...",
         no_jobs: "No jobs found.",
         contact_us: "Contact Us",
-        send_message: "Send Message"
+        send_message: "Send Message",
+        my_dashboard: "My Profile",
+        my_photo: "My profile photo",
+        my_jobs: "My posted jobs",
+        open_jobs_category: "Open jobs in my category",
+        my_worker_profile: "My worker profile",
+        my_disputes: "My disputes / reports",
+        upload_change_photo: "Upload / Change photo",
+        select_photo_first: "Please select a photo first",
+        upload_failed: "Upload failed. Please try again.",
+        photo_updated: "Photo updated successfully!",
+        no_jobs_yet: "You have not posted any jobs yet.",
+        post_first_job: "Post your first job",
+        close_job: "Close job",
+        no_worker_profile: "You do not have a worker profile yet.",
+        create_worker_profile: "Create worker profile",
+        view_job: "View job",
+        error: "An error occurred. Please try again."
     },
     fr: {
         nav_home: "Accueil",
@@ -130,9 +147,27 @@ const I18N = {
         jobs_placeholder: "Rechercher un emploi ou une ville...",
         no_jobs: "Aucun emploi trouvé.",
         contact_us: "Contactez-nous",
-        send_message: "Envoyer le message"
+        send_message: "Envoyer le message",
+        my_dashboard: "Mon profil",
+        my_photo: "Ma photo de profil",
+        my_jobs: "Mes emplois publiés",
+        open_jobs_category: "Emplois ouverts dans ma catégorie",
+        my_worker_profile: "Mon profil d'ouvrier",
+        my_disputes: "Mes litiges / signalements",
+        upload_change_photo: "Télécharger / Changer la photo",
+        select_photo_first: "Veuillez d'abord sélectionner une photo",
+        upload_failed: "Échec du téléchargement. Veuillez réessayer.",
+        photo_updated: "Photo mise à jour avec succès !",
+        no_jobs_yet: "Vous n'avez encore publié aucun emploi.",
+        post_first_job: "Publiez votre premier emploi",
+        close_job: "Fermer l'emploi",
+        no_worker_profile: "Vous n'avez pas encore de profil d'ouvrier.",
+        create_worker_profile: "Créer un profil d'ouvrier",
+        view_job: "Voir l'emploi",
+        error: "Une erreur s'est produite. Veuillez réessayer."
     }
 };
+
 function t(key) {
     var lang = localStorage.getItem('handyman_lang') || 'en';
     return (I18N[lang] && I18N[lang][key]) || I18N.en[key] || key;
@@ -146,6 +181,7 @@ function setLanguage(lang) {
 
 function applyLanguage() {
     var lang = localStorage.getItem('handyman_lang') || 'en';
+    document.documentElement.lang = lang;
 
     // Update language buttons
     var enBtn = document.getElementById('langEn');
@@ -153,21 +189,33 @@ function applyLanguage() {
     if (enBtn) enBtn.classList.toggle('active', lang === 'en');
     if (frBtn) frBtn.classList.toggle('active', lang === 'fr');
 
-    // Update navigation links that exist on every page
+    // Translate everything that has data-i18n attribute (safe method)
+    document.querySelectorAll('[data-i18n]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n');
+        if (!key) return;
+        var text = t(key);
+        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+            el.placeholder = text;
+        } else {
+            el.textContent = text;
+        }
+    });
+
+    // Keep the old nav logic as extra safety
     var nav = document.getElementById('nav');
     if (nav) {
         var links = nav.querySelectorAll('a');
         links.forEach(function(a) {
             var href = (a.getAttribute('href') || '').toLowerCase();
             if (href.includes('index.html') || href === '/' || href === '') {
-                if (!a.classList.contains('logo')) a.textContent = t('nav_home');
-            } else if (href.includes('workers.html')) {
+                if (!a.classList.contains('logo') && !a.hasAttribute('data-i18n')) a.textContent = t('nav_home');
+            } else if (href.includes('workers.html') && !a.hasAttribute('data-i18n')) {
                 a.textContent = t('nav_workers');
-            } else if (href.includes('jobs.html')) {
+            } else if (href.includes('jobs.html') && !a.hasAttribute('data-i18n')) {
                 a.textContent = t('nav_jobs');
-            } else if (href.includes('login.html') && a.id !== 'authBtn' && !a.id) {
+            } else if ((href.includes('join.html') || (href.includes('login.html') && a.id !== 'authBtn')) && !a.hasAttribute('data-i18n')) {
                 a.textContent = t('nav_join');
-            } else if (href.includes('post-job.html')) {
+            } else if (href.includes('post-job.html') && !a.hasAttribute('data-i18n')) {
                 a.textContent = t('nav_post');
             }
         });
@@ -187,9 +235,9 @@ function applyLanguage() {
         }
     }
 
-    // Update common texts on workers page
+    // Workers page extras
     var title = document.querySelector('.search-page h1');
-    if (title) title.textContent = t('workers_title');
+    if (title && !title.hasAttribute('data-i18n')) title.textContent = t('workers_title');
 
     var searchInput = document.getElementById('searchQuery');
     if (searchInput) searchInput.placeholder = t('search_placeholder');
