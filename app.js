@@ -1,6 +1,6 @@
 /**
  * Handy Man Buea — Core Application Logic
- * Version: 1.5.0 (Full EN/FR + categories + data-i18n)
+ * Version: 1.6.0 (Full EN/FR + Categories + All Forms ready)
  * Date: 10 September 2026
  *
  * SECURITY NOTES:
@@ -37,10 +37,11 @@ const FALLBACK_CATEGORIES = [
 ];
 
 // ============================================================================
-// FULL TRANSLATIONS (EN + FR)
+// FULL TRANSLATIONS (EN + FR) - ALL FORMS INCLUDED
 // ============================================================================
 const I18N = {
     en: {
+        // Navigation
         nav_home: "Home",
         nav_workers: "Find Workers",
         nav_jobs: "Find Jobs",
@@ -49,6 +50,8 @@ const I18N = {
         nav_login: "Login",
         nav_logout: "Logout",
         nav_profile: "My Profile",
+
+        // Common
         search: "Search",
         loading: "Loading...",
         view_profile: "View Profile",
@@ -58,6 +61,9 @@ const I18N = {
         search_placeholder: "Search by name, skill or town...",
         all_categories: "All Categories",
         all_towns: "All Towns",
+        error: "An error occurred. Please try again.",
+
+        // Homepage
         hero_title: "Find Trusted Local Help in Cameroon",
         hero_sub: "Connect with skilled plumbers, electricians, cleaners, and more — anywhere in Cameroon.",
         hero_find: "Find a Worker",
@@ -80,11 +86,56 @@ const I18N = {
         how_contact_p: "Call or WhatsApp them directly",
         how_done: "Get It Done",
         how_done_p: "Rate and review after service",
+
+        // Jobs page
         jobs_title: "Find Jobs in Cameroon",
         jobs_placeholder: "Search for a job or town...",
         no_jobs: "No jobs found.",
-        contact_us: "Contact Us",
-        send_message: "Send Message",
+
+        // Join form
+        join_title: "Join as a Service Provider",
+        join_sub: "Create your worker profile to receive jobs anywhere in Cameroon.",
+        town_label: "Town where you work *",
+        category_label: "Service Category *",
+        description_label: "Description of Services *",
+        experience_label: "Years of Experience",
+        phone_label: "Phone for Calls",
+        whatsapp_label: "WhatsApp Number",
+        create_profile: "Create Profile",
+        select_town: "Select town",
+        select_skill: "Select your main skill",
+        desc_placeholder: "Describe what you do, your skills, and experience...",
+
+        // Login / Register form
+        login_title: "Login / Register",
+        login_tab: "Login",
+        register_tab: "Register",
+        email_label: "Email",
+        password_label: "Password",
+        fullname_label: "Full Name",
+        phone_reg_label: "Phone Number",
+        login_btn: "Login",
+        register_btn: "Create Account",
+        already_account: "Already have an account? Login",
+        no_account: "Don't have an account? Register",
+        client_type: "I need a worker (Client)",
+        worker_type: "I want to offer services (Worker)",
+
+        // Post Job form
+        post_title: "Post a Job",
+        post_sub: "Describe what you need and workers will contact you.",
+        job_title_label: "Job Title *",
+        job_category_label: "Category needed *",
+        job_description_label: "Job Description *",
+        job_location_label: "Location (Town + Quarter) *",
+        job_budget_label: "Budget (or Negotiable)",
+        post_job_btn: "Post Job",
+        job_title_placeholder: "e.g. Fix leaking toilet",
+        job_desc_placeholder: "Describe the problem in detail...",
+        job_location_placeholder: "e.g. Molyko, Buea",
+        job_budget_placeholder: "e.g. 5000 FCFA or Negotiable",
+
+        // Dashboard & others
         my_dashboard: "My Profile",
         my_photo: "My profile photo",
         my_jobs: "My posted jobs",
@@ -101,7 +152,8 @@ const I18N = {
         no_worker_profile: "You do not have a worker profile yet.",
         create_worker_profile: "Create worker profile",
         view_job: "View job",
-        error: "An error occurred. Please try again.",
+        contact_us: "Contact Us",
+        send_message: "Send Message",
 
         // Category display names
         cat_Plumbing: "Plumbing",
@@ -117,6 +169,7 @@ const I18N = {
         cat_Others: "Others"
     },
     fr: {
+        // Navigation
         nav_home: "Accueil",
         nav_workers: "Trouver des ouvriers",
         nav_jobs: "Trouver des emplois",
@@ -125,6 +178,8 @@ const I18N = {
         nav_login: "Connexion",
         nav_logout: "Déconnexion",
         nav_profile: "Mon profil",
+
+        // Common
         search: "Rechercher",
         loading: "Chargement...",
         view_profile: "Voir le profil",
@@ -134,6 +189,9 @@ const I18N = {
         search_placeholder: "Rechercher par nom, métier ou ville...",
         all_categories: "Toutes les catégories",
         all_towns: "Toutes les villes",
+        error: "Une erreur s'est produite. Veuillez réessayer.",
+
+        // Homepage
         hero_title: "Trouvez de l'aide locale de confiance au Cameroun",
         hero_sub: "Connectez-vous avec des plombiers, électriciens, agents d'entretien et bien d'autres — partout au Cameroun.",
         hero_find: "Trouver un ouvrier",
@@ -156,11 +214,56 @@ const I18N = {
         how_contact_p: "Appelez ou écrivez sur WhatsApp directement",
         how_done: "Faites réaliser vos travaux",
         how_done_p: "Notez et commentez après le service",
+
+        // Jobs page
         jobs_title: "Trouver des emplois au Cameroun",
         jobs_placeholder: "Rechercher un emploi ou une ville...",
         no_jobs: "Aucun emploi trouvé.",
-        contact_us: "Contactez-nous",
-        send_message: "Envoyer le message",
+
+        // Join form
+        join_title: "Devenir prestataire de services",
+        join_sub: "Créez votre profil d'ouvrier pour recevoir des emplois partout au Cameroun.",
+        town_label: "Ville où vous travaillez *",
+        category_label: "Catégorie de service *",
+        description_label: "Description des services *",
+        experience_label: "Années d'expérience",
+        phone_label: "Téléphone pour les appels",
+        whatsapp_label: "Numéro WhatsApp",
+        create_profile: "Créer le profil",
+        select_town: "Sélectionnez la ville",
+        select_skill: "Sélectionnez votre compétence principale",
+        desc_placeholder: "Décrivez ce que vous faites, vos compétences et votre expérience...",
+
+        // Login / Register form
+        login_title: "Connexion / Inscription",
+        login_tab: "Connexion",
+        register_tab: "Inscription",
+        email_label: "Email",
+        password_label: "Mot de passe",
+        fullname_label: "Nom complet",
+        phone_reg_label: "Numéro de téléphone",
+        login_btn: "Se connecter",
+        register_btn: "Créer un compte",
+        already_account: "Vous avez déjà un compte ? Connexion",
+        no_account: "Pas encore de compte ? Inscription",
+        client_type: "J'ai besoin d'un ouvrier (Client)",
+        worker_type: "Je veux offrir des services (Ouvrier)",
+
+        // Post Job form
+        post_title: "Publier un emploi",
+        post_sub: "Décrivez ce dont vous avez besoin et les ouvriers vous contacteront.",
+        job_title_label: "Titre de l'emploi *",
+        job_category_label: "Catégorie nécessaire *",
+        job_description_label: "Description de l'emploi *",
+        job_location_label: "Lieu (Ville + Quartier) *",
+        job_budget_label: "Budget (ou Négociable)",
+        post_job_btn: "Publier l'emploi",
+        job_title_placeholder: "ex. Réparer une toilette qui fuit",
+        job_desc_placeholder: "Décrivez le problème en détail...",
+        job_location_placeholder: "ex. Molyko, Buea",
+        job_budget_placeholder: "ex. 5000 FCFA ou Négociable",
+
+        // Dashboard & others
         my_dashboard: "Mon profil",
         my_photo: "Ma photo de profil",
         my_jobs: "Mes emplois publiés",
@@ -177,9 +280,10 @@ const I18N = {
         no_worker_profile: "Vous n'avez pas encore de profil d'ouvrier.",
         create_worker_profile: "Créer un profil d'ouvrier",
         view_job: "Voir l'emploi",
-        error: "Une erreur s'est produite. Veuillez réessayer.",
+        contact_us: "Contactez-nous",
+        send_message: "Envoyer le message",
 
-        // Category display names (French)
+        // Category display names
         cat_Plumbing: "Plomberie",
         cat_Electrical: "Électricité",
         cat_Carpentry: "Menuiserie",
@@ -222,7 +326,7 @@ function applyLanguage() {
     if (enBtn) enBtn.classList.toggle('active', lang === 'en');
     if (frBtn) frBtn.classList.toggle('active', lang === 'fr');
 
-    // Translate everything that has data-i18n attribute (safe method)
+    // Translate everything that has data-i18n attribute
     document.querySelectorAll('[data-i18n]').forEach(function(el) {
         var key = el.getAttribute('data-i18n');
         if (!key) return;
@@ -232,6 +336,12 @@ function applyLanguage() {
         } else {
             el.textContent = text;
         }
+    });
+
+    // Translate placeholders
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n-placeholder');
+        if (key) el.placeholder = t(key);
     });
 
     // Keep the old nav logic as extra safety
@@ -290,8 +400,6 @@ function applyLanguage() {
 
     // Re-render categories with new language if they are already on the page
     if (document.getElementById('categoryGrid')) {
-        // We re-call with the same data that was last used (or fallback)
-        // This is safe and will just update the displayed names
         renderCategories(FALLBACK_CATEGORIES);
     }
 }
