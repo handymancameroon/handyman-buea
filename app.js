@@ -1,7 +1,7 @@
 /**
  * Handy Man Buea — Core Application Logic
- * Version: 1.6.0 (Full EN/FR + Categories + All Forms ready)
- * Date: 10 September 2026
+ * Version: 1.6.1 (Full EN/FR + Categories + All Forms ready + footer/cities + password confirm keys)
+ * Date: 11 September 2026
  *
  * SECURITY NOTES:
  * - Supabase credentials are loaded from config.js
@@ -78,6 +78,7 @@ const I18N = {
         slide4_sub: "Safe and reliable electrical work for your property anywhere in Cameroon.",
         slide4_btn: "Find Electricians",
         popular_services: "Popular Services",
+        services_intro: "Browse plumbing, electrical, carpentry, cleaning, painting, masonry, auto mechanics, phone repair, hairdressing, catering and more across Cameroon.",
         featured_workers: "Featured Workers in Cameroon",
         how_title: "How It Works",
         how_search: "Search",
@@ -86,6 +87,10 @@ const I18N = {
         how_contact_p: "Call or WhatsApp them directly",
         how_done: "Get It Done",
         how_done_p: "Rate and review after service",
+        cities_title: "Cities we serve in Cameroon",
+        cities_text: "Handy Man helps you find local skilled workers in Buea, Limbe, Douala, Yaoundé, Bamenda, Bafoussam, Kribi, Kumba, Garoua, Maroua, Ngaoundéré, Bertoua, Ebolowa, Dschang, Nkongsamba, Edéa, Mutengene, Tiko and other towns across Cameroon. Looking for a plumber, electrician, carpenter or cleaner near you? Start on our Find Workers page or post a job for free.",
+        footer_tagline: "Handy Man Cameroon — Find trusted local help: plumbers, electricians, cleaners, carpenters and more.",
+        footer_copy: "© 2026 Handy Man. Connecting people with skilled workers across Cameroon. | Available in English and French.",
 
         // Jobs page
         jobs_title: "Find Jobs in Cameroon",
@@ -112,6 +117,8 @@ const I18N = {
         register_tab: "Register",
         email_label: "Email",
         password_label: "Password",
+        confirm_password_label: "Confirm Password *",
+        password_mismatch: "Passwords do not match. Please type the same password twice.",
         fullname_label: "Full Name",
         phone_reg_label: "Phone Number",
         login_btn: "Login",
@@ -206,6 +213,7 @@ const I18N = {
         slide4_sub: "Travaux électriques sûrs et fiables pour votre propriété partout au Cameroun.",
         slide4_btn: "Trouver des électriciens",
         popular_services: "Services populaires",
+        services_intro: "Parcourez la plomberie, l'électricité, la menuiserie, le nettoyage, la peinture, la maçonnerie, la mécanique auto, la réparation de téléphones, la coiffure, la restauration et plus encore partout au Cameroun.",
         featured_workers: "Ouvriers en vedette au Cameroun",
         how_title: "Comment ça marche",
         how_search: "Rechercher",
@@ -214,6 +222,10 @@ const I18N = {
         how_contact_p: "Appelez ou écrivez sur WhatsApp directement",
         how_done: "Faites réaliser vos travaux",
         how_done_p: "Notez et commentez après le service",
+        cities_title: "Villes desservies au Cameroun",
+        cities_text: "Handy Man vous aide à trouver des ouvriers qualifiés locaux à Buea, Limbé, Douala, Yaoundé, Bamenda, Bafoussam, Kribi, Kumba, Garoua, Maroua, Ngaoundéré, Bertoua, Ebolowa, Dschang, Nkongsamba, Edéa, Mutengene, Tiko et dans d'autres villes du Cameroun. Vous cherchez un plombier, un électricien, un menuisier ou un agent d'entretien près de chez vous ? Commencez sur la page Trouver des ouvriers ou publiez un emploi gratuitement.",
+        footer_tagline: "Handy Man Cameroun — Trouvez une aide locale de confiance : plombiers, électriciens, agents d'entretien, menuisiers et plus encore.",
+        footer_copy: "© 2026 Handy Man. Relier les gens aux ouvriers qualifiés partout au Cameroun. | Disponible en anglais et en français.",
 
         // Jobs page
         jobs_title: "Trouver des emplois au Cameroun",
@@ -240,6 +252,8 @@ const I18N = {
         register_tab: "Inscription",
         email_label: "Email",
         password_label: "Mot de passe",
+        confirm_password_label: "Confirmer le mot de passe *",
+        password_mismatch: "Les mots de passe ne correspondent pas. Veuillez saisir le même mot de passe deux fois.",
         fullname_label: "Nom complet",
         phone_reg_label: "Numéro de téléphone",
         login_btn: "Se connecter",
