@@ -37,12 +37,12 @@
         <div class="container">
             <a href="index.html" class="logo">🔧 Handy Man</a>
             <nav class="nav" id="nav">
-                <a href="index.html">Home</a>
-                <a href="workers.html">Find Workers</a>
-                <a href="jobs.html">Find Jobs</a>
-                <a href="login.html" class="btn-secondary">Join as Worker</a>
-                <a href="post-job.html" class="btn-secondary">Post a Job</a>
-                <a href="login.html" class="btn-secondary" id="authBtn">Login</a>
+                <a href="index.html" data-i18n="nav_home">Home</a>
+                <a href="workers.html" data-i18n="nav_workers">Find Workers</a>
+                <a href="jobs.html" data-i18n="nav_jobs">Find Jobs</a>
+                <a href="login.html" class="btn-secondary" data-i18n="nav_join">Join as Worker</a>
+                <a href="post-job.html" class="btn-secondary" data-i18n="nav_post">Post a Job</a>
+                <a href="login.html" class="btn-secondary" id="authBtn" data-i18n="nav_login">Login</a>
             </nav>
             <button class="menu-toggle" id="menuToggle">☰</button>
         </div>
@@ -50,7 +50,7 @@
 
     <main class="profile-page">
         <div class="container" id="profileContainer">
-            <p class="loading">Loading profile...</p>
+            <p class="loading" data-i18n="loading">Loading profile...</p>
         </div>
     </main>
 
@@ -62,6 +62,7 @@
 
         document.addEventListener('DOMContentLoaded', async () => {
             await checkAuth();
+            applyLanguage();
             setTimeout(async () => { await loadWorkerProfile(); }, 200);
         });
 
@@ -188,43 +189,44 @@
                                         <div style="font-size:0.85rem;color:var(--text-light);">${'⭐'.repeat(r.rating || 0)} (${r.rating}/5)</div>
                                     </div>
                                 </div>
-                                <p>${r.comment || 'No comment'}</p>
+                                <p>${r.comment || t('no_comment')}</p>
                             </div>
                         `;
                     }).join('');
                 } else {
-                    reviewsHtml = '<p>No reviews yet. Be the first to rate this worker!</p>';
+                    reviewsHtml = '<p>' + t('no_reviews_yet') + '</p>';
                 }
 
                 let rateFormHtml = '';
                 if (currentUser && currentUser.id !== id) {
                     rateFormHtml = `
                         <div class="rate-form" id="rateForm">
-                            <h4>⭐ Leave a Rating for this Worker</h4>
-                            <p style="font-size:0.85rem;color:var(--text-light);margin-bottom:8px;">Only registered users can leave reviews. Your photo and name will appear with your review.</p>
-                            <label>Your Rating</label>
+                            <h4>⭐ ${t('leave_rating_worker')}</h4>
+                            <p style="font-size:0.85rem;color:var(--text-light);margin-bottom:8px;">${t('registered_only_reviews')}</p>
+                            <label>${t('your_rating')}</label>
                             <select id="ratingValue">
-                                <option value="5">⭐⭐⭐⭐⭐ 5 Stars - Excellent</option>
-                                <option value="4">⭐⭐⭐⭐ 4 Stars - Very Good</option>
-                                <option value="3">⭐⭐⭐ 3 Stars - Good</option>
-                                <option value="2">⭐⭐ 2 Stars - Fair</option>
-                                <option value="1">⭐ 1 Star - Poor</option>
+                                <option value="5">⭐⭐⭐⭐⭐ ${t('rating_5')}</option>
+                                <option value="4">⭐⭐⭐⭐ ${t('rating_4')}</option>
+                                <option value="3">⭐⭐⭐ ${t('rating_3')}</option>
+                                <option value="2">⭐⭐ ${t('rating_2')}</option>
+                                <option value="1">⭐ ${t('rating_1')}</option>
                             </select>
-                            <label>Your Review / Comment (optional)</label>
-                            <textarea id="ratingComment" placeholder="Tell others about your experience with this worker..."></textarea>
-                            <button class="btn-primary" onclick="submitWorkerReview()" style="margin-top:12px;">Submit Rating & Comment</button>
+                            <label>${t('your_review_comment')}</label>
+                            <textarea id="ratingComment" placeholder="${t('tell_experience')}"></textarea>
+                            <button class="btn-primary" onclick="submitWorkerReview()" style="margin-top:12px;">${t('submit_rating')}</button>
                             <p id="rateMessage" class="message" style="display:none;"></p>
                         </div>
                     `;
                 } else if (!currentUser) {
                     rateFormHtml = `
                         <div class="rate-form">
-                            <p>Please <a href="login.html">login or register</a> to leave a rating and comment.</p>
+                            <p>${t('login_to_rate').replace('login or register', '<a href="login.html">login or register</a>')}</p>
                         </div>
                     `;
                 }
 
                 const safeName = (p.full_name || 'Unknown').replace(/'/g, "\\'");
+                const catDisplay = getCategoryDisplayName(worker.category || 'Others');
 
                 container.innerHTML = `
                     <div class="profile-header">
@@ -234,11 +236,11 @@
                         <div class="profile-info">
                             <h1>${p.full_name || 'Unknown'}</h1>
                             <span class="badge">${worker.verified ? '✓ Verified' : 'New'}</span>
-                            <p class="profile-category">${worker.category || 'General'}</p>
+                            <p class="profile-category">${catDisplay}</p>
                             <p class="profile-location">📍 ${p.location || 'Cameroon'}</p>
                             <div class="profile-rating">
                                 ${'⭐'.repeat(Math.round(displayRating || 0))}
-                                <span>${displayRating}/5 (${displayCount} reviews)</span>
+                                <span>${displayRating}/5 (${displayCount} ${t('reviews')})</span>
                             </div>
                         </div>
                     </div>
@@ -281,7 +283,7 @@
 
         async function submitWorkerReview() {
             if (!currentUser) {
-                alert('Please login first to leave a review.');
+                alert(t('login_to_rate'));
                 window.location.href = 'login.html';
                 return;
             }
@@ -311,7 +313,7 @@
                         comment: comment || null
                     }]);
                     if (error2) {
-                        msg.textContent = 'Error: ' + error2.message;
+                        msg.textContent = t('rating_error') + ' ' + error2.message;
                         msg.className = 'message error';
                         msg.style.display = 'block';
                         return;
@@ -333,7 +335,7 @@
                     }).eq('id', currentWorkerId);
                 }
 
-                msg.textContent = 'Thank you! Your review has been submitted.';
+                msg.textContent = t('rating_submitted');
                 msg.className = 'message success';
                 msg.style.display = 'block';
 
@@ -341,7 +343,7 @@
                 setTimeout(() => loadWorkerProfile(), 1000);
 
             } catch (err) {
-                msg.textContent = 'Error submitting review. Please try again.';
+                msg.textContent = t('rating_error');
                 msg.className = 'message error';
                 msg.style.display = 'block';
             }
