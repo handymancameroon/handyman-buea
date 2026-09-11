@@ -230,6 +230,11 @@
                 const catDisplay = getCategoryDisplayName(worker.category || 'Others');
                 const badgeText = worker.verified ? ('✓ ' + t('verified')) : t('new_badge');
 
+                // Translate availability value
+                let availabilityText = worker.availability || 'Available';
+                if (availabilityText === 'Available') availabilityText = t('availability') === 'Disponibilité' ? 'Disponible' : 'Available';
+                if (availabilityText === 'Busy') availabilityText = t('availability') === 'Disponibilité' ? 'Occupé' : 'Busy';
+
                 container.innerHTML = `
                     <div class="profile-header">
                         <img src="${avatarUrl}" class="profile-avatar"
@@ -252,7 +257,7 @@
                             <h3>${t('about')}</h3>
                             <p>${worker.description || t('no_description')}</p>
                             <p style="margin-top:12px;"><strong>${t('experience')}:</strong> ${worker.experience_years || 0} ${t('years')}</p>
-                            <p><strong>${t('availability')}:</strong> ${worker.availability || 'Available'}</p>
+                            <p><strong>${t('availability')}:</strong> ${availabilityText}</p>
                         </div>
 
                         <div class="profile-section">
