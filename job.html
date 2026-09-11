@@ -30,6 +30,9 @@
         .rate-form { background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-top: 24px; }
         .rate-form select, .rate-form textarea { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); margin: 8px 0; font-family: inherit; }
         .rate-form textarea { min-height: 90px; resize: vertical; }
+        .review { padding: 16px 0; border-bottom: 1px solid var(--border); }
+        .review:last-child { border-bottom: none; }
+        .review-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; flex-wrap: wrap; }
     </style>
 </head>
 <body>
@@ -37,12 +40,12 @@
         <div class="container">
             <a href="index.html" class="logo">🔧 Handy Man</a>
             <nav class="nav" id="nav">
-                <a href="index.html">Home</a>
-                <a href="workers.html">Find Workers</a>
-                <a href="jobs.html">Find Jobs</a>
-                <a href="login.html" class="btn-secondary">Join as Worker</a>
-                <a href="post-job.html" class="btn-secondary">Post a Job</a>
-                <a href="login.html" class="btn-secondary" id="authBtn">Login</a>
+                <a href="index.html" data-i18n="nav_home">Home</a>
+                <a href="workers.html" data-i18n="nav_workers">Find Workers</a>
+                <a href="jobs.html" data-i18n="nav_jobs">Find Jobs</a>
+                <a href="login.html" class="btn-secondary" data-i18n="nav_join">Join as Worker</a>
+                <a href="post-job.html" class="btn-secondary" data-i18n="nav_post">Post a Job</a>
+                <a href="login.html" class="btn-secondary" id="authBtn" data-i18n="nav_login">Login</a>
             </nav>
             <button class="menu-toggle" id="menuToggle">☰</button>
         </div>
@@ -50,7 +53,7 @@
 
     <main class="job-detail-page">
         <div class="container" id="jobContainer">
-            <p class="loading">Loading job...</p>
+            <p class="loading" data-i18n="loading">Loading job...</p>
         </div>
     </main>
 
@@ -64,6 +67,7 @@
 
         document.addEventListener('DOMContentLoaded', async () => {
             await checkAuth();
+            applyLanguage();
             setTimeout(async () => { await loadJobDetail(); }, 200);
         });
 
@@ -123,8 +127,8 @@
                     `;
                 }
 
-                // Load reviews for this client (we store client ratings using worker_id = client_id + review_type)
-                let clientReviewsHtml = '<p>No ratings for this client yet.</p>';
+                // Load reviews for this client
+                let clientReviewsHtml = '<p>' + t('no_client_ratings') + '</p>';
                 try {
                     const { data: clientReviews } = await supabaseClient
                         .from('reviews')
@@ -138,7 +142,7 @@
                                     <strong>Reviewer</strong>
                                     <span>${'⭐'.repeat(r.rating || 0)} (${r.rating}/5)</span>
                                 </div>
-                                <p>${r.comment || 'No comment'}</p>
+                                <p>${r.comment || t('no_comment')}</p>
                             </div>
                         `).join('');
                     }
@@ -149,25 +153,25 @@
                 if (currentUser && currentUser.id !== job.client_id) {
                     rateClientHtml = `
                         <div class="rate-form" id="rateClientForm">
-                            <h4>⭐ Rate this Client</h4>
-                            <label>Your Rating</label>
+                            <h4>⭐ ${t('leave_rating_client')}</h4>
+                            <label>${t('your_rating')}</label>
                             <select id="clientRatingValue">
-                                <option value="5">⭐⭐⭐⭐⭐ 5 Stars - Excellent</option>
-                                <option value="4">⭐⭐⭐⭐ 4 Stars - Very Good</option>
-                                <option value="3">⭐⭐⭐ 3 Stars - Good</option>
-                                <option value="2">⭐⭐ 2 Stars - Fair</option>
-                                <option value="1">⭐ 1 Star - Poor</option>
+                                <option value="5">⭐⭐⭐⭐⭐ ${t('rating_5')}</option>
+                                <option value="4">⭐⭐⭐⭐ ${t('rating_4')}</option>
+                                <option value="3">⭐⭐⭐ ${t('rating_3')}</option>
+                                <option value="2">⭐⭐ ${t('rating_2')}</option>
+                                <option value="1">⭐ ${t('rating_1')}</option>
                             </select>
-                            <label>Your Comment (optional)</label>
-                            <textarea id="clientRatingComment" placeholder="How was working with this client?"></textarea>
-                            <button class="btn-primary" onclick="submitClientReview()" style="margin-top:12px;">Submit Rating & Comment</button>
+                            <label>${t('your_comment')}</label>
+                            <textarea id="clientRatingComment" placeholder="${t('how_was_client')}"></textarea>
+                            <button class="btn-primary" onclick="submitClientReview()" style="margin-top:12px;">${t('submit_rating')}</button>
                             <p id="clientRateMessage" class="message" style="display:none;"></p>
                         </div>
                     `;
                 } else if (!currentUser) {
                     rateClientHtml = `
                         <div class="rate-form">
-                            <p>Please <a href="login.html">login</a> to rate this client.</p>
+                            <p>${t('login_to_rate_client').replace('login', '<a href="login.html">login</a>')}</p>
                         </div>
                     `;
                 }
@@ -209,13 +213,15 @@
                     contactSection = `<p style="color: var(--text-light); font-weight: 600;">This job is closed.</p>`;
                 }
 
+                const catDisplay = getCategoryDisplayName(job.category || 'Others');
+
                 container.innerHTML = `
                     <div class="status-banner ${statusBannerClass}">${statusText}</div>
                     
                     <div class="job-detail-header">
                         <div style="width: 100%;">
                             <h1>${job.title}</h1>
-                            <p class="job-detail-category">${job.category || 'General'}</p>
+                            <p class="job-detail-category">${catDisplay}</p>
                             <div class="job-meta">
                                 <span>📍 ${job.location || 'Cameroon'}</span>
                                 <span>💰 ${job.budget || 'Not specified'}</span>
@@ -263,7 +269,7 @@
 
         async function submitClientReview() {
             if (!currentUser) {
-                alert('Please login first.');
+                alert(t('login_to_rate_client'));
                 window.location.href = 'login.html';
                 return;
             }
@@ -283,7 +289,7 @@
 
             try {
                 let { error } = await supabaseClient.from('reviews').insert([{
-                    worker_id: clientId,          // we reuse worker_id column for the person being rated
+                    worker_id: clientId,
                     reviewer_id: currentUser.id,
                     rating: rating,
                     comment: comment || null,
@@ -298,21 +304,21 @@
                         comment: comment || null
                     }]);
                     if (error2) {
-                        msg.textContent = 'Error: ' + error2.message;
+                        msg.textContent = t('rating_error') + ' ' + error2.message;
                         msg.className = 'message error';
                         msg.style.display = 'block';
                         return;
                     }
                 }
 
-                msg.textContent = 'Thank you! Your rating of the client has been submitted.';
+                msg.textContent = t('rating_submitted');
                 msg.className = 'message success';
                 msg.style.display = 'block';
 
                 setTimeout(() => loadJobDetail(), 1500);
             } catch (err) {
                 console.error(err);
-                alert('Something went wrong. Please try again.');
+                alert(t('rating_error'));
             }
         }
 
