@@ -1,6 +1,6 @@
 /**
  * Handy Man Buea — Core Application Logic
- * Version: 1.6.2 (Full EN/FR + Categories + All Forms + full dropdown translation)
+ * Version: 1.6.3 (Full EN/FR + Categories + Dropdowns + Full Reviews translation)
  * Date: 11 September 2026
  *
  * SECURITY NOTES:
@@ -37,7 +37,7 @@ const FALLBACK_CATEGORIES = [
 ];
 
 // ============================================================================
-// FULL TRANSLATIONS (EN + FR)
+// FULL TRANSLATIONS (EN + FR) — including Reviews
 // ============================================================================
 const I18N = {
     en: {
@@ -163,6 +163,29 @@ const I18N = {
         view_job: "View job",
         contact_us: "Contact Us",
         send_message: "Send Message",
+
+        // ========== REVIEWS (new) ==========
+        leave_rating_worker: "Leave a Rating for this Worker",
+        leave_rating_client: "Rate this Client",
+        your_rating: "Your Rating",
+        your_review_comment: "Your Review / Comment (optional)",
+        your_comment: "Your Comment (optional)",
+        submit_rating: "Submit Rating & Comment",
+        no_reviews_yet: "No reviews yet. Be the first to rate this worker!",
+        no_client_ratings: "No ratings for this client yet.",
+        login_to_rate: "Please login or register to leave a rating and comment.",
+        login_to_rate_client: "Please login to rate this client.",
+        registered_only_reviews: "Only registered users can leave reviews. Your photo and name will appear with your review.",
+        no_comment: "No comment",
+        rating_5: "5 Stars - Excellent",
+        rating_4: "4 Stars - Very Good",
+        rating_3: "3 Stars - Good",
+        rating_2: "2 Stars - Fair",
+        rating_1: "1 Star - Poor",
+        rating_submitted: "Thank you! Your rating has been submitted.",
+        rating_error: "Could not submit rating. Please try again.",
+        tell_experience: "Tell others about your experience with this worker...",
+        how_was_client: "How was working with this client?",
 
         // Category display names
         cat_Plumbing: "Plumbing",
@@ -300,6 +323,29 @@ const I18N = {
         view_job: "Voir l'emploi",
         contact_us: "Contactez-nous",
         send_message: "Envoyer le message",
+
+        // ========== REVIEWS (new) ==========
+        leave_rating_worker: "Laisser une note pour cet ouvrier",
+        leave_rating_client: "Noter ce client",
+        your_rating: "Votre note",
+        your_review_comment: "Votre avis / commentaire (optionnel)",
+        your_comment: "Votre commentaire (optionnel)",
+        submit_rating: "Envoyer la note et le commentaire",
+        no_reviews_yet: "Aucun avis pour le moment. Soyez le premier à noter cet ouvrier !",
+        no_client_ratings: "Aucune note pour ce client pour le moment.",
+        login_to_rate: "Veuillez vous connecter ou vous inscrire pour laisser une note et un commentaire.",
+        login_to_rate_client: "Veuillez vous connecter pour noter ce client.",
+        registered_only_reviews: "Seuls les utilisateurs inscrits peuvent laisser des avis. Votre photo et votre nom apparaîtront avec votre avis.",
+        no_comment: "Aucun commentaire",
+        rating_5: "5 étoiles - Excellent",
+        rating_4: "4 étoiles - Très bien",
+        rating_3: "3 étoiles - Bien",
+        rating_2: "2 étoiles - Moyen",
+        rating_1: "1 étoile - Mauvais",
+        rating_submitted: "Merci ! Votre note a été enregistrée.",
+        rating_error: "Impossible d'envoyer la note. Veuillez réessayer.",
+        tell_experience: "Parlez aux autres de votre expérience avec cet ouvrier...",
+        how_was_client: "Comment s'est passé le travail avec ce client ?",
 
         // Category display names
         cat_Plumbing: "Plomberie",
@@ -477,7 +523,6 @@ function translateAllSelects() {
                     opt.text = t('select_town');
                 }
             } else if (val === 'Other' || val.toLowerCase() === 'other') {
-                // some pages say "Other", some "Other (specify below)"
                 opt.text = (opt.textContent.toLowerCase().indexOf('specify') !== -1 || opt.textContent.toLowerCase().indexOf('précisez') !== -1) ? t('other') : t('other_simple');
             }
             // Town names (Buea, Douala…) stay unchanged – they are proper names
