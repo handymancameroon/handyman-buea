@@ -1,6 +1,6 @@
 /**
  * Handy Man Buea — Core Application Logic
- * Version: 1.6.3 (Full EN/FR + Categories + Dropdowns + Full Reviews translation)
+ * Version: 1.6.5 (Complete EN/FR + Dropdowns + Reviews + Full Worker Profile + Full Client/Job Profile translation)
  * Date: 11 September 2026
  *
  * SECURITY NOTES:
@@ -37,7 +37,7 @@ const FALLBACK_CATEGORIES = [
 ];
 
 // ============================================================================
-// FULL TRANSLATIONS (EN + FR) — including Reviews
+// FULL TRANSLATIONS (EN + FR) — COMPLETE
 // ============================================================================
 const I18N = {
     en: {
@@ -164,7 +164,7 @@ const I18N = {
         contact_us: "Contact Us",
         send_message: "Send Message",
 
-        // ========== REVIEWS (new) ==========
+        // ========== REVIEWS ==========
         leave_rating_worker: "Leave a Rating for this Worker",
         leave_rating_client: "Rate this Client",
         your_rating: "Your Rating",
@@ -186,6 +186,49 @@ const I18N = {
         rating_error: "Could not submit rating. Please try again.",
         tell_experience: "Tell others about your experience with this worker...",
         how_was_client: "How was working with this client?",
+
+        // ========== WORKER PROFILE PAGE ==========
+        about: "About",
+        contact: "Contact",
+        experience: "Experience",
+        availability: "Availability",
+        years: "years",
+        no_description: "No description yet.",
+        verified: "Verified",
+        new_badge: "New",
+        report_worker: "Report this worker",
+        portfolio: "Portfolio",
+        photo: "photo",
+        photos: "photos",
+        reviews_title: "Reviews",
+        call_now: "Call Now",
+        whatsapp: "WhatsApp",
+        loading_profile: "Loading profile...",
+        worker_not_found: "Worker not found.",
+        cannot_connect: "Cannot connect to database.",
+        profile_unavailable: "This worker profile is no longer available.",
+        error_loading_profile: "Error loading profile. Please try again.",
+
+        // ========== CLIENT / JOB DETAIL PAGE ==========
+        job_description: "Job Description",
+        client_information: "Client Information",
+        ratings_for_client: "Ratings for this Client",
+        report_job: "Report this job",
+        reference_photos: "Reference Photos",
+        contact_the_client: "Contact the client:",
+        no_phone_provided: "No phone number provided.",
+        this_job_is_closed: "This job is closed.",
+        status_open: "OPEN — Workers Can Apply",
+        status_closed: "CLOSED — No Longer Accepting Applications",
+        your_job_notice: "This is your job. Close it from your Dashboard when done.",
+        job_closed_notice: "This job is closed. Post a new job if you need more help.",
+        loading_job: "Loading job...",
+        job_not_found: "Job not found.",
+        error_loading_job: "Error loading job. Please try again.",
+        posted: "Posted",
+        budget: "Budget",
+        not_specified: "Not specified",
+        anonymous: "Anonymous",
 
         // Category display names
         cat_Plumbing: "Plumbing",
@@ -324,7 +367,7 @@ const I18N = {
         contact_us: "Contactez-nous",
         send_message: "Envoyer le message",
 
-        // ========== REVIEWS (new) ==========
+        // ========== REVIEWS ==========
         leave_rating_worker: "Laisser une note pour cet ouvrier",
         leave_rating_client: "Noter ce client",
         your_rating: "Votre note",
@@ -346,6 +389,49 @@ const I18N = {
         rating_error: "Impossible d'envoyer la note. Veuillez réessayer.",
         tell_experience: "Parlez aux autres de votre expérience avec cet ouvrier...",
         how_was_client: "Comment s'est passé le travail avec ce client ?",
+
+        // ========== WORKER PROFILE PAGE ==========
+        about: "À propos",
+        contact: "Contact",
+        experience: "Expérience",
+        availability: "Disponibilité",
+        years: "ans",
+        no_description: "Aucune description pour le moment.",
+        verified: "Vérifié",
+        new_badge: "Nouveau",
+        report_worker: "Signaler cet ouvrier",
+        portfolio: "Portfolio",
+        photo: "photo",
+        photos: "photos",
+        reviews_title: "Avis",
+        call_now: "Appeler",
+        whatsapp: "WhatsApp",
+        loading_profile: "Chargement du profil...",
+        worker_not_found: "Ouvrier introuvable.",
+        cannot_connect: "Impossible de se connecter à la base de données.",
+        profile_unavailable: "Ce profil d'ouvrier n'est plus disponible.",
+        error_loading_profile: "Erreur lors du chargement du profil. Veuillez réessayer.",
+
+        // ========== CLIENT / JOB DETAIL PAGE ==========
+        job_description: "Description de l'emploi",
+        client_information: "Informations sur le client",
+        ratings_for_client: "Notes pour ce client",
+        report_job: "Signaler cet emploi",
+        reference_photos: "Photos de référence",
+        contact_the_client: "Contacter le client :",
+        no_phone_provided: "Aucun numéro de téléphone fourni.",
+        this_job_is_closed: "Cet emploi est fermé.",
+        status_open: "OUVERT — Les ouvriers peuvent postuler",
+        status_closed: "FERMÉ — N'accepte plus de candidatures",
+        your_job_notice: "C'est votre emploi. Fermez-le depuis votre Tableau de bord une fois terminé.",
+        job_closed_notice: "Cet emploi est fermé. Publiez un nouvel emploi si vous avez encore besoin d'aide.",
+        loading_job: "Chargement de l'emploi...",
+        job_not_found: "Emploi introuvable.",
+        error_loading_job: "Erreur lors du chargement de l'emploi. Veuillez réessayer.",
+        posted: "Publié le",
+        budget: "Budget",
+        not_specified: "Non précisé",
+        anonymous: "Anonyme",
 
         // Category display names
         cat_Plumbing: "Plomberie",
