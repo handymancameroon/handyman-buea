@@ -60,7 +60,7 @@ body {
     gap: 8px;
 }
 
-/* Make ALL navigation links look the same (no blue borders) */
+/* Make ALL navigation links look the same (no permanent blue highlight on Login) */
 .nav a,
 .nav a.btn-primary,
 .nav a.btn-secondary,
@@ -75,6 +75,7 @@ body {
     border: none !important;
     transition: all 0.2s !important;
     display: inline-block !important;
+    box-shadow: none !important;
 }
 
 .nav a:hover,
@@ -173,7 +174,7 @@ body {
     width: 100%;
 }
 
-/* ========== HERO CAROUSEL ========== */
+/* ========== HERO CAROUSEL (stronger contrast – text readable on images) ========== */
 .hero-carousel {
     position: relative;
     height: 520px;
@@ -206,29 +207,38 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0,0,0,0.55);
+    /* Darker overlay so white text stays readable */
+    background: rgba(0, 0, 0, 0.72);
 }
 
 .carousel-content {
     position: relative;
     z-index: 2;
     text-align: center;
-    color: white;
+    color: #ffffff;
     padding: 20px;
     max-width: 800px;
 }
 
-.carousel-content h1 {
+.carousel-content h1,
+.carousel-content h2 {
     font-size: 2.8rem;
     margin-bottom: 16px;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    color: #ffffff !important;
+    text-shadow:
+        0 2px 8px rgba(0, 0, 0, 0.9),
+        0 0 2px rgba(0, 0, 0, 1);
+    font-weight: 700;
 }
 
 .carousel-content p {
     font-size: 1.25rem;
-    opacity: 0.95;
+    opacity: 1;
     margin-bottom: 32px;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    color: #f8fafc !important;
+    text-shadow:
+        0 2px 6px rgba(0, 0, 0, 0.9),
+        0 0 2px rgba(0, 0, 0, 1);
 }
 
 .carousel-dots {
@@ -245,7 +255,7 @@ body {
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    background: rgba(255,255,255,0.4);
+    background: rgba(255, 255, 255, 0.4);
     cursor: pointer;
     transition: all 0.3s;
     border: 2px solid transparent;
@@ -484,6 +494,34 @@ section h2 {
 .form-group textarea:focus {
     outline: none;
     border-color: var(--primary);
+}
+
+/* Password show/hide support (used on login.html) */
+.password-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-wrap input {
+    width: 100%;
+    padding-right: 48px;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 10px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--text-light);
+    padding: 4px 8px;
+    line-height: 1;
+}
+
+.password-toggle:hover {
+    color: var(--primary);
 }
 
 .message {
@@ -963,7 +1001,8 @@ section h2 {
         height: 420px;
     }
 
-    .carousel-content h1 {
+    .carousel-content h1,
+    .carousel-content h2 {
         font-size: 1.8rem;
     }
 
