@@ -53,7 +53,7 @@
 
     <main class="job-detail-page">
         <div class="container" id="jobContainer">
-            <p class="loading" data-i18n="loading">Loading job...</p>
+            <p class="loading" data-i18n="loading_job">Loading job...</p>
         </div>
     </main>
 
@@ -77,8 +77,14 @@
             const container = document.getElementById('jobContainer');
             currentJobId = id;
 
-            if (!id) { container.innerHTML = '<p class="error">Job not found.</p>'; return; }
-            if (!supabaseClient) { container.innerHTML = '<p class="error">Cannot connect to database.</p>'; return; }
+            if (!id) { 
+                container.innerHTML = '<p class="error">' + t('job_not_found') + '</p>'; 
+                return; 
+            }
+            if (!supabaseClient) { 
+                container.innerHTML = '<p class="error">' + t('cannot_connect') + '</p>'; 
+                return; 
+            }
 
             try {
                 const { data: job, error } = await supabaseClient
@@ -87,7 +93,10 @@
                     .eq('id', id)
                     .single();
 
-                if (error || !job) { container.innerHTML = '<p class="error">Job not found.</p>'; return; }
+                if (error || !job) { 
+                    container.innerHTML = '<p class="error">' + t('job_not_found') + '</p>'; 
+                    return; 
+                }
 
                 currentJob = job;
                 clientId = job.client_id;
@@ -102,7 +111,7 @@
                 const isOwner = currentUser && currentUser.id === job.client_id;
                 const isOpen = job.status === 'Open';
                 const statusBannerClass = isOpen ? 'status-open' : 'status-closed';
-                const statusText = isOpen ? '🟢 OPEN — Workers Can Apply' : '🔴 CLOSED — No Longer Accepting Applications';
+                const statusText = isOpen ? '🟢 ' + t('status_open') : '🔴 ' + t('status_closed');
 
                 const avatarUrl = p.avatar_url || 'https://via.placeholder.com/60?text=No+Photo';
 
@@ -117,7 +126,7 @@
                 if (portfolio.length > 0) {
                     portfolioHtml = `
                         <div class="profile-section">
-                            <h3>📸 Reference Photos (${portfolio.length})</h3>
+                            <h3>📸 ${t('reference_photos')} (${portfolio.length})</h3>
                             <div class="portfolio-grid">
                                 ${portfolio.map((url, i) => `
                                     <img src="${url}" class="portfolio-img" onerror="this.onerror=null;this.src='https://via.placeholder.com/180?text=Image+Not+Found';this.classList.add('img-error');" onclick="window.open('${url}', '_blank')" alt="Reference ${i+1}">
@@ -181,13 +190,13 @@
                     if (isOpen) {
                         ownerSection = `
                             <div class="owner-notice">
-                                <p>💡 <strong>This is your job.</strong> Close it from your <a href="dashboard.html">Dashboard</a> when done.</p>
+                                <p>💡 <strong>${t('your_job_notice')}</strong></p>
                             </div>
                         `;
                     } else {
                         ownerSection = `
                             <div class="owner-notice">
-                                <p>✅ <strong>This job is closed.</strong> <a href="post-job.html">Post a new job</a> if you need more help.</p>
+                                <p>✅ <strong>${t('job_closed_notice')}</strong></p>
                             </div>
                         `;
                     }
@@ -198,19 +207,19 @@
                     if (p.phone) {
                         contactSection = `
                             <div class="client-contact-box">
-                                <p style="color: var(--text-light); margin-bottom: 8px;">📞 Contact the client:</p>
+                                <p style="color: var(--text-light); margin-bottom: 8px;">📞 ${t('contact_the_client')}</p>
                                 <p class="phone-display">📱 ${p.phone}</p>
                                 <div class="contact-buttons">
-                                    <a href="${whatsappLink}" target="_blank" class="btn-whatsapp">💬 WhatsApp</a>
-                                    <a href="${callLink}" class="btn-primary">📞 Call Now</a>
+                                    <a href="${whatsappLink}" target="_blank" class="btn-whatsapp">💬 ${t('whatsapp')}</a>
+                                    <a href="${callLink}" class="btn-primary">📞 ${t('call_now')}</a>
                                 </div>
                             </div>
                         `;
                     } else {
-                        contactSection = `<p style="color: var(--text-light);">No phone number provided.</p>`;
+                        contactSection = `<p style="color: var(--text-light);">${t('no_phone_provided')}</p>`;
                     }
                 } else {
-                    contactSection = `<p style="color: var(--text-light); font-weight: 600;">This job is closed.</p>`;
+                    contactSection = `<p style="color: var(--text-light); font-weight: 600;">${t('this_job_is_closed')}</p>`;
                 }
 
                 const catDisplay = getCategoryDisplayName(job.category || 'Others');
@@ -224,8 +233,8 @@
                             <p class="job-detail-category">${catDisplay}</p>
                             <div class="job-meta">
                                 <span>📍 ${job.location || 'Cameroon'}</span>
-                                <span>💰 ${job.budget || 'Not specified'}</span>
-                                <span>📅 Posted ${postedDate}</span>
+                                <span>💰 ${t('budget')}: ${job.budget || t('not_specified')}</span>
+                                <span>📅 ${t('posted')} ${postedDate}</span>
                             </div>
                         </div>
                     </div>
@@ -233,29 +242,29 @@
                     ${ownerSection}
                     
                     <div class="job-description">
-                        <h3>Job Description</h3>
+                        <h3>${t('job_description')}</h3>
                         <p>${job.description}</p>
                     </div>
                     
                     ${portfolioHtml}
                     
                     <div class="client-info">
-                        <h3>Client Information</h3>
+                        <h3>${t('client_information')}</h3>
                         <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
                             <img src="${avatarUrl}" class="client-avatar-small" onerror="this.onerror=null;this.src='https://via.placeholder.com/60?text=No+Photo'" alt="${p.full_name || 'Client'}">
                             <div>
-                                <p style="font-size: 1.1rem; font-weight: 600; margin-bottom: 4px;">${p.full_name || 'Anonymous'}</p>
+                                <p style="font-size: 1.1rem; font-weight: 600; margin-bottom: 4px;">${p.full_name || t('anonymous')}</p>
                                 <p style="color: var(--text-light); font-size: 0.9rem;">📍 ${p.location || 'Cameroon'}</p>
                             </div>
                         </div>
                         ${contactSection}
                         <div class="report-section">
-                            <button onclick="reportJob('${id}', '${(job.title || '').replace(/'/g, "\\'")}')" class="btn-report">🚩 Report this job</button>
+                            <button onclick="reportJob('${id}', '${(job.title || '').replace(/'/g, "\\'")}')" class="btn-report">🚩 ${t('report_job')}</button>
                         </div>
                     </div>
 
                     <div class="profile-section" style="margin-top:24px;">
-                        <h3>⭐ Ratings for this Client</h3>
+                        <h3>⭐ ${t('ratings_for_client')}</h3>
                         <div id="clientReviewsList">${clientReviewsHtml}</div>
                         ${rateClientHtml}
                     </div>
@@ -263,7 +272,7 @@
 
             } catch (err) {
                 console.error('Job load error:', err);
-                container.innerHTML = '<p class="error">Error loading job. Please try again.</p>';
+                container.innerHTML = '<p class="error">' + t('error_loading_job') + '</p>';
             }
         }
 
@@ -297,7 +306,6 @@
                 }]);
 
                 if (error) {
-                    // Fallback
                     const { error: error2 } = await supabaseClient.from('reviews').insert([{
                         worker_id: clientId,
                         rating: rating,
