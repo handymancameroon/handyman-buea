@@ -50,7 +50,7 @@
 
     <main class="profile-page">
         <div class="container" id="profileContainer">
-            <p class="loading" data-i18n="loading">Loading profile...</p>
+            <p class="loading" data-i18n="loading_profile">Loading profile...</p>
         </div>
     </main>
 
@@ -73,11 +73,11 @@
             currentWorkerId = id;
 
             if (!id) {
-                container.innerHTML = '<p class="error">Worker not found.</p>';
+                container.innerHTML = '<p class="error">' + t('worker_not_found') + '</p>';
                 return;
             }
             if (!supabaseClient) {
-                container.innerHTML = '<p class="error">Cannot connect to database.</p>';
+                container.innerHTML = '<p class="error">' + t('cannot_connect') + '</p>';
                 return;
             }
 
@@ -89,7 +89,7 @@
                     .single();
 
                 if (workerError || !worker) {
-                    container.innerHTML = '<p class="error">Worker not found.</p>';
+                    container.innerHTML = '<p class="error">' + t('worker_not_found') + '</p>';
                     return;
                 }
 
@@ -100,7 +100,7 @@
                     .single();
 
                 if (profile && profile.is_deleted === true) {
-                    container.innerHTML = '<p class="error">This worker profile is no longer available.</p>';
+                    container.innerHTML = '<p class="error">' + t('profile_unavailable') + '</p>';
                     return;
                 }
 
@@ -111,7 +111,7 @@
                     .eq('worker_id', id)
                     .order('created_at', { ascending: false });
 
-                // Get reviewer profiles for pictures and names
+                // Get reviewer profiles
                 let reviewerMap = {};
                 if (reviews && reviews.length > 0) {
                     const reviewerIds = reviews.map(r => r.reviewer_id).filter(Boolean);
@@ -143,9 +143,10 @@
 
                 let portfolioHtml = '';
                 if (portfolio.length > 0) {
+                    const photoWord = portfolio.length > 1 ? t('photos') : t('photo');
                     portfolioHtml = `
                         <div class="profile-section">
-                            <h3>📸 Portfolio (${portfolio.length} photo${portfolio.length > 1 ? 's' : ''})</h3>
+                            <h3>📸 ${t('portfolio')} (${portfolio.length} ${photoWord})</h3>
                             <div class="portfolio-grid">
                                 ${portfolio.map((url, i) => `
                                     <img src="${url}" class="portfolio-img"
@@ -167,7 +168,7 @@
                     displayCount = reviews.length;
                 }
 
-                // Build reviews HTML with photo + link
+                // Build reviews HTML
                 let reviewsHtml = '';
                 if (reviews && reviews.length > 0) {
                     reviewsHtml = reviews.map(r => {
@@ -227,6 +228,7 @@
 
                 const safeName = (p.full_name || 'Unknown').replace(/'/g, "\\'");
                 const catDisplay = getCategoryDisplayName(worker.category || 'Others');
+                const badgeText = worker.verified ? ('✓ ' + t('verified')) : t('new_badge');
 
                 container.innerHTML = `
                     <div class="profile-header">
@@ -235,7 +237,7 @@
                              alt="${p.full_name || 'Worker'}">
                         <div class="profile-info">
                             <h1>${p.full_name || 'Unknown'}</h1>
-                            <span class="badge">${worker.verified ? '✓ Verified' : 'New'}</span>
+                            <span class="badge">${badgeText}</span>
                             <p class="profile-category">${catDisplay}</p>
                             <p class="profile-location">📍 ${p.location || 'Cameroon'}</p>
                             <div class="profile-rating">
@@ -247,26 +249,26 @@
 
                     <div class="profile-body">
                         <div class="profile-section">
-                            <h3>About</h3>
-                            <p>${worker.description || 'No description yet.'}</p>
-                            <p style="margin-top:12px;"><strong>Experience:</strong> ${worker.experience_years || 0} years</p>
-                            <p><strong>Availability:</strong> ${worker.availability || 'Available'}</p>
+                            <h3>${t('about')}</h3>
+                            <p>${worker.description || t('no_description')}</p>
+                            <p style="margin-top:12px;"><strong>${t('experience')}:</strong> ${worker.experience_years || 0} ${t('years')}</p>
+                            <p><strong>${t('availability')}:</strong> ${worker.availability || 'Available'}</p>
                         </div>
 
                         <div class="profile-section">
-                            <h3>Contact</h3>
+                            <h3>${t('contact')}</h3>
                             ${p.phone ? `<p>📞 ${p.phone}</p>` : ''}
-                            <a href="${whatsappLink}" target="_blank" class="btn-whatsapp">💬 WhatsApp</a>
-                            ${p.phone ? `<a href="${callLink}" class="btn-primary" style="margin-left:8px;">📞 Call Now</a>` : ''}
+                            <a href="${whatsappLink}" target="_blank" class="btn-whatsapp">💬 ${t('whatsapp')}</a>
+                            ${p.phone ? `<a href="${callLink}" class="btn-primary" style="margin-left:8px;">📞 ${t('call_now')}</a>` : ''}
                             <div style="margin-top: 16px;">
-                                <button onclick="reportWorker('${id}', '${safeName}')" class="btn-report">🚩 Report this worker</button>
+                                <button onclick="reportWorker('${id}', '${safeName}')" class="btn-report">🚩 ${t('report_worker')}</button>
                             </div>
                         </div>
 
                         ${portfolioHtml}
 
                         <div class="profile-section">
-                            <h3>⭐ Reviews (${displayCount})</h3>
+                            <h3>⭐ ${t('reviews_title')} (${displayCount})</h3>
                             <div id="reviewsList">
                                 ${reviewsHtml}
                             </div>
@@ -277,7 +279,7 @@
 
             } catch (err) {
                 console.error('Profile load error:', err);
-                container.innerHTML = '<p class="error">Error loading profile. Please try again.</p>';
+                container.innerHTML = '<p class="error">' + t('error_loading_profile') + '</p>';
             }
         }
 
@@ -306,7 +308,6 @@
                 }]);
 
                 if (error) {
-                    // Fallback without reviewer_id if column is missing
                     const { error: error2 } = await supabaseClient.from('reviews').insert([{
                         worker_id: currentWorkerId,
                         rating: rating,
@@ -339,7 +340,6 @@
                 msg.className = 'message success';
                 msg.style.display = 'block';
 
-                // Reload the profile to show the new review with photo
                 setTimeout(() => loadWorkerProfile(), 1000);
 
             } catch (err) {
