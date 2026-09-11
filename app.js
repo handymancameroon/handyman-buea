@@ -1,6 +1,6 @@
 /**
  * Handy Man Buea — Core Application Logic
- * Version: 1.6.1 (Full EN/FR + Categories + All Forms ready + footer/cities + password confirm keys)
+ * Version: 1.6.2 (Full EN/FR + Categories + All Forms + full dropdown translation)
  * Date: 11 September 2026
  *
  * SECURITY NOTES:
@@ -37,7 +37,7 @@ const FALLBACK_CATEGORIES = [
 ];
 
 // ============================================================================
-// FULL TRANSLATIONS (EN + FR) - ALL FORMS INCLUDED
+// FULL TRANSLATIONS (EN + FR)
 // ============================================================================
 const I18N = {
     en: {
@@ -62,6 +62,10 @@ const I18N = {
         all_categories: "All Categories",
         all_towns: "All Towns",
         error: "An error occurred. Please try again.",
+        select_town: "Select town",
+        select_skill: "Select your main skill / category",
+        other: "Other (specify below)",
+        other_simple: "Other",
 
         // Homepage
         hero_title: "Find Trusted Local Help in Cameroon",
@@ -107,8 +111,6 @@ const I18N = {
         phone_label: "Phone for Calls",
         whatsapp_label: "WhatsApp Number",
         create_profile: "Create Profile",
-        select_town: "Select town",
-        select_skill: "Select your main skill",
         desc_placeholder: "Describe what you do, your skills, and experience...",
 
         // Login / Register form
@@ -197,6 +199,10 @@ const I18N = {
         all_categories: "Toutes les catégories",
         all_towns: "Toutes les villes",
         error: "Une erreur s'est produite. Veuillez réessayer.",
+        select_town: "Sélectionnez la ville",
+        select_skill: "Sélectionnez votre compétence principale",
+        other: "Autre (précisez ci-dessous)",
+        other_simple: "Autre",
 
         // Homepage
         hero_title: "Trouvez de l'aide locale de confiance au Cameroun",
@@ -242,8 +248,6 @@ const I18N = {
         phone_label: "Téléphone pour les appels",
         whatsapp_label: "Numéro WhatsApp",
         create_profile: "Créer le profil",
-        select_town: "Sélectionnez la ville",
-        select_skill: "Sélectionnez votre compétence principale",
         desc_placeholder: "Décrivez ce que vous faites, vos compétences et votre expérience...",
 
         // Login / Register form
@@ -317,7 +321,7 @@ function t(key) {
     return (I18N[lang] && I18N[lang][key]) || I18N.en[key] || key;
 }
 
-// Helper: get translated category name while keeping original English name for search
+// Helper: get translated category name while keeping original English name for search/DB
 function getCategoryDisplayName(englishName) {
     if (!englishName) return '';
     var key = 'cat_' + englishName.replace(/[\s\/]+/g, '_');
@@ -399,23 +403,86 @@ function applyLanguage() {
     var searchInput = document.getElementById('searchQuery');
     if (searchInput) searchInput.placeholder = t('search_placeholder');
 
-    var catSelect = document.getElementById('categoryFilter');
-    if (catSelect && catSelect.options.length > 0) {
-        catSelect.options[0].text = t('all_categories');
-    }
-
-    var townSelect = document.getElementById('townFilter');
-    if (townSelect && townSelect.options.length > 0) {
-        townSelect.options[0].text = t('all_towns');
-    }
-
     var searchBtn = document.querySelector('.search-filters .btn-primary');
     if (searchBtn) searchBtn.textContent = t('search');
+
+    // =====================================================
+    // TRANSLATE ALL DROPDOWN MENUS
+    // =====================================================
+    translateAllSelects();
 
     // Re-render categories with new language if they are already on the page
     if (document.getElementById('categoryGrid')) {
         renderCategories(FALLBACK_CATEGORIES);
     }
+}
+
+/**
+ * Translates every relevant <select> on the page.
+ * - Category options: value stays English (for DB), text becomes French/English.
+ * - First empty option and "Other" options are translated.
+ * - Town names stay as proper names (Buea, Douala…).
+ */
+function translateAllSelects() {
+    // All known category selects on the site
+    var categorySelectIds = [
+        'categoryFilter',   // workers.html
+        'jCategory',        // post-job.html
+        'wCategory',        // join.html
+        'serviceCategory'   // login.html register
+    ];
+
+    categorySelectIds.forEach(function(id) {
+        var sel = document.getElementById(id);
+        if (!sel) return;
+
+        Array.from(sel.options).forEach(function(opt) {
+            var val = (opt.value || '').trim();
+
+            if (!val) {
+                // empty / placeholder option
+                if (id === 'categoryFilter') {
+                    opt.text = t('all_categories');
+                } else {
+                    opt.text = t('select_skill');
+                }
+            } else if (val === 'Others' || val.toLowerCase() === 'others') {
+                opt.text = t('cat_Others');
+            } else {
+                // normal category → translate display text only
+                opt.text = getCategoryDisplayName(val);
+            }
+        });
+    });
+
+    // Town selects – only translate the first empty option and "Other"
+    var townSelectIds = [
+        'townFilter',   // workers.html
+        'jTown',        // post-job.html
+        'wTown',        // join.html
+        'regTown'       // login.html
+    ];
+
+    townSelectIds.forEach(function(id) {
+        var sel = document.getElementById(id);
+        if (!sel) return;
+
+        Array.from(sel.options).forEach(function(opt) {
+            var val = (opt.value || '').trim();
+
+            if (!val) {
+                if (id === 'townFilter') {
+                    opt.text = t('all_towns');
+                } else {
+                    opt.text = t('select_town');
+                }
+            } else if (val === 'Other' || val.toLowerCase() === 'other') {
+                // some pages say "Other", some "Other (specify below)"
+                opt.text = (opt.textContent.toLowerCase().indexOf('specify') !== -1 || opt.textContent.toLowerCase().indexOf('précisez') !== -1) ? t('other') : t('other_simple');
+            }
+            // Town names (Buea, Douala…) stay unchanged – they are proper names
+        });
+    });
 }
 
 // ============================================================================
