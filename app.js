@@ -1,7 +1,7 @@
 /**
  * Handy Man Buea — Core Application Logic
- * Version: 1.6.5 (Complete EN/FR + Dropdowns + Reviews + Full Worker Profile + Full Client/Job Profile translation)
- * Date: 11 September 2026
+ * Version: 1.6.6 (Complete EN/FR + Dropdowns + Reviews + Full Worker Profile + Full Client/Job Profile translation + Profile Edit keys)
+ * Date: 14 September 2026
  *
  * SECURITY NOTES:
  * - Supabase credentials are loaded from config.js
@@ -163,6 +163,9 @@ const I18N = {
         view_job: "View job",
         contact_us: "Contact Us",
         send_message: "Send Message",
+        edit_profile: "Edit My Profile",
+        save_profile: "Save Profile Changes",
+        profile_saved: "Profile saved successfully!",
 
         // ========== REVIEWS ==========
         leave_rating_worker: "Leave a Rating for this Worker",
@@ -366,6 +369,9 @@ const I18N = {
         view_job: "Voir l'emploi",
         contact_us: "Contactez-nous",
         send_message: "Envoyer le message",
+        edit_profile: "Modifier mon profil",
+        save_profile: "Enregistrer les modifications",
+        profile_saved: "Profil enregistré avec succès !",
 
         // ========== REVIEWS ==========
         leave_rating_worker: "Laisser une note pour cet ouvrier",
