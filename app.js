@@ -1,7 +1,7 @@
 /**
  * Handy Man Buea — Core Application Logic
- * Version: 1.6.5 (Complete EN/FR + Dropdowns + Reviews + Full Worker Profile + Full Client/Job Profile translation)
- * Date: 11 September 2026
+ * Version: 1.6.7 (EN/FR + Reviews + Profile Edit keys + Auth 403 fix + Public pages)
+ * Date: 14 September 2026
  *
  * SECURITY NOTES:
  * - Supabase credentials are loaded from config.js
@@ -41,7 +41,6 @@ const FALLBACK_CATEGORIES = [
 // ============================================================================
 const I18N = {
     en: {
-        // Navigation
         nav_home: "Home",
         nav_workers: "Find Workers",
         nav_jobs: "Find Jobs",
@@ -51,7 +50,6 @@ const I18N = {
         nav_logout: "Logout",
         nav_profile: "My Profile",
 
-        // Common
         search: "Search",
         loading: "Loading...",
         view_profile: "View Profile",
@@ -67,7 +65,6 @@ const I18N = {
         other: "Other (specify below)",
         other_simple: "Other",
 
-        // Homepage
         hero_title: "Find Trusted Local Help in Cameroon",
         hero_sub: "Connect with skilled plumbers, electricians, cleaners, and more — anywhere in Cameroon.",
         hero_find: "Find a Worker",
@@ -96,12 +93,10 @@ const I18N = {
         footer_tagline: "Handy Man Cameroon — Find trusted local help: plumbers, electricians, cleaners, carpenters and more.",
         footer_copy: "© 2026 Handy Man. Connecting people with skilled workers across Cameroon. | Available in English and French.",
 
-        // Jobs page
         jobs_title: "Find Jobs in Cameroon",
         jobs_placeholder: "Search for a job or town...",
         no_jobs: "No jobs found.",
 
-        // Join form
         join_title: "Join as a Service Provider",
         join_sub: "Create your worker profile to receive jobs anywhere in Cameroon.",
         town_label: "Town where you work *",
@@ -113,7 +108,6 @@ const I18N = {
         create_profile: "Create Profile",
         desc_placeholder: "Describe what you do, your skills, and experience...",
 
-        // Login / Register form
         login_title: "Login / Register",
         login_tab: "Login",
         register_tab: "Register",
@@ -130,7 +124,6 @@ const I18N = {
         client_type: "I need a worker (Client)",
         worker_type: "I want to offer services (Worker)",
 
-        // Post Job form
         post_title: "Post a Job",
         post_sub: "Describe what you need and workers will contact you.",
         job_title_label: "Job Title *",
@@ -144,7 +137,6 @@ const I18N = {
         job_location_placeholder: "e.g. Molyko, Buea",
         job_budget_placeholder: "e.g. 5000 FCFA or Negotiable",
 
-        // Dashboard & others
         my_dashboard: "My Profile",
         my_photo: "My profile photo",
         my_jobs: "My posted jobs",
@@ -163,8 +155,10 @@ const I18N = {
         view_job: "View job",
         contact_us: "Contact Us",
         send_message: "Send Message",
+        edit_profile: "Edit My Profile",
+        save_profile: "Save Profile Changes",
+        profile_saved: "Profile saved successfully!",
 
-        // ========== REVIEWS ==========
         leave_rating_worker: "Leave a Rating for this Worker",
         leave_rating_client: "Rate this Client",
         your_rating: "Your Rating",
@@ -187,7 +181,6 @@ const I18N = {
         tell_experience: "Tell others about your experience with this worker...",
         how_was_client: "How was working with this client?",
 
-        // ========== WORKER PROFILE PAGE ==========
         about: "About",
         contact: "Contact",
         experience: "Experience",
@@ -209,7 +202,6 @@ const I18N = {
         profile_unavailable: "This worker profile is no longer available.",
         error_loading_profile: "Error loading profile. Please try again.",
 
-        // ========== CLIENT / JOB DETAIL PAGE ==========
         job_description: "Job Description",
         client_information: "Client Information",
         ratings_for_client: "Ratings for this Client",
@@ -230,7 +222,6 @@ const I18N = {
         not_specified: "Not specified",
         anonymous: "Anonymous",
 
-        // Category display names
         cat_Plumbing: "Plumbing",
         cat_Electrical: "Electrical",
         cat_Carpentry: "Carpentry",
@@ -244,7 +235,6 @@ const I18N = {
         cat_Others: "Others"
     },
     fr: {
-        // Navigation
         nav_home: "Accueil",
         nav_workers: "Trouver des ouvriers",
         nav_jobs: "Trouver des emplois",
@@ -254,7 +244,6 @@ const I18N = {
         nav_logout: "Déconnexion",
         nav_profile: "Mon profil",
 
-        // Common
         search: "Rechercher",
         loading: "Chargement...",
         view_profile: "Voir le profil",
@@ -270,7 +259,6 @@ const I18N = {
         other: "Autre (précisez ci-dessous)",
         other_simple: "Autre",
 
-        // Homepage
         hero_title: "Trouvez de l'aide locale de confiance au Cameroun",
         hero_sub: "Connectez-vous avec des plombiers, électriciens, agents d'entretien et bien d'autres — partout au Cameroun.",
         hero_find: "Trouver un ouvrier",
@@ -299,12 +287,10 @@ const I18N = {
         footer_tagline: "Handy Man Cameroun — Trouvez une aide locale de confiance : plombiers, électriciens, agents d'entretien, menuisiers et plus encore.",
         footer_copy: "© 2026 Handy Man. Relier les gens aux ouvriers qualifiés partout au Cameroun. | Disponible en anglais et en français.",
 
-        // Jobs page
         jobs_title: "Trouver des emplois au Cameroun",
         jobs_placeholder: "Rechercher un emploi ou une ville...",
         no_jobs: "Aucun emploi trouvé.",
 
-        // Join form
         join_title: "Devenir prestataire de services",
         join_sub: "Créez votre profil d'ouvrier pour recevoir des emplois partout au Cameroun.",
         town_label: "Ville où vous travaillez *",
@@ -316,7 +302,6 @@ const I18N = {
         create_profile: "Créer le profil",
         desc_placeholder: "Décrivez ce que vous faites, vos compétences et votre expérience...",
 
-        // Login / Register form
         login_title: "Connexion / Inscription",
         login_tab: "Connexion",
         register_tab: "Inscription",
@@ -333,7 +318,6 @@ const I18N = {
         client_type: "J'ai besoin d'un ouvrier (Client)",
         worker_type: "Je veux offrir des services (Ouvrier)",
 
-        // Post Job form
         post_title: "Publier un emploi",
         post_sub: "Décrivez ce dont vous avez besoin et les ouvriers vous contacteront.",
         job_title_label: "Titre de l'emploi *",
@@ -347,7 +331,6 @@ const I18N = {
         job_location_placeholder: "ex. Molyko, Buea",
         job_budget_placeholder: "ex. 5000 FCFA ou Négociable",
 
-        // Dashboard & others
         my_dashboard: "Mon profil",
         my_photo: "Ma photo de profil",
         my_jobs: "Mes emplois publiés",
@@ -366,8 +349,10 @@ const I18N = {
         view_job: "Voir l'emploi",
         contact_us: "Contactez-nous",
         send_message: "Envoyer le message",
+        edit_profile: "Modifier mon profil",
+        save_profile: "Enregistrer les modifications",
+        profile_saved: "Profil enregistré avec succès !",
 
-        // ========== REVIEWS ==========
         leave_rating_worker: "Laisser une note pour cet ouvrier",
         leave_rating_client: "Noter ce client",
         your_rating: "Votre note",
@@ -390,7 +375,6 @@ const I18N = {
         tell_experience: "Parlez aux autres de votre expérience avec cet ouvrier...",
         how_was_client: "Comment s'est passé le travail avec ce client ?",
 
-        // ========== WORKER PROFILE PAGE ==========
         about: "À propos",
         contact: "Contact",
         experience: "Expérience",
@@ -412,7 +396,6 @@ const I18N = {
         profile_unavailable: "Ce profil d'ouvrier n'est plus disponible.",
         error_loading_profile: "Erreur lors du chargement du profil. Veuillez réessayer.",
 
-        // ========== CLIENT / JOB DETAIL PAGE ==========
         job_description: "Description de l'emploi",
         client_information: "Informations sur le client",
         ratings_for_client: "Notes pour ce client",
@@ -433,7 +416,6 @@ const I18N = {
         not_specified: "Non précisé",
         anonymous: "Anonyme",
 
-        // Category display names
         cat_Plumbing: "Plomberie",
         cat_Electrical: "Électricité",
         cat_Carpentry: "Menuiserie",
@@ -453,7 +435,6 @@ function t(key) {
     return (I18N[lang] && I18N[lang][key]) || I18N.en[key] || key;
 }
 
-// Helper: get translated category name while keeping original English name for search/DB
 function getCategoryDisplayName(englishName) {
     if (!englishName) return '';
     var key = 'cat_' + englishName.replace(/[\s\/]+/g, '_');
@@ -470,13 +451,11 @@ function applyLanguage() {
     var lang = localStorage.getItem('handyman_lang') || 'en';
     document.documentElement.lang = lang;
 
-    // Update language buttons
     var enBtn = document.getElementById('langEn');
     var frBtn = document.getElementById('langFr');
     if (enBtn) enBtn.classList.toggle('active', lang === 'en');
     if (frBtn) frBtn.classList.toggle('active', lang === 'fr');
 
-    // Translate everything that has data-i18n attribute
     document.querySelectorAll('[data-i18n]').forEach(function(el) {
         var key = el.getAttribute('data-i18n');
         if (!key) return;
@@ -488,13 +467,11 @@ function applyLanguage() {
         }
     });
 
-    // Translate placeholders
     document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) {
         var key = el.getAttribute('data-i18n-placeholder');
         if (key) el.placeholder = t(key);
     });
 
-    // Keep the old nav logic as extra safety
     var nav = document.getElementById('nav');
     if (nav) {
         var links = nav.querySelectorAll('a');
@@ -514,11 +491,9 @@ function applyLanguage() {
         });
     }
 
-    // Update injected My Profile button
     var dash = document.getElementById('navDashboard');
     if (dash) dash.textContent = t('nav_profile');
 
-    // Update auth button
     var authBtn = document.getElementById('authBtn');
     if (authBtn) {
         if (currentUser) {
@@ -528,7 +503,6 @@ function applyLanguage() {
         }
     }
 
-    // Workers page extras
     var title = document.querySelector('.search-page h1');
     if (title && !title.hasAttribute('data-i18n')) title.textContent = t('workers_title');
 
@@ -538,30 +512,19 @@ function applyLanguage() {
     var searchBtn = document.querySelector('.search-filters .btn-primary');
     if (searchBtn) searchBtn.textContent = t('search');
 
-    // =====================================================
-    // TRANSLATE ALL DROPDOWN MENUS
-    // =====================================================
     translateAllSelects();
 
-    // Re-render categories with new language if they are already on the page
     if (document.getElementById('categoryGrid')) {
         renderCategories(FALLBACK_CATEGORIES);
     }
 }
 
-/**
- * Translates every relevant <select> on the page.
- * - Category options: value stays English (for DB), text becomes French/English.
- * - First empty option and "Other" options are translated.
- * - Town names stay as proper names (Buea, Douala…).
- */
 function translateAllSelects() {
-    // All known category selects on the site
     var categorySelectIds = [
-        'categoryFilter',   // workers.html
-        'jCategory',        // post-job.html
-        'wCategory',        // join.html
-        'serviceCategory'   // login.html register
+        'categoryFilter',
+        'jCategory',
+        'wCategory',
+        'serviceCategory'
     ];
 
     categorySelectIds.forEach(function(id) {
@@ -572,7 +535,6 @@ function translateAllSelects() {
             var val = (opt.value || '').trim();
 
             if (!val) {
-                // empty / placeholder option
                 if (id === 'categoryFilter') {
                     opt.text = t('all_categories');
                 } else {
@@ -581,18 +543,16 @@ function translateAllSelects() {
             } else if (val === 'Others' || val.toLowerCase() === 'others') {
                 opt.text = t('cat_Others');
             } else {
-                // normal category → translate display text only
                 opt.text = getCategoryDisplayName(val);
             }
         });
     });
 
-    // Town selects – only translate the first empty option and "Other"
     var townSelectIds = [
-        'townFilter',   // workers.html
-        'jTown',        // post-job.html
-        'wTown',        // join.html
-        'regTown'       // login.html
+        'townFilter',
+        'jTown',
+        'wTown',
+        'regTown'
     ];
 
     townSelectIds.forEach(function(id) {
@@ -611,7 +571,6 @@ function translateAllSelects() {
             } else if (val === 'Other' || val.toLowerCase() === 'other') {
                 opt.text = (opt.textContent.toLowerCase().indexOf('specify') !== -1 || opt.textContent.toLowerCase().indexOf('précisez') !== -1) ? t('other') : t('other_simple');
             }
-            // Town names (Buea, Douala…) stay unchanged – they are proper names
         });
     });
 }
@@ -897,12 +856,24 @@ async function trackVisitor() {
 }
 
 // ============================================================================
-// AUTH
+// AUTH — fixed for 403 / invalid sessions
 // ============================================================================
 async function checkAuth() {
     try {
         if (!supabaseClient) return;
-        var { data: { user } } = await supabaseClient.auth.getUser();
+        var result = await supabaseClient.auth.getUser();
+        var user = result && result.data ? result.data.user : null;
+        var error = result ? result.error : null;
+
+        if (error) {
+            console.log('[HandyMan] Auth session invalid, clearing:', error.message);
+            try { await supabaseClient.auth.signOut(); } catch (e) {}
+            currentUser = null;
+            currentProfile = null;
+            updateAuthUI();
+            return;
+        }
+
         currentUser = user;
         if (user) {
             var { data: profile } = await supabaseClient
@@ -917,6 +888,9 @@ async function checkAuth() {
         updateAuthUI();
     } catch (e) {
         console.log('[HandyMan] Auth check failed:', e.message);
+        currentUser = null;
+        currentProfile = null;
+        updateAuthUI();
     }
 }
 
@@ -1198,6 +1172,8 @@ window.checkAuth = checkAuth;
 window.isAdmin = isAdmin;
 window.updateAuthUI = updateAuthUI;
 window.uploadFile = uploadFile;
+window.uploadMultipleFiles = uploadMultipleFiles;
 window.renderWorkers = renderWorkers;
 window.viewWorker = viewWorker;
+window.viewJob = viewJob;
 window.searchByCategory = searchByCategory;
