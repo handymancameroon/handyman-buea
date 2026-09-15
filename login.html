@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Handy Man</title>
+    <title>Login / Register - Handy Man Cameroon</title>
+    <meta name="description" content="Login or create a free account on Handy Man Cameroon. Register as a client or skilled worker in Buea, Douala, Yaoundé and across Cameroon.">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://handyman-buea.vercel.app/login.html">
     <link rel="stylesheet" href="style.css">
     <style>
         .worker-fields, .client-fields { display: none; animation: fadeIn 0.3s ease; }
@@ -57,7 +60,6 @@
             display: block;
         }
         .auth-box { max-width: 520px; }
-        /* Password field with show/hide */
         .password-wrap {
             position: relative;
             display: flex;
@@ -197,10 +199,11 @@
                         <div class="form-group">
                             <label>Profile Photo (optional)</label>
                             <div class="photo-upload-box">
-                                <p style="margin-bottom: 8px; font-size: 0.9rem;">📷 Take a photo or choose from gallery</p>
-                                <input type="file" id="regPhotoFile" accept="image/*" capture="environment">
+                                <p style="margin-bottom: 8px; font-size: 0.9rem;">📷 Choose from gallery or take a photo</p>
+                                <!-- capture attribute REMOVED so phone offers Gallery OR Camera -->
+                                <input type="file" id="regPhotoFile" accept="image/*">
                                 <img id="regAvatarPreview" class="avatar-preview" alt="Preview">
-                                <small class="upload-hint">JPEG or PNG. On phones you can use the camera.</small>
+                                <small class="upload-hint">JPEG or PNG. On phones you can choose Gallery or Camera.</small>
                             </div>
                         </div>
 
@@ -218,6 +221,19 @@
                                 <option value="Phone/Laptop Repair">Phone/Laptop Repair</option>
                                 <option value="Hairdressing">Hairdressing</option>
                                 <option value="Catering">Catering</option>
+                                <option value="Nanny">Nanny</option>
+                                <option value="House help">House help</option>
+                                <option value="General Labour">General Labour</option>
+                                <option value="Laundry services">Laundry services</option>
+                                <option value="Transporter">Transporter</option>
+                                <option value="Errands">Errands</option>
+                                <option value="Construction Engineer">Construction Engineer</option>
+                                <option value="Teacher/Tutors">Teacher/Tutors</option>
+                                <option value="Lawyer">Lawyer</option>
+                                <option value="Family Doctors">Family Doctors</option>
+                                <option value="Stay at Home Nurse">Stay at Home Nurse</option>
+                                <option value="Security Guard">Security Guard</option>
+                                <option value="Gardener">Gardener</option>
                                 <option value="Others">Others (specify below)</option>
                             </select>
                             <div id="customCategoryField" class="custom-category-field">
