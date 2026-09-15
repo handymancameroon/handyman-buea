@@ -150,8 +150,6 @@
                     });
                 }
 
-                await populateCustomCategoriesInDropdown();
-
                 var params = new URLSearchParams(window.location.search);
                 var q = params.get('q');
                 var cat = params.get('category');
@@ -162,6 +160,7 @@
                 if (cat) {
                     var sel = document.getElementById('categoryFilter');
                     if (sel) {
+                        // Only set if it exists in the fixed dropdown (do not add custom options)
                         var exists = false;
                         for (var i = 0; i < sel.options.length; i++) {
                             if (sel.options[i].value === cat) {
@@ -169,21 +168,12 @@
                                 break;
                             }
                         }
-                        if (!exists) {
-                            var opt = document.createElement('option');
-                            opt.value = cat;
-                            opt.textContent = cat;
-                            var othersOpt = null;
-                            for (var j = 0; j < sel.options.length; j++) {
-                                if (sel.options[j].value === 'Others') {
-                                    othersOpt = sel.options[j];
-                                    break;
-                                }
-                            }
-                            if (othersOpt) sel.insertBefore(opt, othersOpt);
-                            else sel.appendChild(opt);
+                        if (exists) {
+                            sel.value = cat;
+                        } else if (isOthersCategory(cat)) {
+                            // Custom category from URL → treat as Others
+                            sel.value = 'Others';
                         }
-                        sel.value = cat;
                     }
                 }
                 performSearch();
@@ -195,57 +185,6 @@
                 }
             }
         });
-
-        async function populateCustomCategoriesInDropdown() {
-            if (typeof supabaseClient === 'undefined' || !supabaseClient) return;
-            try {
-                var result = await supabaseClient
-                    .from('worker_details')
-                    .select('category')
-                    .limit(500);
-
-                var rows = result && result.data ? result.data : null;
-                if (!rows || !rows.length) return;
-
-                var sel = document.getElementById('categoryFilter');
-                if (!sel) return;
-
-                var existing = {};
-                for (var i = 0; i < sel.options.length; i++) {
-                    var v = sel.options[i].value;
-                    if (v) existing[v.toLowerCase()] = true;
-                }
-
-                var customSet = {};
-                for (var r = 0; r < rows.length; r++) {
-                    var cat = (rows[r].category || '').trim();
-                    if (!cat) continue;
-                    var lower = cat.toLowerCase();
-                    if (isOthersCategory(cat) && lower !== 'others' && lower !== 'other') {
-                        if (!existing[lower]) customSet[cat] = true;
-                    }
-                }
-
-                var othersOpt = null;
-                for (var o = 0; o < sel.options.length; o++) {
-                    if (sel.options[o].value === 'Others') {
-                        othersOpt = sel.options[o];
-                        break;
-                    }
-                }
-
-                var names = Object.keys(customSet).sort();
-                for (var n = 0; n < names.length; n++) {
-                    var opt = document.createElement('option');
-                    opt.value = names[n];
-                    opt.textContent = names[n];
-                    if (othersOpt) sel.insertBefore(opt, othersOpt);
-                    else sel.appendChild(opt);
-                }
-            } catch (e) {
-                console.log('Custom categories load skipped', e);
-            }
-        }
 
         async function performSearch() {
             var queryEl = document.getElementById('searchQuery');
@@ -296,6 +235,7 @@
                     filtered.push(w);
                 }
 
+                // Others = literal "Others" OR any custom typed category
                 if (category === 'Others') {
                     var othersOnly = [];
                     for (var a = 0; a < filtered.length; a++) {
