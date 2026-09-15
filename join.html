@@ -7,7 +7,7 @@
     <!-- Primary SEO -->
     <title>Join as Worker | Create Profile - Handy Man Cameroon</title>
     <meta name="description" content="Join Handy Man Cameroon as a skilled worker. Create your free profile, upload photos and start receiving jobs from clients in Buea, Douala, Yaoundé and across Cameroon.">
-    <meta name="keywords" content="join as worker Cameroon, become handyman Buea, register plumber Douala, worker profile Cameroon, artisan Cameroun">
+    <meta name="keywords" content="join as worker Cameroon, become handyman Buea, register plumber Douala, worker profile Cameroon, artisan Cameroun, nanny, house help, gardener">
     <meta name="author" content="Handy Man Cameroon">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="https://handyman-buea.vercel.app/join.html">
@@ -26,6 +26,11 @@
     <meta name="twitter:description" content="Free worker profiles for plumbers, electricians and skilled artisans in Cameroon.">
 
     <link rel="stylesheet" href="style.css">
+    <style>
+        .custom-category-field, .custom-town-field { display: none; margin-top: 8px; }
+        .custom-category-field.active, .custom-town-field.active { display: block; }
+        .upload-hint { color: var(--text-light); font-size: 0.8rem; margin-top: 6px; display: block; }
+    </style>
 </head>
 <body>
     <header class="header">
@@ -52,7 +57,7 @@
                 <form id="workerForm" onsubmit="handleWorkerJoin(event)">
                     <div class="form-group">
                         <label>Town where you work *</label>
-                        <select id="wTown" required>
+                        <select id="wTown" required onchange="handleJoinTownChange()">
                             <option value="">Select town</option>
                             <option value="Buea">Buea</option>
                             <option value="Limbe">Limbe</option>
@@ -72,13 +77,16 @@
                             <option value="Edéa">Edéa</option>
                             <option value="Mutengene">Mutengene</option>
                             <option value="Tiko">Tiko</option>
-                            <option value="Other">Other</option>
+                            <option value="Other">Other (specify below)</option>
                         </select>
+                        <div id="wCustomTownField" class="custom-town-field">
+                            <input type="text" id="wCustomTown" placeholder="Enter your town">
+                        </div>
                     </div>
 
                     <div class="form-group">
                         <label>Service Category *</label>
-                        <select id="wCategory" required>
+                        <select id="wCategory" required onchange="handleJoinCategoryChange()">
                             <option value="">Select your main skill</option>
                             <option value="Plumbing">Plumbing</option>
                             <option value="Electrical">Electrical</option>
@@ -90,8 +98,24 @@
                             <option value="Phone/Laptop Repair">Phone/Laptop Repair</option>
                             <option value="Hairdressing">Hairdressing</option>
                             <option value="Catering">Catering</option>
-                            <option value="Others">Others</option>
+                            <option value="Nanny">Nanny</option>
+                            <option value="House help">House help</option>
+                            <option value="General Labour">General Labour</option>
+                            <option value="Laundry services">Laundry services</option>
+                            <option value="Transporter">Transporter</option>
+                            <option value="Errands">Errands</option>
+                            <option value="Construction Engineer">Construction Engineer</option>
+                            <option value="Teacher/Tutors">Teacher/Tutors</option>
+                            <option value="Lawyer">Lawyer</option>
+                            <option value="Family Doctors">Family Doctors</option>
+                            <option value="Stay at Home Nurse">Stay at Home Nurse</option>
+                            <option value="Security Guard">Security Guard</option>
+                            <option value="Gardener">Gardener</option>
+                            <option value="Others">Others (specify below)</option>
                         </select>
+                        <div id="wCustomCategoryField" class="custom-category-field">
+                            <input type="text" id="wCustomCategory" placeholder="Enter your skill or category">
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -117,6 +141,7 @@
                     <div class="form-group">
                         <label>Profile Photo (optional)</label>
                         <input type="file" id="wAvatar" accept="image/*">
+                        <small class="upload-hint">Choose from gallery or take a photo with your camera.</small>
                     </div>
 
                     <div class="form-group">
@@ -140,7 +165,6 @@
             await checkAuth();
             applyLanguage();
 
-            // Not logged in → go to login, then come back here
             if (!currentUser) {
                 window.location.href = 'login.html?redirect=join';
                 return;
@@ -155,6 +179,48 @@
             }
         });
 
+        function handleJoinTownChange() {
+            var town = document.getElementById('wTown').value;
+            var field = document.getElementById('wCustomTownField');
+            var input = document.getElementById('wCustomTown');
+            if (town === 'Other') {
+                field.classList.add('active');
+                input.required = true;
+            } else {
+                field.classList.remove('active');
+                input.required = false;
+            }
+        }
+
+        function handleJoinCategoryChange() {
+            var cat = document.getElementById('wCategory').value;
+            var field = document.getElementById('wCustomCategoryField');
+            var input = document.getElementById('wCustomCategory');
+            if (cat === 'Others') {
+                field.classList.add('active');
+                input.required = true;
+            } else {
+                field.classList.remove('active');
+                input.required = false;
+            }
+        }
+
+        function getJoinTown() {
+            var town = document.getElementById('wTown').value;
+            if (town === 'Other') {
+                return document.getElementById('wCustomTown').value.trim() || 'Cameroon';
+            }
+            return town || 'Cameroon';
+        }
+
+        function getJoinCategory() {
+            var cat = document.getElementById('wCategory').value;
+            if (cat === 'Others') {
+                return document.getElementById('wCustomCategory').value.trim() || 'Others';
+            }
+            return cat;
+        }
+
         async function handleWorkerJoin(e) {
             e.preventDefault();
             showJoinMessage('Creating profile...', '');
@@ -166,8 +232,8 @@
                 }
 
                 var userId = currentUser.id;
-                var town = document.getElementById('wTown').value;
-                var category = document.getElementById('wCategory').value;
+                var town = getJoinTown();
+                var category = getJoinCategory();
                 var description = document.getElementById('wDescription').value.trim();
                 var experience = parseInt(document.getElementById('wExperience').value) || 0;
                 var phone = document.getElementById('wPhone').value.trim();
