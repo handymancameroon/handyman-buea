@@ -1,7 +1,7 @@
 /**
  * Handy Man Buea — Core Application Logic
- * Version: 1.6.7 (EN/FR + Reviews + Profile Edit keys + Auth 403 fix + Public pages)
- * Date: 14 September 2026
+ * Version: 1.6.8 (EN/FR + Reviews + Profile Edit + New Categories + Auth 403 fix + Public pages)
+ * Date: 15 September 2026
  *
  * SECURITY NOTES:
  * - Supabase credentials are loaded from config.js
@@ -33,6 +33,19 @@ const FALLBACK_CATEGORIES = [
     {name: 'Phone/Laptop Repair', icon: '💻', description: 'Device repairs and troubleshooting'},
     {name: 'Hairdressing', icon: '💇', description: 'Hair styling, barbing, braiding'},
     {name: 'Catering', icon: '🍲', description: 'Event cooking and food services'},
+    {name: 'Nanny', icon: '👶', description: 'Childcare and nanny services'},
+    {name: 'House help', icon: '🏠', description: 'Domestic house help and cleaning support'},
+    {name: 'General Labour', icon: '💪', description: 'General labour and odd jobs'},
+    {name: 'Laundry services', icon: '👕', description: 'Washing, ironing and laundry'},
+    {name: 'Transporter', icon: '🚚', description: 'Goods and people transport'},
+    {name: 'Errands', icon: '🏃', description: 'Running errands and deliveries'},
+    {name: 'Construction Engineer', icon: '🏗️', description: 'Construction planning and engineering'},
+    {name: 'Teacher/Tutors', icon: '📚', description: 'Teaching and private tutoring'},
+    {name: 'Lawyer', icon: '⚖️', description: 'Legal advice and representation'},
+    {name: 'Family Doctors', icon: '🩺', description: 'General medical consultation'},
+    {name: 'Stay at Home Nurse', icon: '💉', description: 'Home nursing and patient care'},
+    {name: 'Security Guard', icon: '🛡️', description: 'Security and guarding services'},
+    {name: 'Gardener', icon: '🌿', description: 'Gardening and outdoor maintenance'},
     {name: 'Others', icon: '✨', description: 'Other services not listed above'}
 ];
 
@@ -79,7 +92,7 @@ const I18N = {
         slide4_sub: "Safe and reliable electrical work for your property anywhere in Cameroon.",
         slide4_btn: "Find Electricians",
         popular_services: "Popular Services",
-        services_intro: "Browse plumbing, electrical, carpentry, cleaning, painting, masonry, auto mechanics, phone repair, hairdressing, catering and more across Cameroon.",
+        services_intro: "Browse plumbing, electrical, carpentry, cleaning, painting, masonry, auto mechanics, phone repair, hairdressing, catering, nanny, house help, laundry, transporter, teachers, lawyers, nurses, security guards, gardeners and more across Cameroon.",
         featured_workers: "Featured Workers in Cameroon",
         how_title: "How It Works",
         how_search: "Search",
@@ -232,6 +245,19 @@ const I18N = {
         cat_Phone_Laptop_Repair: "Phone/Laptop Repair",
         cat_Hairdressing: "Hairdressing",
         cat_Catering: "Catering",
+        cat_Nanny: "Nanny",
+        cat_House_help: "House help",
+        cat_General_Labour: "General Labour",
+        cat_Laundry_services: "Laundry services",
+        cat_Transporter: "Transporter",
+        cat_Errands: "Errands",
+        cat_Construction_Engineer: "Construction Engineer",
+        cat_Teacher_Tutors: "Teacher/Tutors",
+        cat_Lawyer: "Lawyer",
+        cat_Family_Doctors: "Family Doctors",
+        cat_Stay_at_Home_Nurse: "Stay at Home Nurse",
+        cat_Security_Guard: "Security Guard",
+        cat_Gardener: "Gardener",
         cat_Others: "Others"
     },
     fr: {
@@ -273,7 +299,7 @@ const I18N = {
         slide4_sub: "Travaux électriques sûrs et fiables pour votre propriété partout au Cameroun.",
         slide4_btn: "Trouver des électriciens",
         popular_services: "Services populaires",
-        services_intro: "Parcourez la plomberie, l'électricité, la menuiserie, le nettoyage, la peinture, la maçonnerie, la mécanique auto, la réparation de téléphones, la coiffure, la restauration et plus encore partout au Cameroun.",
+        services_intro: "Parcourez la plomberie, l'électricité, la menuiserie, le nettoyage, la peinture, la maçonnerie, la mécanique auto, la réparation de téléphones, la coiffure, la restauration, nounou, aide ménagère, blanchisserie, transporteur, enseignants, avocats, infirmiers, agents de sécurité, jardiniers et plus encore partout au Cameroun.",
         featured_workers: "Ouvriers en vedette au Cameroun",
         how_title: "Comment ça marche",
         how_search: "Rechercher",
@@ -426,6 +452,19 @@ const I18N = {
         cat_Phone_Laptop_Repair: "Réparation téléphone/ordinateur",
         cat_Hairdressing: "Coiffure",
         cat_Catering: "Restauration / Traiteur",
+        cat_Nanny: "Nounou",
+        cat_House_help: "Aide ménagère",
+        cat_General_Labour: "Main-d'œuvre générale",
+        cat_Laundry_services: "Services de blanchisserie",
+        cat_Transporter: "Transporteur",
+        cat_Errands: "Courses / Errands",
+        cat_Construction_Engineer: "Ingénieur en construction",
+        cat_Teacher_Tutors: "Enseignant / Tuteurs",
+        cat_Lawyer: "Avocat",
+        cat_Family_Doctors: "Médecins de famille",
+        cat_Stay_at_Home_Nurse: "Infirmier(ère) à domicile",
+        cat_Security_Guard: "Agent de sécurité",
+        cat_Gardener: "Jardinier",
         cat_Others: "Autres"
     }
 };
@@ -1016,7 +1055,8 @@ async function loadCategories() {
         return;
     }
     try {
-        var { data: categories, error } = await supabaseClient.from('categories').select('*').limit(11);
+        // Increased limit so more categories can load from DB if present
+        var { data: categories, error } = await supabaseClient.from('categories').select('*').limit(30);
         if (error || !categories || categories.length === 0) {
             renderCategories(FALLBACK_CATEGORIES);
             return;
