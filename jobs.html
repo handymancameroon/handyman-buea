@@ -57,7 +57,7 @@
                     <option value="Gardener">Gardener</option>
                     <option value="Others">Others</option>
                 </select>
-                <button onclick="performSearch()" class="btn-primary" data-i18n="search">Search</button>
+                <button type="button" onclick="performSearch()" class="btn-primary" data-i18n="search">Search</button>
             </div>
             <p id="othersHint" style="display:none;color:var(--text-light);font-size:0.9rem;margin:8px 0 12px;">
                 Showing jobs in custom / other categories (skills not in the main list).
@@ -84,9 +84,10 @@
             if (!cat) return false;
             var c = String(cat).trim().toLowerCase();
             if (c === 'others' || c === 'other') return false;
-            return STANDARD_CATEGORIES.some(function (s) {
-                return s.toLowerCase() === c;
-            });
+            for (var i = 0; i < STANDARD_CATEGORIES.length; i++) {
+                if (STANDARD_CATEGORIES[i].toLowerCase() === c) return true;
+            }
+            return false;
         }
 
         function isOthersCategory(cat) {
@@ -97,148 +98,140 @@
         }
 
         document.addEventListener('DOMContentLoaded', async function () {
-            await checkAuth();
-            if (typeof applyLanguage === 'function') applyLanguage();
-
-            await populateCustomJobCategories();
-
-            var params = new URLSearchParams(window.location.search);
-            var cat = params.get('category');
-            if (cat) {
-                var sel = document.getElementById('categoryFilter');
-                var exists = Array.from(sel.options).some(function (o) { return o.value === cat; });
-                if (!exists && cat) {
-                    var opt = document.createElement('option');
-                    opt.value = cat;
-                    opt.textContent = cat;
-                    var othersOpt = Array.from(sel.options).find(function (o) { return o.value === 'Others'; });
-                    if (othersOpt) sel.insertBefore(opt, othersOpt);
-                    else sel.appendChild(opt);
-                }
-                sel.value = cat;
-            }
-            performSearch();
-        });
-
-        async function populateCustomJobCategories() {
-            if (!supabaseClient) return;
             try {
-                var { data: rows } = await supabaseClient
-                    .from('job_posts')
-                    .select('category')
-                    .eq('status', 'Open')
-                    .limit(500);
+                if (typeof checkAuth === 'function') await checkAuth();
+                if (typeof applyLanguage === 'function') applyLanguage();
 
-                if (!rows || !rows.length) return;
+                var menuToggle = document.getElementById('menuToggle');
+                if (menuToggle) {
+                    menuToggle.addEventListener('click', function () {
+                        var n = document.getElementById('nav');
+                        if (n) n.classList.toggle('active');
+                    });
+                }
 
-                var sel = document.getElementById('categoryFilter');
-                if (!sel) return;
-
-                var existing = {};
-                Array.from(sel.options).forEach(function (o) {
-                    if (o.value) existing[o.value.toLowerCase()] = true;
-                });
-
-                var customSet = {};
-                rows.forEach(function (r) {
-                    var cat = (r.category || '').trim();
-                    if (!cat) return;
-                    if (isOthersCategory(cat) && cat.toLowerCase() !== 'others' && cat.toLowerCase() !== 'other') {
-                        if (!existing[cat.toLowerCase()]) {
-                            customSet[cat] = true;
+                var params = new URLSearchParams(window.location.search);
+                var cat = params.get('category');
+                if (cat) {
+                    var sel = document.getElementById('categoryFilter');
+                    if (sel) {
+                        var exists = false;
+                        for (var i = 0; i < sel.options.length; i++) {
+                            if (sel.options[i].value === cat) {
+                                exists = true;
+                                break;
+                            }
+                        }
+                        if (exists) {
+                            sel.value = cat;
+                        } else if (isOthersCategory(cat)) {
+                            sel.value = 'Others';
                         }
                     }
-                });
-
-                var othersOpt = Array.from(sel.options).find(function (o) { return o.value === 'Others'; });
-                Object.keys(customSet).sort().forEach(function (catName) {
-                    var opt = document.createElement('option');
-                    opt.value = catName;
-                    opt.textContent = catName;
-                    if (othersOpt) sel.insertBefore(opt, othersOpt);
-                    else sel.appendChild(opt);
-                });
-            } catch (e) {
-                console.log('Custom job categories load skipped', e);
+                }
+                performSearch();
+            } catch (err) {
+                console.error(err);
             }
-        }
+        });
 
         async function performSearch() {
-            var query = document.getElementById('searchQuery').value;
-            var category = document.getElementById('categoryFilter').value;
+            var queryEl = document.getElementById('searchQuery');
+            var catEl = document.getElementById('categoryFilter');
             var container = document.getElementById('jobsResults');
             var hint = document.getElementById('othersHint');
+
+            if (!container) return;
+
+            var query = queryEl ? queryEl.value : '';
+            var category = catEl ? catEl.value : '';
 
             container.innerHTML = '<p class="loading">' + (typeof t === 'function' ? t('loading') : 'Searching...') + '</p>';
             if (hint) hint.style.display = (category === 'Others') ? 'block' : 'none';
 
-            if (!supabaseClient) {
+            if (typeof supabaseClient === 'undefined' || !supabaseClient) {
                 container.innerHTML = '<p class="empty">Cannot load jobs. Please refresh.</p>';
                 return;
             }
 
-            var dbQuery = supabaseClient
-                .from('job_posts')
-                .select('*, profiles(full_name)')
-                .eq('status', 'Open')
-                .order('created_at', { ascending: false });
+            try {
+                var dbQuery = supabaseClient
+                    .from('job_posts')
+                    .select('*, profiles(full_name)')
+                    .eq('status', 'Open')
+                    .order('created_at', { ascending: false });
 
-            if (category && category !== 'Others') {
-                dbQuery = dbQuery.eq('category', category);
-            }
+                if (category && category !== 'Others') {
+                    dbQuery = dbQuery.eq('category', category);
+                }
 
-            var { data: jobs, error } = await dbQuery;
+                var result = await dbQuery;
+                var jobs = result && result.data ? result.data : null;
+                var error = result ? result.error : null;
 
-            if (error) {
+                if (error) {
+                    container.innerHTML = '<p class="error">' + (typeof t === 'function' ? t('error') : 'Error loading jobs.') + '</p>';
+                    return;
+                }
+
+                var filtered = jobs || [];
+
+                if (category === 'Others') {
+                    var othersOnly = [];
+                    for (var i = 0; i < filtered.length; i++) {
+                        if (isOthersCategory(filtered[i].category)) othersOnly.push(filtered[i]);
+                    }
+                    filtered = othersOnly;
+                }
+
+                if (query) {
+                    var q = query.toLowerCase();
+                    var byQuery = [];
+                    for (var j = 0; j < filtered.length; j++) {
+                        var job = filtered[j];
+                        if ((job.title || '').toLowerCase().indexOf(q) !== -1 ||
+                            (job.description || '').toLowerCase().indexOf(q) !== -1 ||
+                            (job.category || '').toLowerCase().indexOf(q) !== -1 ||
+                            (job.location || '').toLowerCase().indexOf(q) !== -1) {
+                            byQuery.push(job);
+                        }
+                    }
+                    filtered = byQuery;
+                }
+
+                if (filtered.length === 0) {
+                    container.innerHTML = '<p class="empty">' + (typeof t === 'function' ? t('no_jobs') : 'No jobs found.') +
+                        ' <a href="post-job.html">' + (typeof t === 'function' ? t('nav_post') : 'Post a Job') + '</a></p>';
+                    return;
+                }
+
+                renderJobs(filtered, container);
+            } catch (err) {
+                console.error(err);
                 container.innerHTML = '<p class="error">' + (typeof t === 'function' ? t('error') : 'Error loading jobs.') + '</p>';
-                return;
             }
-
-            var filtered = jobs || [];
-
-            if (category === 'Others') {
-                filtered = filtered.filter(function (j) {
-                    return isOthersCategory(j.category);
-                });
-            }
-
-            if (query) {
-                var q = query.toLowerCase();
-                filtered = filtered.filter(function (j) {
-                    return (j.title || '').toLowerCase().indexOf(q) !== -1 ||
-                        (j.description || '').toLowerCase().indexOf(q) !== -1 ||
-                        (j.category || '').toLowerCase().indexOf(q) !== -1 ||
-                        (j.location || '').toLowerCase().indexOf(q) !== -1;
-                });
-            }
-
-            if (filtered.length === 0) {
-                container.innerHTML = '<p class="empty">' + (typeof t === 'function' ? t('no_jobs') : 'No jobs found.') +
-                    ' <a href="post-job.html">' + (typeof t === 'function' ? t('nav_post') : 'Post a Job') + '</a></p>';
-                return;
-            }
-
-            renderJobs(filtered, container);
         }
 
         function renderJobs(jobs, container) {
-            container.innerHTML = jobs.map(function (j) {
+            var html = '';
+            for (var i = 0; i < jobs.length; i++) {
+                var j = jobs[i];
                 var catLabel = (typeof getCategoryDisplayName === 'function')
                     ? getCategoryDisplayName(j.category || 'Others')
                     : (j.category || 'General');
-                return '' +
-                    '<div class="job-card" onclick="viewJob(\'' + j.id + '\')">' +
+                var poster = (j.profiles && j.profiles.full_name) ? j.profiles.full_name : 'Anonymous';
+                html += '<div class="job-card" onclick="viewJob(\'' + j.id + '\')">' +
                     '<span class="job-status">' + (j.status || '') + '</span>' +
                     '<h3>' + (j.title || '') + '</h3>' +
                     '<p class="job-category">' + catLabel + '</p>' +
                     '<p class="job-location">📍 ' + (j.location || 'Cameroon') + '</p>' +
                     '<p class="job-budget">' + (j.budget || 'Budget not specified') + '</p>' +
-                    '<p style="color: var(--text-light); font-size: 0.875rem;">Posted by ' +
-                    ((j.profiles && j.profiles.full_name) ? j.profiles.full_name : 'Anonymous') + '</p>' +
+                    '<p style="color: var(--text-light); font-size: 0.875rem;">Posted by ' + poster + '</p>' +
                     '<button class="btn-small" style="margin-top: 12px;">' +
                     (typeof t === 'function' ? t('view_job') : 'View Job') + '</button>' +
                     '</div>';
-            }).join('');
+            }
+            container.innerHTML = html;
         }
     </script>
 </body>
