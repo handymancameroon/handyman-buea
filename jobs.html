@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Find Jobs in Cameroon - Handy Man</title>
+    <meta name="description" content="Browse open jobs across Cameroon. Find work as a plumber, electrician, cleaner, nanny, house help and more on Handy Man.">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://handyman-buea.vercel.app/jobs.html">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -39,10 +42,26 @@
                     <option value="Phone/Laptop Repair">Phone/Laptop Repair</option>
                     <option value="Hairdressing">Hairdressing</option>
                     <option value="Catering">Catering</option>
+                    <option value="Nanny">Nanny</option>
+                    <option value="House help">House help</option>
+                    <option value="General Labour">General Labour</option>
+                    <option value="Laundry services">Laundry services</option>
+                    <option value="Transporter">Transporter</option>
+                    <option value="Errands">Errands</option>
+                    <option value="Construction Engineer">Construction Engineer</option>
+                    <option value="Teacher/Tutors">Teacher/Tutors</option>
+                    <option value="Lawyer">Lawyer</option>
+                    <option value="Family Doctors">Family Doctors</option>
+                    <option value="Stay at Home Nurse">Stay at Home Nurse</option>
+                    <option value="Security Guard">Security Guard</option>
+                    <option value="Gardener">Gardener</option>
                     <option value="Others">Others</option>
                 </select>
                 <button onclick="performSearch()" class="btn-primary" data-i18n="search">Search</button>
             </div>
+            <p id="othersHint" style="display:none;color:var(--text-light);font-size:0.9rem;margin:8px 0 12px;">
+                Showing jobs in custom / other categories (skills not in the main list).
+            </p>
             <div class="job-grid" id="jobsResults">
                 <p class="loading" data-i18n="loading">Loading jobs...</p>
             </div>
@@ -53,55 +72,149 @@
     <script src="config.js"></script>
     <script src="app.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', async () => {
+        var STANDARD_CATEGORIES = [
+            'Plumbing', 'Electrical', 'Carpentry', 'Cleaning', 'Painting', 'Masonry',
+            'Auto Mechanics', 'Phone/Laptop Repair', 'Hairdressing', 'Catering',
+            'Nanny', 'House help', 'General Labour', 'Laundry services', 'Transporter',
+            'Errands', 'Construction Engineer', 'Teacher/Tutors', 'Lawyer',
+            'Family Doctors', 'Stay at Home Nurse', 'Security Guard', 'Gardener'
+        ];
+
+        function isStandardCategory(cat) {
+            if (!cat) return false;
+            var c = String(cat).trim().toLowerCase();
+            if (c === 'others' || c === 'other') return false;
+            return STANDARD_CATEGORIES.some(function (s) {
+                return s.toLowerCase() === c;
+            });
+        }
+
+        function isOthersCategory(cat) {
+            if (!cat) return false;
+            var c = String(cat).trim().toLowerCase();
+            if (c === 'others' || c === 'other') return true;
+            return !isStandardCategory(cat);
+        }
+
+        document.addEventListener('DOMContentLoaded', async function () {
             await checkAuth();
             if (typeof applyLanguage === 'function') applyLanguage();
-            const params = new URLSearchParams(window.location.search);
-            const cat = params.get('category');
-            if (cat) document.getElementById('categoryFilter').value = cat;
+
+            await populateCustomJobCategories();
+
+            var params = new URLSearchParams(window.location.search);
+            var cat = params.get('category');
+            if (cat) {
+                var sel = document.getElementById('categoryFilter');
+                var exists = Array.from(sel.options).some(function (o) { return o.value === cat; });
+                if (!exists && cat) {
+                    var opt = document.createElement('option');
+                    opt.value = cat;
+                    opt.textContent = cat;
+                    var othersOpt = Array.from(sel.options).find(function (o) { return o.value === 'Others'; });
+                    if (othersOpt) sel.insertBefore(opt, othersOpt);
+                    else sel.appendChild(opt);
+                }
+                sel.value = cat;
+            }
             performSearch();
         });
 
+        async function populateCustomJobCategories() {
+            if (!supabaseClient) return;
+            try {
+                var { data: rows } = await supabaseClient
+                    .from('job_posts')
+                    .select('category')
+                    .eq('status', 'Open')
+                    .limit(500);
+
+                if (!rows || !rows.length) return;
+
+                var sel = document.getElementById('categoryFilter');
+                if (!sel) return;
+
+                var existing = {};
+                Array.from(sel.options).forEach(function (o) {
+                    if (o.value) existing[o.value.toLowerCase()] = true;
+                });
+
+                var customSet = {};
+                rows.forEach(function (r) {
+                    var cat = (r.category || '').trim();
+                    if (!cat) return;
+                    if (isOthersCategory(cat) && cat.toLowerCase() !== 'others' && cat.toLowerCase() !== 'other') {
+                        if (!existing[cat.toLowerCase()]) {
+                            customSet[cat] = true;
+                        }
+                    }
+                });
+
+                var othersOpt = Array.from(sel.options).find(function (o) { return o.value === 'Others'; });
+                Object.keys(customSet).sort().forEach(function (catName) {
+                    var opt = document.createElement('option');
+                    opt.value = catName;
+                    opt.textContent = catName;
+                    if (othersOpt) sel.insertBefore(opt, othersOpt);
+                    else sel.appendChild(opt);
+                });
+            } catch (e) {
+                console.log('Custom job categories load skipped', e);
+            }
+        }
+
         async function performSearch() {
-            const query = document.getElementById('searchQuery').value;
-            const category = document.getElementById('categoryFilter').value;
-            const container = document.getElementById('jobsResults');
+            var query = document.getElementById('searchQuery').value;
+            var category = document.getElementById('categoryFilter').value;
+            var container = document.getElementById('jobsResults');
+            var hint = document.getElementById('othersHint');
 
             container.innerHTML = '<p class="loading">' + (typeof t === 'function' ? t('loading') : 'Searching...') + '</p>';
+            if (hint) hint.style.display = (category === 'Others') ? 'block' : 'none';
 
             if (!supabaseClient) {
                 container.innerHTML = '<p class="empty">Cannot load jobs. Please refresh.</p>';
                 return;
             }
 
-            let dbQuery = supabaseClient
+            var dbQuery = supabaseClient
                 .from('job_posts')
                 .select('*, profiles(full_name)')
                 .eq('status', 'Open')
                 .order('created_at', { ascending: false });
 
-            if (category) dbQuery = dbQuery.eq('category', category);
+            if (category && category !== 'Others') {
+                dbQuery = dbQuery.eq('category', category);
+            }
 
-            const { data: jobs, error } = await dbQuery;
+            var { data: jobs, error } = await dbQuery;
 
             if (error) {
                 container.innerHTML = '<p class="error">' + (typeof t === 'function' ? t('error') : 'Error loading jobs.') + '</p>';
                 return;
             }
 
-            let filtered = jobs || [];
+            var filtered = jobs || [];
+
+            if (category === 'Others') {
+                filtered = filtered.filter(function (j) {
+                    return isOthersCategory(j.category);
+                });
+            }
+
             if (query) {
-                const q = query.toLowerCase();
-                filtered = filtered.filter(j =>
-                    (j.title || '').toLowerCase().includes(q) ||
-                    (j.description || '').toLowerCase().includes(q) ||
-                    (j.category || '').toLowerCase().includes(q) ||
-                    (j.location || '').toLowerCase().includes(q)
-                );
+                var q = query.toLowerCase();
+                filtered = filtered.filter(function (j) {
+                    return (j.title || '').toLowerCase().indexOf(q) !== -1 ||
+                        (j.description || '').toLowerCase().indexOf(q) !== -1 ||
+                        (j.category || '').toLowerCase().indexOf(q) !== -1 ||
+                        (j.location || '').toLowerCase().indexOf(q) !== -1;
+                });
             }
 
             if (filtered.length === 0) {
-                container.innerHTML = '<p class="empty">' + (typeof t === 'function' ? t('no_jobs') : 'No jobs found.') + ' <a href="post-job.html">' + (typeof t === 'function' ? t('nav_post') : 'Post a Job') + '</a></p>';
+                container.innerHTML = '<p class="empty">' + (typeof t === 'function' ? t('no_jobs') : 'No jobs found.') +
+                    ' <a href="post-job.html">' + (typeof t === 'function' ? t('nav_post') : 'Post a Job') + '</a></p>';
                 return;
             }
 
@@ -109,17 +222,23 @@
         }
 
         function renderJobs(jobs, container) {
-            container.innerHTML = jobs.map(j => `
-                <div class="job-card" onclick="viewJob('${j.id}')">
-                    <span class="job-status">${j.status}</span>
-                    <h3>${j.title}</h3>
-                    <p class="job-category">${j.category || 'General'}</p>
-                    <p class="job-location">📍 ${j.location || 'Cameroon'}</p>
-                    <p class="job-budget">${j.budget || 'Budget not specified'}</p>
-                    <p style="color: var(--text-light); font-size: 0.875rem;">Posted by ${j.profiles?.full_name || 'Anonymous'}</p>
-                    <button class="btn-small" style="margin-top: 12px;">${typeof t === 'function' ? t('view_job') : 'View Job'}</button>
-                </div>
-            `).join('');
+            container.innerHTML = jobs.map(function (j) {
+                var catLabel = (typeof getCategoryDisplayName === 'function')
+                    ? getCategoryDisplayName(j.category || 'Others')
+                    : (j.category || 'General');
+                return '' +
+                    '<div class="job-card" onclick="viewJob(\'' + j.id + '\')">' +
+                    '<span class="job-status">' + (j.status || '') + '</span>' +
+                    '<h3>' + (j.title || '') + '</h3>' +
+                    '<p class="job-category">' + catLabel + '</p>' +
+                    '<p class="job-location">📍 ' + (j.location || 'Cameroon') + '</p>' +
+                    '<p class="job-budget">' + (j.budget || 'Budget not specified') + '</p>' +
+                    '<p style="color: var(--text-light); font-size: 0.875rem;">Posted by ' +
+                    ((j.profiles && j.profiles.full_name) ? j.profiles.full_name : 'Anonymous') + '</p>' +
+                    '<button class="btn-small" style="margin-top: 12px;">' +
+                    (typeof t === 'function' ? t('view_job') : 'View Job') + '</button>' +
+                    '</div>';
+            }).join('');
         }
     </script>
 </body>
