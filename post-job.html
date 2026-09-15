@@ -3,11 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Post a Job - Handy Man</title>
+    <title>Post a Job - Handy Man Cameroon</title>
+    <meta name="description" content="Post a free job on Handy Man Cameroon. Find plumbers, electricians, nannies, cleaners and more in Buea, Douala, Yaoundé and across Cameroon.">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://handyman-buea.vercel.app/post-job.html">
     <link rel="stylesheet" href="style.css">
     <style>
-        .custom-town-field { display: none; margin-top: 8px; }
-        .custom-town-field.active { display: block; }
+        .custom-town-field, .custom-category-field { display: none; margin-top: 8px; }
+        .custom-town-field.active, .custom-category-field.active { display: block; }
         .upload-hint { color: var(--text-light); font-size: 0.8rem; margin-top: 6px; display: block; }
     </style>
 </head>
@@ -40,7 +43,7 @@
                     </div>
                     <div class="form-group">
                         <label data-i18n="job_category_label">Service Category *</label>
-                        <select id="jCategory" required>
+                        <select id="jCategory" required onchange="handleJobCategoryChange()">
                             <option value="" data-i18n="select_skill">Select category</option>
                             <option value="Plumbing">Plumbing</option>
                             <option value="Electrical">Electrical</option>
@@ -52,8 +55,24 @@
                             <option value="Phone/Laptop Repair">Phone/Laptop Repair</option>
                             <option value="Hairdressing">Hairdressing</option>
                             <option value="Catering">Catering</option>
-                            <option value="Others">Others</option>
+                            <option value="Nanny">Nanny</option>
+                            <option value="House help">House help</option>
+                            <option value="General Labour">General Labour</option>
+                            <option value="Laundry services">Laundry services</option>
+                            <option value="Transporter">Transporter</option>
+                            <option value="Errands">Errands</option>
+                            <option value="Construction Engineer">Construction Engineer</option>
+                            <option value="Teacher/Tutors">Teacher/Tutors</option>
+                            <option value="Lawyer">Lawyer</option>
+                            <option value="Family Doctors">Family Doctors</option>
+                            <option value="Stay at Home Nurse">Stay at Home Nurse</option>
+                            <option value="Security Guard">Security Guard</option>
+                            <option value="Gardener">Gardener</option>
+                            <option value="Others">Others (specify below)</option>
                         </select>
+                        <div id="jCustomCategoryField" class="custom-category-field">
+                            <input type="text" id="jCustomCategory" placeholder="Enter the category you need">
+                        </div>
                     </div>
                     <div class="form-group">
                         <label data-i18n="job_description_label">Description *</label>
@@ -134,12 +153,33 @@
             }
         }
 
+        function handleJobCategoryChange() {
+            const cat = document.getElementById('jCategory').value;
+            const field = document.getElementById('jCustomCategoryField');
+            const input = document.getElementById('jCustomCategory');
+            if (cat === 'Others') {
+                field.classList.add('active');
+                input.required = true;
+            } else {
+                field.classList.remove('active');
+                input.required = false;
+            }
+        }
+
         function getJobTown() {
             const town = document.getElementById('jTown').value;
             if (town === 'Other') {
                 return document.getElementById('jCustomTown').value.trim() || 'Cameroon';
             }
             return town || 'Cameroon';
+        }
+
+        function getJobCategory() {
+            const cat = document.getElementById('jCategory').value;
+            if (cat === 'Others') {
+                return document.getElementById('jCustomCategory').value.trim() || 'Others';
+            }
+            return cat;
         }
         
         async function handlePostJob(e) {
@@ -160,7 +200,7 @@
             const jobData = {
                 client_id: user.id,
                 title: document.getElementById('jTitle').value.trim(),
-                category: document.getElementById('jCategory').value,
+                category: getJobCategory(),
                 description: document.getElementById('jDescription').value.trim(),
                 location: fullLocation,
                 budget: document.getElementById('jBudget').value.trim() || 'Negotiable',
