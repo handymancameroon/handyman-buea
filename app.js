@@ -1,7 +1,7 @@
 /**
  * Handy Man Buea — Core Application Logic
- * Version: 1.6.8 (EN/FR + Reviews + Profile Edit + New Categories + Auth 403 fix + Public pages)
- * Date: 15 September 2026
+ * Version: 1.6.9 (EN/FR + Reviews + Profile Edit + New Categories + Auth 403 fix + Public pages + Mobile menu fix)
+ * Date: 16 September 2026
  *
  * SECURITY NOTES:
  * - Supabase credentials are loaded from config.js
@@ -637,9 +637,51 @@ if (window._resolveSupabaseReady) {
 }
 
 // ============================================================================
+// MOBILE MENU (must work on all pages, including workers.html / jobs.html)
+// ============================================================================
+function initMobileMenu() {
+    var menuToggle = document.getElementById('menuToggle');
+    var nav = document.getElementById('nav');
+    if (!menuToggle || !nav) return;
+
+    // Avoid double-binding (page scripts may also attach listeners)
+    if (menuToggle.getAttribute('data-menu-ready') === '1') return;
+    menuToggle.setAttribute('data-menu-ready', '1');
+    menuToggle.setAttribute('type', 'button');
+    menuToggle.setAttribute('aria-label', 'Open menu');
+    menuToggle.setAttribute('aria-expanded', 'false');
+
+    menuToggle.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        nav.classList.toggle('active');
+        menuToggle.setAttribute('aria-expanded', nav.classList.contains('active') ? 'true' : 'false');
+    });
+
+    // Close menu when a nav link is tapped
+    nav.querySelectorAll('a').forEach(function (link) {
+        link.addEventListener('click', function () {
+            nav.classList.remove('active');
+            menuToggle.setAttribute('aria-expanded', 'false');
+        });
+    });
+
+    // Close when tapping outside the menu
+    document.addEventListener('click', function (e) {
+        if (!nav.classList.contains('active')) return;
+        if (nav.contains(e.target) || menuToggle.contains(e.target)) return;
+        nav.classList.remove('active');
+        menuToggle.setAttribute('aria-expanded', 'false');
+    });
+}
+
+// ============================================================================
 // APP INIT
 // ============================================================================
 document.addEventListener('DOMContentLoaded', async function() {
+    // FIX: bind mobile menu FIRST (before any await) so it works on all pages on phones
+    initMobileMenu();
+
     try {
         injectNavExtras();
         injectShareButton();
@@ -658,8 +700,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             initCarousel();
         }
 
+        // Original menu binding kept; skipped if initMobileMenu already bound the button
         var menuToggle = document.getElementById('menuToggle');
-        if (menuToggle) {
+        if (menuToggle && menuToggle.getAttribute('data-menu-ready') !== '1') {
             menuToggle.addEventListener('click', function() {
                 var n = document.getElementById('nav');
                 if (n) n.classList.toggle('active');
@@ -667,6 +710,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     } catch (err) {
         console.error('[HandyMan] App init error:', err);
+        // Ensure menu still works even if other init fails
+        initMobileMenu();
         if (document.getElementById('categoryGrid')) {
             renderCategories(FALLBACK_CATEGORIES);
         }
@@ -1217,3 +1262,5 @@ window.renderWorkers = renderWorkers;
 window.viewWorker = viewWorker;
 window.viewJob = viewJob;
 window.searchByCategory = searchByCategory;
+window.initMobileMenu = initMobileMenu;
+window.escapeHtml = escapeHtml;
