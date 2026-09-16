@@ -1108,8 +1108,8 @@ function renderWorkers(workers, container) {
     if (!container) return;
     container.innerHTML = workers.map(function(w) {
         var avatar = (w.profiles && w.profiles.avatar_url) ? w.profiles.avatar_url : 'https://via.placeholder.com/80?text=No+Photo';
-        var name = (w.profiles && w.profiles.full_name) ? w.profiles.full_name : 'Unknown';
-        var location = (w.profiles && w.profiles.location) ? w.profiles.location : 'Cameroon';
+        var name = escapeHtml((w.profiles && w.profiles.full_name) ? w.profiles.full_name : 'Unknown');
+        var location = escapeHtml((w.profiles && w.profiles.location) ? w.profiles.location : 'Cameroon');
         var catDisplay = getCategoryDisplayName(w.category || 'Others');
         return '<div class="worker-card" onclick="viewWorker(\'' + w.id + '\')">' +
             '<div class="worker-avatar">' +
