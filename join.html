@@ -44,7 +44,7 @@
                 <a href="post-job.html" class="btn-secondary" data-i18n="nav_post">Post a Job</a>
                 <a href="login.html" class="btn-secondary" id="authBtn" data-i18n="nav_login">Login</a>
             </nav>
-            <button class="menu-toggle" id="menuToggle">☰</button>
+            <button class="menu-toggle" id="menuToggle" type="button">☰</button>
         </div>
     </header>
 
@@ -114,8 +114,8 @@
                             <option value="Others">Others (specify below)</option>
                         </select>
                         <div id="wCustomCategoryField" class="custom-category-field">
-                            <input type="text" id="wCustomCategory" placeholder="Enter your skill or category (max 5 words)" maxlength="60">
-                            <small class="upload-hint">Maximum 5 words. Extra words will be removed.</small>
+                            <input type="text" id="wCustomCategory" placeholder="Enter your skill or category (max 5 words)">
+                            <small class="upload-hint">Maximum 5 words. Extra words are removed automatically.</small>
                         </div>
                     </div>
 
@@ -163,6 +163,7 @@
     <script src="app.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async function () {
+            if (typeof initMobileMenu === 'function') initMobileMenu();
             await checkAuth();
             applyLanguage();
 
@@ -171,25 +172,30 @@
                 return;
             }
 
+            // Live 5-word limit on custom category
+            var customCat = document.getElementById('wCustomCategory');
+            if (customCat) {
+                customCat.addEventListener('input', function () {
+                    var limited = limitToFiveWords(this.value);
+                    if (limited !== this.value) this.value = limited;
+                });
+            }
+
             var menuToggle = document.getElementById('menuToggle');
-            if (menuToggle) {
+            if (menuToggle && menuToggle.getAttribute('data-menu-ready') !== '1') {
                 menuToggle.addEventListener('click', function () {
                     var n = document.getElementById('nav');
                     if (n) n.classList.toggle('active');
                 });
             }
-
-            // Limit custom category to 5 words while typing
-            var customCat = document.getElementById('wCustomCategory');
-            if (customCat) {
-                customCat.addEventListener('input', function () {
-                    var words = this.value.trim().split(/\s+/).filter(Boolean);
-                    if (words.length > 5) {
-                        this.value = words.slice(0, 5).join(' ');
-                    }
-                });
-            }
         });
+
+        function limitToFiveWords(str) {
+            if (!str) return '';
+            var words = String(str).trim().split(/\s+/).filter(Boolean);
+            if (words.length <= 5) return words.join(' ');
+            return words.slice(0, 5).join(' ');
+        }
 
         function handleJoinTownChange() {
             var town = document.getElementById('wTown').value;
@@ -225,17 +231,10 @@
             return town || 'Cameroon';
         }
 
-        function limitToFiveWords(text) {
-            if (!text) return '';
-            var words = text.trim().split(/\s+/).filter(Boolean);
-            return words.slice(0, 5).join(' ');
-        }
-
         function getJoinCategory() {
             var cat = document.getElementById('wCategory').value;
             if (cat === 'Others') {
-                var custom = limitToFiveWords(document.getElementById('wCustomCategory').value);
-                return custom || 'Others';
+                return limitToFiveWords(document.getElementById('wCustomCategory').value) || 'Others';
             }
             return cat;
         }
