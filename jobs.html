@@ -21,7 +21,7 @@
                 <a href="post-job.html" class="btn-secondary" data-i18n="nav_post">Post a Job</a>
                 <a href="login.html" class="btn-secondary" id="authBtn" data-i18n="nav_login">Login</a>
             </nav>
-            <button class="menu-toggle" id="menuToggle">☰</button>
+            <button type="button" class="menu-toggle" id="menuToggle" aria-label="Open menu">☰</button>
         </div>
     </header>
 
@@ -102,13 +102,7 @@
                 if (typeof checkAuth === 'function') await checkAuth();
                 if (typeof applyLanguage === 'function') applyLanguage();
 
-                var menuToggle = document.getElementById('menuToggle');
-                if (menuToggle) {
-                    menuToggle.addEventListener('click', function () {
-                        var n = document.getElementById('nav');
-                        if (n) n.classList.toggle('active');
-                    });
-                }
+                /* Mobile menu is handled once in app.js (avoids double-toggle bug) */
 
                 var params = new URLSearchParams(window.location.search);
                 var cat = params.get('category');
