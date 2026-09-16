@@ -61,9 +61,10 @@
         let currentWorkerId = null;
 
         document.addEventListener('DOMContentLoaded', async () => {
+            if (window.supabaseReady) { await window.supabaseReady; }
             await checkAuth();
             applyLanguage();
-            setTimeout(async () => { await loadWorkerProfile(); }, 200);
+            await loadWorkerProfile();
         });
 
         async function loadWorkerProfile() {
@@ -173,7 +174,7 @@
                 if (reviews && reviews.length > 0) {
                     reviewsHtml = reviews.map(r => {
                         const rev = reviewerMap[r.reviewer_id] || {};
-                        const revName = rev.full_name || 'Registered User';
+                        const revName = escapeHtml(rev.full_name || 'Registered User');
                         const revAvatar = rev.avatar_url || 'https://via.placeholder.com/40?text=U';
                         const nameHtml = r.reviewer_id
                             ? (rev.is_worker
@@ -190,7 +191,7 @@
                                         <div style="font-size:0.85rem;color:var(--text-light);">${'⭐'.repeat(r.rating || 0)} (${r.rating}/5)</div>
                                     </div>
                                 </div>
-                                <p>${r.comment || t('no_comment')}</p>
+                                <p>${escapeHtml(r.comment) || t('no_comment')}</p>
                             </div>
                         `;
                     }).join('');
@@ -239,9 +240,9 @@
                     <div class="profile-header">
                         <img src="${avatarUrl}" class="profile-avatar"
                              onerror="this.onerror=null;this.src='https://via.placeholder.com/120?text=No+Photo'"
-                             alt="${p.full_name || 'Worker'}">
+                             alt="${escapeHtml(p.full_name || 'Worker')}">
                         <div class="profile-info">
-                            <h1>${p.full_name || 'Unknown'}</h1>
+                            <h1>${escapeHtml(p.full_name || 'Unknown')}</h1>
                             <span class="badge">${badgeText}</span>
                             <p class="profile-category">${catDisplay}</p>
                             <p class="profile-location">📍 ${p.location || 'Cameroon'}</p>
@@ -255,7 +256,7 @@
                     <div class="profile-body">
                         <div class="profile-section">
                             <h3>${t('about')}</h3>
-                            <p>${worker.description || t('no_description')}</p>
+                            <p>${escapeHtml(worker.description) || t('no_description')}</p>
                             <p style="margin-top:12px;"><strong>${t('experience')}:</strong> ${worker.experience_years || 0} ${t('years')}</p>
                             <p><strong>${t('availability')}:</strong> ${availabilityText}</p>
                         </div>
