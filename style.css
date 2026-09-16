@@ -45,6 +45,7 @@ body {
     justify-content: space-between;
     align-items: center;
     height: 64px;
+    position: relative;
 }
 
 .logo {
@@ -91,6 +92,12 @@ body {
     border: none;
     font-size: 1.5rem;
     cursor: pointer;
+    z-index: 110;
+    position: relative;
+    min-width: 44px;
+    min-height: 44px;
+    line-height: 1;
+    -webkit-tap-highlight-color: transparent;
 }
 
 /* ========== BUTTONS (for the rest of the site) ========== */
@@ -969,7 +976,7 @@ section h2 {
 /* ========== RESPONSIVE ========== */
 @media (max-width: 768px) {
     .menu-toggle {
-        display: block;
+        display: block !important;
     }
 
     .nav {
@@ -978,15 +985,16 @@ section h2 {
         top: 64px;
         left: 0;
         right: 0;
-        background: white;
+        background: #ffffff;
         flex-direction: column;
         padding: 16px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.12);
         gap: 4px;
+        z-index: 105;
     }
 
     .nav.active {
-        display: flex;
+        display: flex !important;
     }
 
     .nav a,
