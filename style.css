@@ -92,11 +92,12 @@ body {
     border: none;
     font-size: 1.5rem;
     cursor: pointer;
-    z-index: 110;
     position: relative;
+    z-index: 120;
     min-width: 44px;
     min-height: 44px;
     line-height: 1;
+    color: var(--text);
     -webkit-tap-highlight-color: transparent;
 }
 
@@ -977,6 +978,7 @@ section h2 {
 @media (max-width: 768px) {
     .menu-toggle {
         display: block !important;
+        pointer-events: auto !important;
     }
 
     .nav {
@@ -985,12 +987,15 @@ section h2 {
         top: 64px;
         left: 0;
         right: 0;
-        background: #ffffff;
+        background: white;
         flex-direction: column;
         padding: 16px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         gap: 4px;
-        z-index: 105;
+        z-index: 110;
+        max-height: calc(100vh - 64px);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
     }
 
     .nav.active {
