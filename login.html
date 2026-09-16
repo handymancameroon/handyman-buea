@@ -200,7 +200,6 @@
                             <label>Profile Photo (optional)</label>
                             <div class="photo-upload-box">
                                 <p style="margin-bottom: 8px; font-size: 0.9rem;">📷 Choose from gallery or take a photo</p>
-                                <!-- capture attribute REMOVED so phone offers Gallery OR Camera -->
                                 <input type="file" id="regPhotoFile" accept="image/*">
                                 <img id="regAvatarPreview" class="avatar-preview" alt="Preview">
                                 <small class="upload-hint">JPEG or PNG. On phones you can choose Gallery or Camera.</small>
@@ -208,7 +207,7 @@
                         </div>
 
                         <div class="form-group">
-                            <label data-i18n="category_label">Service Category *</label>
+                            <label id="categoryLabel">Category of the job you need *</label>
                             <select id="serviceCategory" required onchange="handleCategoryChange()">
                                 <option value="" data-i18n="select_skill">Select category</option>
                                 <option value="Plumbing">Plumbing</option>
@@ -237,7 +236,8 @@
                                 <option value="Others">Others (specify below)</option>
                             </select>
                             <div id="customCategoryField" class="custom-category-field">
-                                <input type="text" id="customCategory" placeholder="Enter your skill or category">
+                                <input type="text" id="customCategory" placeholder="Enter category (max 5 words)" maxlength="60">
+                                <small class="upload-hint">Maximum 5 words. Extra words will be removed.</small>
                             </div>
                         </div>
 
@@ -307,6 +307,17 @@
             setupFilePreviews();
             setupAvatarPreview();
             applyLanguage();
+
+            // Limit custom category to 5 words while typing
+            var customCat = document.getElementById('customCategory');
+            if (customCat) {
+                customCat.addEventListener('input', function () {
+                    var words = this.value.trim().split(/\s+/).filter(Boolean);
+                    if (words.length > 5) {
+                        this.value = words.slice(0, 5).join(' ');
+                    }
+                });
+            }
         });
 
         function togglePasswordVisibility(inputId, btn) {
@@ -337,6 +348,7 @@
             const type = document.getElementById('regType').value;
             const workerFields = document.getElementById('workerFields');
             const clientFields = document.getElementById('clientFields');
+            const catLabel = document.getElementById('categoryLabel');
 
             if (type === 'worker') {
                 workerFields.classList.add('active');
@@ -344,12 +356,14 @@
                 document.getElementById('wDescription').required = true;
                 document.getElementById('cJobTitle').required = false;
                 document.getElementById('cJobDesc').required = false;
+                if (catLabel) catLabel.textContent = 'Your Service Category / Area of Competence *';
             } else {
                 workerFields.classList.remove('active');
                 clientFields.classList.add('active');
                 document.getElementById('wDescription').required = false;
                 document.getElementById('cJobTitle').required = true;
                 document.getElementById('cJobDesc').required = true;
+                if (catLabel) catLabel.textContent = 'Category of the job you need *';
             }
         }
 
@@ -385,6 +399,12 @@
                 return document.getElementById('customTown').value.trim() || 'Cameroon';
             }
             return town || 'Cameroon';
+        }
+
+        function limitToFiveWords(text) {
+            if (!text) return '';
+            var words = text.trim().split(/\s+/).filter(Boolean);
+            return words.slice(0, 5).join(' ');
         }
 
         function setupAvatarPreview() {
@@ -481,7 +501,7 @@
 
                 let category = document.getElementById('serviceCategory').value;
                 if (category === 'Others') {
-                    category = document.getElementById('customCategory').value.trim() || 'Others';
+                    category = limitToFiveWords(document.getElementById('customCategory').value) || 'Others';
                 }
 
                 const { data, error } = await supabaseClient.auth.signUp({
