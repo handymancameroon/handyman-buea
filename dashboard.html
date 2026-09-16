@@ -184,7 +184,7 @@
                         </div>
                         <div class="form-group">
                             <label data-i18n="description_label">Description of Services</label>
-                            <textarea id="editDescription" placeholder="${t('desc_placeholder') || 'Describe your services...'}">${(worker && worker.description) || ''}</textarea>
+                            <textarea id="editDescription" placeholder="${t('desc_placeholder') || 'Describe your services...'}">${escapeHtml((worker && worker.description) || '')}</textarea>
                             <small style="color:var(--text-light);">This text is shown on your public profile. Language switch changes UI labels; your free-text stays as you wrote it.</small>
                         </div>
                         <div class="form-group">
@@ -315,7 +315,7 @@
                     return `
                         <div class="job-row">
                             <div>
-                                <h4>${job.title}</h4>
+                                <h4>${escapeHtml(job.title)}</h4>
                                 <p>${job.category} • ${job.location} • ${postedDate}</p>
                                 <span class="status-badge ${statusClass}">${isOpen ? 'Open' : 'Closed'}</span>
                             </div>
@@ -366,7 +366,7 @@
                 container.innerHTML = `
                     <div style="text-align:center;margin-bottom:16px;">
                         <img src="${p.avatar_url || 'https://via.placeholder.com/80'}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;margin-bottom:12px;">
-                        <h3>${p.full_name || 'Your Name'}</h3>
+                        <h3>${escapeHtml(p.full_name || 'Your Name')}</h3>
                         <p style="color:var(--primary);font-weight:600;">${worker.category || ''}</p>
                     </div>
                     <p><strong>📍 Location:</strong> ${p.location || 'Cameroon'}</p>
@@ -374,7 +374,7 @@
                     <p><strong>⭐ Rating:</strong> ${worker.rating || 0}/5 (${worker.review_count || 0} ${t('reviews') || 'reviews'})</p>
                     <p><strong>🛠️ Experience:</strong> ${worker.experience_years || 0} years</p>
                     <p><strong>✅ Status:</strong> ${worker.availability || 'Available'}</p>
-                    <p style="margin-top:12px;color:var(--text-light);">${worker.description || (t('no_description') || 'No description yet.')}</p>
+                    <p style="margin-top:12px;color:var(--text-light);">${escapeHtml(worker.description) || (t('no_description') || 'No description yet.')}</p>
                     <div style="margin-top:20px;">
                         <label><strong>Update Portfolio Photos (max 2)</strong></label><br>
                         <input type="file" id="portfolioInput" accept="image/*" multiple style="margin:8px 0;">
@@ -428,9 +428,9 @@
                 return `
                     <div class="job-row">
                         <div>
-                            <h4>${job.title}</h4>
+                            <h4>${escapeHtml(job.title)}</h4>
                             <p>${job.location} • ${date} • Budget: ${job.budget || 'Negotiable'}</p>
-                            <p style="font-size:0.85rem;">Client: ${client.full_name || 'Unknown'}</p>
+                            <p style="font-size:0.85rem;">Client: ${escapeHtml(client.full_name || 'Unknown')}</p>
                         </div>
                         <a href="job.html?id=${job.id}" class="btn-primary">${t('view_job') || 'View job'}</a>
                     </div>`;
@@ -457,10 +457,10 @@
                     return `
                         <div class="dispute-row">
                             <div>
-                                <h4>${d.reason || 'Report'}</h4>
-                                <p>${d.target_name || ''} (${d.target_type || ''}) • ${date}</p>
+                                <h4>${escapeHtml(d.reason || 'Report')}</h4>
+                                <p>${escapeHtml(d.target_name || '')} (${escapeHtml(d.target_type || '')}) • ${date}</p>
                                 <span class="status-badge ${statusClass}">${d.status || ''}</span>
-                                <p style="font-size:0.85rem;margin-top:6px;color:var(--text-light);">${(d.details || '').substring(0, 120)}</p>
+                                <p style="font-size:0.85rem;margin-top:6px;color:var(--text-light);">${escapeHtml((d.details || '').substring(0, 120))}</p>
                             </div>
                         </div>`;
                 }).join('');
