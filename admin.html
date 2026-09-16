@@ -80,6 +80,25 @@
         }
         .user-modal-box h3 { margin-bottom: 12px; padding-right: 30px; }
         .user-modal-box p { margin-bottom: 8px; }
+
+        /* Jump nav + clickable stats */
+        .admin-jump-nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+        .admin-jump-nav .btn-small {
+            cursor: pointer;
+        }
+        .stat-card.clickable {
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .stat-card.clickable:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }
         .reported-box {
             background: #fef3c7;
             border: 1px solid #f59e0b;
@@ -107,28 +126,40 @@
                 <a href="dashboard.html" class="btn-secondary">My Profile</a>
                 <a href="login.html" class="btn-secondary" id="authBtn">Login</a>
             </nav>
-            <button class="menu-toggle" id="menuToggle">☰</button>
+            <button class="menu-toggle" id="menuToggle" type="button">☰</button>
         </div>
     </header>
 
     <main class="admin-page">
         <div class="container">
             <h1>⚙️ Admin Control Panel</h1>
-            <p style="color: var(--text-light); margin-bottom: 32px;">Welcome back, Administrator.</p>
+            <p style="color: var(--text-light); margin-bottom: 16px;">Welcome back, Administrator.</p>
 
-            <div class="admin-stats-grid" id="statsGrid">
-                <div class="stat-card visitors"><h3 id="statVisitors">...</h3><p>Total Visitors</p></div>
-                <div class="stat-card today"><h3 id="statTodayVisitors">...</h3><p>Visitors Today</p></div>
-                <div class="stat-card"><h3 id="statWeekVisitors">...</h3><p>Visitors This Week</p></div>
-                <div class="stat-card"><h3 id="statMonthVisitors">...</h3><p>Visitors This Month</p></div>
-                <div class="stat-card today"><h3 id="statTodayRegs">...</h3><p>Registered Today</p></div>
-                <div class="stat-card workers"><h3 id="statWorkers">...</h3><p>Workers Registered</p></div>
-                <div class="stat-card clients"><h3 id="statClients">...</h3><p>Employers / Clients</p></div>
-                <div class="stat-card jobs"><h3 id="statJobs">...</h3><p>Total Job Posts</p></div>
-                <div class="stat-card disputes"><h3 id="statDisputes">...</h3><p>Open Disputes</p></div>
+            <!-- Jump navigation -->
+            <div class="admin-jump-nav">
+                <button type="button" class="btn-small" onclick="scrollToSection('statsGrid')">📊 Stats</button>
+                <button type="button" class="btn-small" onclick="scrollToSection('sectionBroadcast')">📢 Broadcast</button>
+                <button type="button" class="btn-small" onclick="scrollToSection('sectionContact')">📬 Messages</button>
+                <button type="button" class="btn-small" onclick="scrollToSection('sectionUsers')">👥 Users</button>
+                <button type="button" class="btn-small" onclick="scrollToSection('sectionDisputes')">🚩 Disputes</button>
+                <button type="button" class="btn-small" onclick="scrollToSection('sectionBugs')">🐞 Bugs</button>
+                <button type="button" class="btn-small" onclick="scrollToSection('sectionWorkers')">👷 Workers</button>
+                <button type="button" class="btn-small" onclick="scrollToSection('sectionJobs')">📋 Jobs</button>
             </div>
 
-            <div class="admin-section">
+            <div class="admin-stats-grid" id="statsGrid">
+                <div class="stat-card visitors clickable" onclick="scrollToSection('statsGrid')"><h3 id="statVisitors">...</h3><p>Total Visitors</p></div>
+                <div class="stat-card today clickable" onclick="scrollToSection('statsGrid')"><h3 id="statTodayVisitors">...</h3><p>Visitors Today</p></div>
+                <div class="stat-card clickable" onclick="scrollToSection('statsGrid')"><h3 id="statWeekVisitors">...</h3><p>Visitors This Week</p></div>
+                <div class="stat-card clickable" onclick="scrollToSection('statsGrid')"><h3 id="statMonthVisitors">...</h3><p>Visitors This Month</p></div>
+                <div class="stat-card today clickable" onclick="scrollToSection('sectionUsers')"><h3 id="statTodayRegs">...</h3><p>Registered Today</p></div>
+                <div class="stat-card workers clickable" onclick="scrollToSection('sectionWorkers')"><h3 id="statWorkers">...</h3><p>Workers Registered</p></div>
+                <div class="stat-card clients clickable" onclick="scrollToSection('sectionUsers')"><h3 id="statClients">...</h3><p>Employers / Clients</p></div>
+                <div class="stat-card jobs clickable" onclick="scrollToSection('sectionJobs')"><h3 id="statJobs">...</h3><p>Total Job Posts</p></div>
+                <div class="stat-card disputes clickable" onclick="scrollToSection('sectionDisputes')" title="Go to disputes"><h3 id="statDisputes">...</h3><p>Open Disputes</p></div>
+            </div>
+
+            <div class="admin-section" id="sectionBroadcast">
                 <h2>📢 Send Message / Broadcast</h2>
                 <div class="broadcast-box">
                     <label><strong>Send to:</strong></label>
@@ -143,12 +174,12 @@
                 </div>
             </div>
 
-            <div class="admin-section">
+            <div class="admin-section" id="sectionContact">
                 <h2>📬 Contact Us Messages</h2>
                 <div id="contactMailsList"><p class="loading">Loading messages...</p></div>
             </div>
 
-            <div class="admin-section">
+            <div class="admin-section" id="sectionUsers">
                 <h2>👥 All Users (Clients & Workers)</h2>
                 <p style="color:var(--text-light);margin-bottom:12px;">Users sorted alphabetically. Use filter <strong>Deleted Accounts</strong> to restore. Click <strong>View</strong> to open details (list stays open).</p>
                 <div class="admin-filter-bar">
@@ -163,12 +194,13 @@
                 <div id="allUsersList"><p class="loading">Loading users...</p></div>
             </div>
 
-            <div class="admin-section">
+            <div class="admin-section" id="sectionDisputes">
                 <h2>🚩 Disputes & Reports</h2>
+                <p style="color:var(--text-light);margin-bottom:12px;">Only <strong>Open</strong> disputes are listed. Marking as solved removes them from this list and from the Open Disputes count.</p>
                 <div id="disputesList"><p class="loading">Loading disputes...</p></div>
             </div>
 
-            <div class="admin-section">
+            <div class="admin-section" id="sectionBugs">
                 <h2>🐞 Report a Bug or Case</h2>
                 <div class="broadcast-box">
                     <input type="text" id="bugTitle" placeholder="Short title" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid var(--border);">
@@ -178,12 +210,12 @@
                 </div>
             </div>
 
-            <div class="admin-section">
+            <div class="admin-section" id="sectionWorkers">
                 <h2>👷 All Workers (Quick Delete / Restore)</h2>
                 <div id="allWorkersList"><p class="loading">Loading workers...</p></div>
             </div>
 
-            <div class="admin-section">
+            <div class="admin-section" id="sectionJobs">
                 <h2>📋 All Job Posts</h2>
                 <div id="allJobsList"><p class="loading">Loading jobs...</p></div>
             </div>
@@ -203,6 +235,7 @@
     <script src="app.js"></script>
     <script>
     document.addEventListener('DOMContentLoaded', async function () {
+        if (typeof initMobileMenu === 'function') initMobileMenu();
         await checkAuth();
 
         var adminEmail = (window.HANDYMAN_CONFIG && window.HANDYMAN_CONFIG.ADMIN_EMAIL) || 'internationalpimerchant@gmail.com';
@@ -234,6 +267,11 @@
         }
     });
 
+    function scrollToSection(id) {
+        var el = document.getElementById(id);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
     function formatPhone(phone) {
         if (!phone) return null;
         var p = phone.toString().replace(/\D/g, '');
@@ -264,6 +302,9 @@
     }
 
     function escapeHtml(str) {
+        if (typeof window.escapeHtml === 'function' && window.escapeHtml !== escapeHtml) {
+            return window.escapeHtml(str);
+        }
         if (!str) return '';
         return String(str)
             .replace(/&/g, '&amp;')
@@ -632,9 +673,14 @@
             return;
         }
         try {
-            var res = await supabaseClient.from('disputes').select('*').order('created_at', { ascending: false });
+            // Only Open disputes so solved ones no longer appear
+            var res = await supabaseClient
+                .from('disputes')
+                .select('*')
+                .eq('status', 'Open')
+                .order('created_at', { ascending: false });
             if (res.error || !res.data || res.data.length === 0) {
-                setHtml('disputesList', '<p class="empty-dashboard">No disputes yet.</p>');
+                setHtml('disputesList', '<p class="empty-dashboard">No open disputes.</p>');
                 return;
             }
             setHtml('disputesList', res.data.map(function (d) {
@@ -670,9 +716,7 @@
         var targetId = d.target_id || '';
         var targetType = (d.target_type || '').toLowerCase();
         var safeReporter = (d.reporter_name || 'Reporter').replace(/'/g, "\\'");
-        var safeTarget = (d.target_name || 'Reported Person').replace(/'/g, "\\'");
 
-        // Resolve reported person's profile ID (worker id or job's client_id)
         var reportedPersonId = null;
         var reportedPersonName = d.target_name || 'Unknown';
         var reportedPersonPhone = '';
@@ -699,8 +743,7 @@
                         }
                     }
                 }
-            } else if (targetId && targetId.length > 10) {
-                // Fallback: treat as profile id
+            } else if (targetId && targetId.length > 10 && targetType !== 'bug') {
                 reportedPersonId = targetId;
                 var fr = await supabaseClient.from('profiles').select('id, full_name, phone').eq('id', targetId).maybeSingle();
                 if (fr.data) {
@@ -712,7 +755,6 @@
             console.log('Could not resolve reported person:', e);
         }
 
-        // Reporter phone
         var reporterPhone = '';
         if (reporterId) {
             try {
@@ -724,16 +766,18 @@
             } catch (e) {}
         }
 
+        var safeReported = (reportedPersonName || 'User').replace(/'/g, "\\'");
+
         var msgReporterBtn = reporterId
             ? '<button type="button" class="btn-primary" onclick="messageUser(\'' + reporterId + '\',\'' + safeReporter + '\')">Message Reporter</button>'
             : '';
 
         var msgReportedBtn = reportedPersonId
-            ? '<button type="button" class="btn-primary" onclick="messageUser(\'' + reportedPersonId + '\',\'' + (reportedPersonName || 'User').replace(/'/g, "\\'") + '\')">Message Reported Person</button>'
+            ? '<button type="button" class="btn-primary" onclick="messageUser(\'' + reportedPersonId + '\',\'' + safeReported + '\')">Message Reported Person</button>'
             : '';
 
         var resolveBtn = d.status === 'Open'
-            ? '<button type="button" class="btn-small" onclick="resolveDispute(\'' + d.id + '\')">Mark Resolved</button>'
+            ? '<button type="button" class="btn-small" onclick="resolveDispute(\'' + d.id + '\')">Mark Solved (Remove)</button>'
             : '';
 
         var reporterContactHtml = '';
@@ -805,14 +849,30 @@
     }
 
     async function resolveDispute(disputeId) {
-        if (!confirm('Mark as resolved?')) return;
-        var res = await supabaseClient.from('disputes').update({ status: 'Resolved' }).eq('id', disputeId);
-        if (res.error) alert('Error: ' + res.error.message);
-        else {
-            alert('Resolved.');
-            loadDisputes();
-            loadStats();
+        if (!confirm('Mark this dispute as solved?\n\nIt will be REMOVED from the list and will no longer count as an open dispute.')) return;
+
+        // Prefer DELETE so it disappears and open count drops
+        var res = await supabaseClient.from('disputes').delete().eq('id', disputeId).select('id');
+
+        if (res.error) {
+            // Fallback if RLS blocks delete
+            var upd = await supabaseClient.from('disputes').update({ status: 'Resolved' }).eq('id', disputeId).select('id, status');
+            if (upd.error || !upd.data || upd.data.length === 0) {
+                alert('Could not close dispute.\n\nError: ' + (res.error.message || (upd.error && upd.error.message) || 'No permission') +
+                    '\n\nIn Supabase SQL, allow admin DELETE (and UPDATE) on table disputes.');
+                return;
+            }
+            alert('Marked as Resolved (delete not allowed by database policy). It will no longer appear in Open list.');
+        } else {
+            if (!res.data || res.data.length === 0) {
+                alert('Dispute was not removed. Check Supabase RLS: admin must be allowed to DELETE from disputes.');
+                return;
+            }
+            alert('Dispute solved and removed.');
         }
+
+        loadDisputes();
+        loadStats();
     }
 
     async function loadAllWorkers() {
@@ -834,9 +894,9 @@
                 var safeName = (p.full_name || 'worker').replace(/'/g, "\\'");
                 var isDeleted = p.is_deleted === true || w.availability === 'Deleted';
                 return '<div class="dispute-row ' + (isDeleted ? 'deleted-user' : '') + '">' +
-                    '<div class="dispute-info"><h4>' + (p.full_name || 'Unknown') +
+                    '<div class="dispute-info"><h4>' + escapeHtml(p.full_name || 'Unknown') +
                     (isDeleted ? ' <span style="color:#ef4444;">(Deleted)</span>' : '') +
-                    '</h4><p>' + (w.category || '') + ' • ' + (p.phone || 'No phone') + ' • ' + (p.location || 'Cameroon') +
+                    '</h4><p>' + escapeHtml(w.category || '') + ' • ' + (p.phone || 'No phone') + ' • ' + escapeHtml(p.location || 'Cameroon') +
                     '</p></div>' +
                     '<div class="user-actions">' +
                     '<button type="button" class="btn-small" onclick="viewUserDetail(\'' + w.id + '\')">View</button> ' +
@@ -867,9 +927,9 @@
             setHtml('allJobsList', res.data.map(function (job) {
                 var date = new Date(job.created_at).toLocaleDateString('en-GB');
                 var poster = (job.profiles && job.profiles.full_name) || 'Unknown';
-                return '<div class="dispute-row"><div class="dispute-info"><h4>' + (job.title || '') +
-                    '</h4><p>' + (job.category || '') + ' • ' + (job.location || '') + ' • ' + poster + ' • ' + date +
-                    ' • ' + (job.status || '') + '</p></div>' +
+                return '<div class="dispute-row"><div class="dispute-info"><h4>' + escapeHtml(job.title || '') +
+                    '</h4><p>' + escapeHtml(job.category || '') + ' • ' + escapeHtml(job.location || '') + ' • ' + escapeHtml(poster) + ' • ' + date +
+                    ' • ' + escapeHtml(job.status || '') + '</p></div>' +
                     '<a href="job.html?id=' + job.id + '" class="btn-small">View</a></div>';
             }).join(''));
         } catch (err) {
@@ -902,10 +962,10 @@
                 var date = m.created_at ? new Date(m.created_at).toLocaleString('en-GB') : '';
                 var unreadClass = m.read ? '' : 'unread';
                 return '<div class="mail-row ' + unreadClass + '">' +
-                    '<p><strong>From:</strong> ' + (m.name || 'Anonymous') + ' &lt;' + (m.email || '') + '&gt;</p>' +
-                    '<p><strong>Phone:</strong> ' + (m.phone || '—') + '</p>' +
+                    '<p><strong>From:</strong> ' + escapeHtml(m.name || 'Anonymous') + ' &lt;' + escapeHtml(m.email || '') + '&gt;</p>' +
+                    '<p><strong>Phone:</strong> ' + escapeHtml(m.phone || '—') + '</p>' +
                     '<p><strong>Date:</strong> ' + date + '</p>' +
-                    '<p style="white-space:pre-wrap;background:#f8fafc;padding:10px;border-radius:8px;">' + (m.message || '') + '</p>' +
+                    '<p style="white-space:pre-wrap;background:#f8fafc;padding:10px;border-radius:8px;">' + escapeHtml(m.message || '') + '</p>' +
                     (m.read ? '' : '<button type="button" class="btn-small" onclick="markMailRead(\'' + m.id + '\')">Mark as Read</button>') +
                     '</div>';
             }).join(''));
