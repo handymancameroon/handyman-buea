@@ -114,7 +114,8 @@
                             <option value="Others">Others (specify below)</option>
                         </select>
                         <div id="wCustomCategoryField" class="custom-category-field">
-                            <input type="text" id="wCustomCategory" placeholder="Enter your skill or category">
+                            <input type="text" id="wCustomCategory" placeholder="Enter your skill or category (max 5 words)" maxlength="60">
+                            <small class="upload-hint">Maximum 5 words. Extra words will be removed.</small>
                         </div>
                     </div>
 
@@ -177,6 +178,17 @@
                     if (n) n.classList.toggle('active');
                 });
             }
+
+            // Limit custom category to 5 words while typing
+            var customCat = document.getElementById('wCustomCategory');
+            if (customCat) {
+                customCat.addEventListener('input', function () {
+                    var words = this.value.trim().split(/\s+/).filter(Boolean);
+                    if (words.length > 5) {
+                        this.value = words.slice(0, 5).join(' ');
+                    }
+                });
+            }
         });
 
         function handleJoinTownChange() {
@@ -213,10 +225,17 @@
             return town || 'Cameroon';
         }
 
+        function limitToFiveWords(text) {
+            if (!text) return '';
+            var words = text.trim().split(/\s+/).filter(Boolean);
+            return words.slice(0, 5).join(' ');
+        }
+
         function getJoinCategory() {
             var cat = document.getElementById('wCategory').value;
             if (cat === 'Others') {
-                return document.getElementById('wCustomCategory').value.trim() || 'Others';
+                var custom = limitToFiveWords(document.getElementById('wCustomCategory').value);
+                return custom || 'Others';
             }
             return cat;
         }
