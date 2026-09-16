@@ -66,9 +66,10 @@
         let clientId = null;
 
         document.addEventListener('DOMContentLoaded', async () => {
+            if (window.supabaseReady) { await window.supabaseReady; }
             await checkAuth();
             applyLanguage();
-            setTimeout(async () => { await loadJobDetail(); }, 200);
+            await loadJobDetail();
         });
 
         async function loadJobDetail() {
@@ -151,7 +152,7 @@
                                     <strong>Reviewer</strong>
                                     <span>${'⭐'.repeat(r.rating || 0)} (${r.rating}/5)</span>
                                 </div>
-                                <p>${r.comment || t('no_comment')}</p>
+                                <p>${escapeHtml(r.comment) || t('no_comment')}</p>
                             </div>
                         `).join('');
                     }
@@ -229,7 +230,7 @@
                     
                     <div class="job-detail-header">
                         <div style="width: 100%;">
-                            <h1>${job.title}</h1>
+                            <h1>${escapeHtml(job.title)}</h1>
                             <p class="job-detail-category">${catDisplay}</p>
                             <div class="job-meta">
                                 <span>📍 ${job.location || 'Cameroon'}</span>
@@ -243,7 +244,7 @@
                     
                     <div class="job-description">
                         <h3>${t('job_description')}</h3>
-                        <p>${job.description}</p>
+                        <p>${escapeHtml(job.description)}</p>
                     </div>
                     
                     ${portfolioHtml}
@@ -251,9 +252,9 @@
                     <div class="client-info">
                         <h3>${t('client_information')}</h3>
                         <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
-                            <img src="${avatarUrl}" class="client-avatar-small" onerror="this.onerror=null;this.src='https://via.placeholder.com/60?text=No+Photo'" alt="${p.full_name || 'Client'}">
+                            <img src="${avatarUrl}" class="client-avatar-small" onerror="this.onerror=null;this.src='https://via.placeholder.com/60?text=No+Photo'" alt="${escapeHtml(p.full_name || 'Client')}">
                             <div>
-                                <p style="font-size: 1.1rem; font-weight: 600; margin-bottom: 4px;">${p.full_name || t('anonymous')}</p>
+                                <p style="font-size: 1.1rem; font-weight: 600; margin-bottom: 4px;">${escapeHtml(p.full_name || t('anonymous'))}</p>
                                 <p style="color: var(--text-light); font-size: 0.9rem;">📍 ${p.location || 'Cameroon'}</p>
                             </div>
                         </div>
