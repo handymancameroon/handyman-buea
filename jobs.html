@@ -219,13 +219,13 @@
                 var catLabel = (typeof getCategoryDisplayName === 'function')
                     ? getCategoryDisplayName(j.category || 'Others')
                     : (j.category || 'General');
-                var poster = (j.profiles && j.profiles.full_name) ? j.profiles.full_name : 'Anonymous';
+                var poster = escapeHtml((j.profiles && j.profiles.full_name) ? j.profiles.full_name : 'Anonymous');
                 html += '<div class="job-card" onclick="viewJob(\'' + j.id + '\')">' +
                     '<span class="job-status">' + (j.status || '') + '</span>' +
-                    '<h3>' + (j.title || '') + '</h3>' +
+                    '<h3>' + escapeHtml(j.title || '') + '</h3>' +
                     '<p class="job-category">' + catLabel + '</p>' +
-                    '<p class="job-location">📍 ' + (j.location || 'Cameroon') + '</p>' +
-                    '<p class="job-budget">' + (j.budget || 'Budget not specified') + '</p>' +
+                    '<p class="job-location">📍 ' + escapeHtml(j.location || 'Cameroon') + '</p>' +
+                    '<p class="job-budget">' + escapeHtml(j.budget || 'Budget not specified') + '</p>' +
                     '<p style="color: var(--text-light); font-size: 0.875rem;">Posted by ' + poster + '</p>' +
                     '<button class="btn-small" style="margin-top: 12px;">' +
                     (typeof t === 'function' ? t('view_job') : 'View Job') + '</button>' +
