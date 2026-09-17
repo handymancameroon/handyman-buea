@@ -80,39 +80,6 @@
         }
         .user-modal-box h3 { margin-bottom: 12px; padding-right: 30px; }
         .user-modal-box p { margin-bottom: 8px; }
-
-        /* Jump nav + clickable stats */
-        .admin-jump-nav {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 24px;
-        }
-        .admin-jump-nav .btn-small {
-            cursor: pointer;
-        }
-        .stat-card.clickable {
-            cursor: pointer;
-            transition: transform 0.15s, box-shadow 0.15s;
-        }
-        .stat-card.clickable:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-        }
-        .reported-box {
-            background: #fef3c7;
-            border: 1px solid #f59e0b;
-            border-radius: 10px;
-            padding: 14px;
-            margin: 14px 0;
-        }
-        .reporter-box {
-            background: #eff6ff;
-            border: 1px solid #3b82f6;
-            border-radius: 10px;
-            padding: 14px;
-            margin: 14px 0;
-        }
     </style>
 </head>
 <body>
@@ -126,40 +93,43 @@
                 <a href="dashboard.html" class="btn-secondary">My Profile</a>
                 <a href="login.html" class="btn-secondary" id="authBtn">Login</a>
             </nav>
-            <button class="menu-toggle" id="menuToggle" type="button">☰</button>
+            <button class="menu-toggle" id="menuToggle">☰</button>
         </div>
     </header>
 
     <main class="admin-page">
         <div class="container">
-            <h1>⚙️ Admin Control Panel</h1>
-            <p style="color: var(--text-light); margin-bottom: 16px;">Welcome back, Administrator.</p>
+            <h1 id="adminTop">⚙️ Admin Control Panel</h1>
+            <p style="color: var(--text-light); margin-bottom: 20px;">Welcome back, Administrator.</p>
 
-            <!-- Jump navigation -->
-            <div class="admin-jump-nav">
-                <button type="button" class="btn-small" onclick="scrollToSection('statsGrid')">📊 Stats</button>
-                <button type="button" class="btn-small" onclick="scrollToSection('sectionBroadcast')">📢 Broadcast</button>
-                <button type="button" class="btn-small" onclick="scrollToSection('sectionContact')">📬 Messages</button>
-                <button type="button" class="btn-small" onclick="scrollToSection('sectionUsers')">👥 Users</button>
-                <button type="button" class="btn-small" onclick="scrollToSection('sectionDisputes')">🚩 Disputes</button>
-                <button type="button" class="btn-small" onclick="scrollToSection('sectionBugs')">🐞 Bugs</button>
-                <button type="button" class="btn-small" onclick="scrollToSection('sectionWorkers')">👷 Workers</button>
-                <button type="button" class="btn-small" onclick="scrollToSection('sectionJobs')">📋 Jobs</button>
+            <!-- Section navigation (sticky) -->
+            <nav class="admin-section-nav" id="adminSectionNav" aria-label="Admin sections">
+                <a href="#section-stats">Stats</a>
+                <a href="#section-broadcast">Broadcast</a>
+                <a href="#section-mails">Messages</a>
+                <a href="#section-users">Users</a>
+                <a href="#section-disputes">Disputes</a>
+                <a href="#section-bugs">Bug Report</a>
+                <a href="#section-workers">Workers</a>
+                <a href="#section-jobs">Job Posts</a>
+            </nav>
+
+            <div class="admin-section" id="section-stats">
+                <div class="admin-stats-grid" id="statsGrid">
+                    <div class="stat-card visitors"><h3 id="statVisitors">...</h3><p>Total Visitors</p></div>
+                    <div class="stat-card today"><h3 id="statTodayVisitors">...</h3><p>Visitors Today</p></div>
+                    <div class="stat-card"><h3 id="statWeekVisitors">...</h3><p>Visitors This Week</p></div>
+                    <div class="stat-card"><h3 id="statMonthVisitors">...</h3><p>Visitors This Month</p></div>
+                    <div class="stat-card today"><h3 id="statTodayRegs">...</h3><p>Registered Today</p></div>
+                    <div class="stat-card workers"><h3 id="statWorkers">...</h3><p>Workers Registered</p></div>
+                    <div class="stat-card clients"><h3 id="statClients">...</h3><p>Employers / Clients</p></div>
+                    <div class="stat-card jobs"><h3 id="statJobs">...</h3><p>Total Job Posts</p></div>
+                    <div class="stat-card disputes"><h3 id="statDisputes">...</h3><p>Open Disputes</p></div>
+                </div>
+                <div class="admin-back-top"><a href="#adminTop">↑ Back to top</a></div>
             </div>
 
-            <div class="admin-stats-grid" id="statsGrid">
-                <div class="stat-card visitors clickable" onclick="scrollToSection('statsGrid')"><h3 id="statVisitors">...</h3><p>Total Visitors</p></div>
-                <div class="stat-card today clickable" onclick="scrollToSection('statsGrid')"><h3 id="statTodayVisitors">...</h3><p>Visitors Today</p></div>
-                <div class="stat-card clickable" onclick="scrollToSection('statsGrid')"><h3 id="statWeekVisitors">...</h3><p>Visitors This Week</p></div>
-                <div class="stat-card clickable" onclick="scrollToSection('statsGrid')"><h3 id="statMonthVisitors">...</h3><p>Visitors This Month</p></div>
-                <div class="stat-card today clickable" onclick="scrollToSection('sectionUsers')"><h3 id="statTodayRegs">...</h3><p>Registered Today</p></div>
-                <div class="stat-card workers clickable" onclick="scrollToSection('sectionWorkers')"><h3 id="statWorkers">...</h3><p>Workers Registered</p></div>
-                <div class="stat-card clients clickable" onclick="scrollToSection('sectionUsers')"><h3 id="statClients">...</h3><p>Employers / Clients</p></div>
-                <div class="stat-card jobs clickable" onclick="scrollToSection('sectionJobs')"><h3 id="statJobs">...</h3><p>Total Job Posts</p></div>
-                <div class="stat-card disputes clickable" onclick="scrollToSection('sectionDisputes')" title="Go to disputes"><h3 id="statDisputes">...</h3><p>Open Disputes</p></div>
-            </div>
-
-            <div class="admin-section" id="sectionBroadcast">
+            <div class="admin-section" id="section-broadcast">
                 <h2>📢 Send Message / Broadcast</h2>
                 <div class="broadcast-box">
                     <label><strong>Send to:</strong></label>
@@ -172,14 +142,16 @@
                     <button type="button" class="btn-primary" onclick="sendBroadcast()">Send In-App Notification</button>
                     <p id="broadcastStatus" class="message"></p>
                 </div>
+                <div class="admin-back-top"><a href="#adminTop">↑ Back to top</a></div>
             </div>
 
-            <div class="admin-section" id="sectionContact">
+            <div class="admin-section" id="section-mails">
                 <h2>📬 Contact Us Messages</h2>
                 <div id="contactMailsList"><p class="loading">Loading messages...</p></div>
+                <div class="admin-back-top"><a href="#adminTop">↑ Back to top</a></div>
             </div>
 
-            <div class="admin-section" id="sectionUsers">
+            <div class="admin-section" id="section-users">
                 <h2>👥 All Users (Clients & Workers)</h2>
                 <p style="color:var(--text-light);margin-bottom:12px;">Users sorted alphabetically. Use filter <strong>Deleted Accounts</strong> to restore. Click <strong>View</strong> to open details (list stays open).</p>
                 <div class="admin-filter-bar">
@@ -192,15 +164,16 @@
                     <input type="text" id="userSearch" placeholder="Search by name, phone or location..." oninput="loadAllUsers()">
                 </div>
                 <div id="allUsersList"><p class="loading">Loading users...</p></div>
+                <div class="admin-back-top"><a href="#adminTop">↑ Back to top</a></div>
             </div>
 
-            <div class="admin-section" id="sectionDisputes">
+            <div class="admin-section" id="section-disputes">
                 <h2>🚩 Disputes & Reports</h2>
-                <p style="color:var(--text-light);margin-bottom:12px;">Only <strong>Open</strong> disputes are listed. Marking as solved removes them from this list and from the Open Disputes count.</p>
                 <div id="disputesList"><p class="loading">Loading disputes...</p></div>
+                <div class="admin-back-top"><a href="#adminTop">↑ Back to top</a></div>
             </div>
 
-            <div class="admin-section" id="sectionBugs">
+            <div class="admin-section" id="section-bugs">
                 <h2>🐞 Report a Bug or Case</h2>
                 <div class="broadcast-box">
                     <input type="text" id="bugTitle" placeholder="Short title" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid var(--border);">
@@ -208,16 +181,31 @@
                     <button type="button" class="btn-primary" onclick="submitBugReport()">Save Bug / Case Report</button>
                     <p id="bugStatus" class="message"></p>
                 </div>
+                <div class="admin-back-top"><a href="#adminTop">↑ Back to top</a></div>
             </div>
 
-            <div class="admin-section" id="sectionWorkers">
+            <div class="admin-section" id="section-workers">
                 <h2>👷 All Workers (Quick Delete / Restore)</h2>
                 <div id="allWorkersList"><p class="loading">Loading workers...</p></div>
+                <div class="admin-back-top"><a href="#adminTop">↑ Back to top</a></div>
             </div>
 
-            <div class="admin-section" id="sectionJobs">
+            <div class="admin-section" id="section-jobs">
                 <h2>📋 All Job Posts</h2>
+                <p style="color:var(--text-light);margin-bottom:12px;">
+                    Deactivate hides a job from the public site (status = Deactivated). Restore brings it back to Open. Delete removes it permanently.
+                </p>
+                <div class="admin-filter-bar">
+                    <select id="jobFilter" onchange="loadAllJobs()">
+                        <option value="all">All jobs</option>
+                        <option value="Open">Open only</option>
+                        <option value="Taken">Taken / Closed</option>
+                        <option value="Deactivated">Deactivated only</option>
+                    </select>
+                    <input type="text" id="jobSearch" placeholder="Search title, location, category..." oninput="loadAllJobs()">
+                </div>
                 <div id="allJobsList"><p class="loading">Loading jobs...</p></div>
+                <div class="admin-back-top"><a href="#adminTop">↑ Back to top</a></div>
             </div>
         </div>
     </main>
@@ -235,7 +223,6 @@
     <script src="app.js"></script>
     <script>
     document.addEventListener('DOMContentLoaded', async function () {
-        if (typeof initMobileMenu === 'function') initMobileMenu();
         await checkAuth();
 
         var adminEmail = (window.HANDYMAN_CONFIG && window.HANDYMAN_CONFIG.ADMIN_EMAIL) || 'internationalpimerchant@gmail.com';
@@ -267,11 +254,6 @@
         }
     });
 
-    function scrollToSection(id) {
-        var el = document.getElementById(id);
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-
     function formatPhone(phone) {
         if (!phone) return null;
         var p = phone.toString().replace(/\D/g, '');
@@ -299,19 +281,6 @@
     function setHtml(id, html) {
         var el = document.getElementById(id);
         if (el) el.innerHTML = html;
-    }
-
-    function escapeHtml(str) {
-        if (typeof window.escapeHtml === 'function' && window.escapeHtml !== escapeHtml) {
-            return window.escapeHtml(str);
-        }
-        if (!str) return '';
-        return String(str)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;');
     }
 
     async function loadStats() {
@@ -673,14 +642,9 @@
             return;
         }
         try {
-            // Only Open disputes so solved ones no longer appear
-            var res = await supabaseClient
-                .from('disputes')
-                .select('*')
-                .eq('status', 'Open')
-                .order('created_at', { ascending: false });
+            var res = await supabaseClient.from('disputes').select('*').order('created_at', { ascending: false });
             if (res.error || !res.data || res.data.length === 0) {
-                setHtml('disputesList', '<p class="empty-dashboard">No open disputes.</p>');
+                setHtml('disputesList', '<p class="empty-dashboard">No disputes yet.</p>');
                 return;
             }
             setHtml('disputesList', res.data.map(function (d) {
@@ -691,7 +655,7 @@
                 return '<div class="dispute-row" style="cursor:pointer;" onclick="openDisputeDetail(\'' + d.id + '\')">' +
                     '<div class="dispute-info">' +
                     '<h4>' + escapeHtml(d.reason || 'Report') + '</h4>' +
-                    '<p><strong>Reported:</strong> ' + escapeHtml(d.target_name || 'Unknown') + ' (' + escapeHtml(d.target_type || '') + ')</p>' +
+                    '<p><strong>Target:</strong> ' + escapeHtml(d.target_name || '') + ' (' + escapeHtml(d.target_type || '') + ')</p>' +
                     '<p><strong>Reporter:</strong> ' + escapeHtml(d.reporter_name || 'Anonymous') + '</p>' +
                     '<p style="font-size:0.85rem;">' + preview + '</p>' +
                     '<p style="font-size:0.8rem;">' + date + ' • <span class="status-badge ' + statusClass + '">' + (d.status || '') + '</span></p>' +
@@ -714,117 +678,50 @@
         var date = new Date(d.created_at).toLocaleString('en-GB');
         var reporterId = d.reporter_id || '';
         var targetId = d.target_id || '';
-        var targetType = (d.target_type || '').toLowerCase();
         var safeReporter = (d.reporter_name || 'Reporter').replace(/'/g, "\\'");
-
-        var reportedPersonId = null;
-        var reportedPersonName = d.target_name || 'Unknown';
-        var reportedPersonPhone = '';
-        var reportedExtraInfo = '';
-
-        try {
-            if (targetType === 'worker' && targetId && targetId.length > 10) {
-                reportedPersonId = targetId;
-                var wr = await supabaseClient.from('profiles').select('id, full_name, phone').eq('id', targetId).maybeSingle();
-                if (wr.data) {
-                    reportedPersonName = wr.data.full_name || reportedPersonName;
-                    reportedPersonPhone = wr.data.phone || '';
-                }
-            } else if (targetType === 'job' && targetId) {
-                var jr = await supabaseClient.from('job_posts').select('id, title, client_id, category, location').eq('id', targetId).maybeSingle();
-                if (jr.data) {
-                    reportedExtraInfo = 'Job: ' + (jr.data.title || '') + ' • ' + (jr.data.category || '') + ' • ' + (jr.data.location || '');
-                    if (jr.data.client_id) {
-                        reportedPersonId = jr.data.client_id;
-                        var cr = await supabaseClient.from('profiles').select('id, full_name, phone').eq('id', jr.data.client_id).maybeSingle();
-                        if (cr.data) {
-                            reportedPersonName = cr.data.full_name || reportedPersonName;
-                            reportedPersonPhone = cr.data.phone || '';
-                        }
-                    }
-                }
-            } else if (targetId && targetId.length > 10 && targetType !== 'bug') {
-                reportedPersonId = targetId;
-                var fr = await supabaseClient.from('profiles').select('id, full_name, phone').eq('id', targetId).maybeSingle();
-                if (fr.data) {
-                    reportedPersonName = fr.data.full_name || reportedPersonName;
-                    reportedPersonPhone = fr.data.phone || '';
-                }
-            }
-        } catch (e) {
-            console.log('Could not resolve reported person:', e);
-        }
-
-        var reporterPhone = '';
-        if (reporterId) {
-            try {
-                var pr = await supabaseClient.from('profiles').select('id, full_name, phone').eq('id', reporterId).maybeSingle();
-                if (pr.data) {
-                    reporterPhone = pr.data.phone || '';
-                    if (pr.data.full_name) safeReporter = pr.data.full_name.replace(/'/g, "\\'");
-                }
-            } catch (e) {}
-        }
-
-        var safeReported = (reportedPersonName || 'User').replace(/'/g, "\\'");
+        var safeTarget = (d.target_name || 'User').replace(/'/g, "\\'");
 
         var msgReporterBtn = reporterId
             ? '<button type="button" class="btn-primary" onclick="messageUser(\'' + reporterId + '\',\'' + safeReporter + '\')">Message Reporter</button>'
             : '';
-
-        var msgReportedBtn = reportedPersonId
-            ? '<button type="button" class="btn-primary" onclick="messageUser(\'' + reportedPersonId + '\',\'' + safeReported + '\')">Message Reported Person</button>'
+        var msgTargetBtn = (targetId && d.target_type !== 'Bug' && d.target_type !== 'job')
+            ? '<button type="button" class="btn-primary" onclick="messageUser(\'' + targetId + '\',\'' + safeTarget + '\')">Message Reported Person</button>'
             : '';
-
         var resolveBtn = d.status === 'Open'
-            ? '<button type="button" class="btn-small" onclick="resolveDispute(\'' + d.id + '\')">Mark Solved (Remove)</button>'
+            ? '<button type="button" class="btn-small" onclick="resolveDispute(\'' + d.id + '\')">Mark Resolved</button>'
             : '';
 
-        var reporterContactHtml = '';
-        if (reporterPhone) {
-            reporterContactHtml = '<p style="margin-top:8px;">' +
-                '<a class="btn-call" href="' + callLink(reporterPhone) + '">Call Reporter</a> ' +
-                '<a class="btn-whatsapp" href="' + whatsappLink(reporterPhone) + '" target="_blank">WhatsApp Reporter</a></p>';
-        }
-
-        var reportedContactHtml = '';
-        if (reportedPersonPhone) {
-            reportedContactHtml = '<p style="margin-top:8px;">' +
-                '<a class="btn-call" href="' + callLink(reportedPersonPhone) + '">Call Reported Person</a> ' +
-                '<a class="btn-whatsapp" href="' + whatsappLink(reportedPersonPhone) + '" target="_blank">WhatsApp Reported Person</a></p>';
-        }
+        var phonesHtml = '';
+        try {
+            var ids = [];
+            if (reporterId) ids.push(reporterId);
+            if (targetId && targetId.length > 10) ids.push(targetId);
+            if (ids.length) {
+                var pr = await supabaseClient.from('profiles').select('id, full_name, phone').in('id', ids);
+                if (pr.data) {
+                    phonesHtml = pr.data.map(function (p) {
+                        var ph = p.phone || '';
+                        if (!ph) return '';
+                        return '<p><strong>' + (p.full_name || 'User') + ':</strong> ' +
+                            '<a class="btn-call" href="' + callLink(ph) + '">Call</a> ' +
+                            '<a class="btn-whatsapp" href="' + whatsappLink(ph) + '" target="_blank">WhatsApp</a></p>';
+                    }).join('');
+                }
+            }
+        } catch (e) {}
 
         var html = '<div class="dispute-detail-box">' +
             '<h3>🚩 Dispute Detail</h3>' +
             '<p><strong>Reason:</strong> ' + escapeHtml(d.reason || '') + '</p>' +
+            '<p><strong>Target:</strong> ' + escapeHtml(d.target_name || '') + ' (' + escapeHtml(d.target_type || '') + ') — ID: ' + (targetId || 'n/a') + '</p>' +
+            '<p><strong>Reporter:</strong> ' + escapeHtml(d.reporter_name || 'Anonymous') + ' — ID: ' + (reporterId || 'n/a') + '</p>' +
             '<p><strong>Status:</strong> ' + (d.status || '') + '</p>' +
             '<p><strong>Date:</strong> ' + date + '</p>' +
-
-            '<div class="reported-box">' +
-            '<h4 style="margin:0 0 8px;">👤 Reported Person / Item</h4>' +
-            '<p><strong>Name:</strong> ' + escapeHtml(reportedPersonName || d.target_name || 'Unknown') + '</p>' +
-            '<p><strong>Type:</strong> ' + escapeHtml(d.target_type || '') + '</p>' +
-            '<p><strong>Target ID:</strong> ' + escapeHtml(targetId || 'n/a') + '</p>' +
-            (reportedExtraInfo ? '<p><strong>Job info:</strong> ' + escapeHtml(reportedExtraInfo) + '</p>' : '') +
-            (reportedPersonId ? '<p><strong>Profile ID:</strong> ' + reportedPersonId + '</p>' : '') +
-            (reportedPersonPhone ? '<p><strong>Phone:</strong> ' + escapeHtml(reportedPersonPhone) + '</p>' : '') +
-            reportedContactHtml +
-            (msgReportedBtn ? '<p style="margin-top:8px;">' + msgReportedBtn + '</p>' : '<p style="color:#b45309;margin-top:8px;">No direct contact ID available for reported person.</p>') +
-            '</div>' +
-
-            '<div class="reporter-box">' +
-            '<h4 style="margin:0 0 8px;">📣 Reporter</h4>' +
-            '<p><strong>Name:</strong> ' + escapeHtml(d.reporter_name || 'Anonymous') + '</p>' +
-            '<p><strong>Reporter ID:</strong> ' + (reporterId || 'n/a') + '</p>' +
-            (reporterPhone ? '<p><strong>Phone:</strong> ' + escapeHtml(reporterPhone) + '</p>' : '') +
-            reporterContactHtml +
-            (msgReporterBtn ? '<p style="margin-top:8px;">' + msgReporterBtn + '</p>' : '') +
-            '</div>' +
-
+            phonesHtml +
             '<p style="margin-top:12px;"><strong>Full details:</strong></p>' +
             '<p style="background:#f8fafc;padding:12px;border-radius:8px;white-space:pre-wrap;">' + escapeHtml(d.details || 'No details') + '</p>' +
             '<div class="detail-actions">' +
-            resolveBtn +
+            msgReporterBtn + msgTargetBtn + resolveBtn +
             '<button type="button" class="btn-secondary" onclick="loadDisputes()">← Back to list</button>' +
             '</div></div>';
 
@@ -849,30 +746,14 @@
     }
 
     async function resolveDispute(disputeId) {
-        if (!confirm('Mark this dispute as solved?\n\nIt will be REMOVED from the list and will no longer count as an open dispute.')) return;
-
-        // Prefer DELETE so it disappears and open count drops
-        var res = await supabaseClient.from('disputes').delete().eq('id', disputeId).select('id');
-
-        if (res.error) {
-            // Fallback if RLS blocks delete
-            var upd = await supabaseClient.from('disputes').update({ status: 'Resolved' }).eq('id', disputeId).select('id, status');
-            if (upd.error || !upd.data || upd.data.length === 0) {
-                alert('Could not close dispute.\n\nError: ' + (res.error.message || (upd.error && upd.error.message) || 'No permission') +
-                    '\n\nIn Supabase SQL, allow admin DELETE (and UPDATE) on table disputes.');
-                return;
-            }
-            alert('Marked as Resolved (delete not allowed by database policy). It will no longer appear in Open list.');
-        } else {
-            if (!res.data || res.data.length === 0) {
-                alert('Dispute was not removed. Check Supabase RLS: admin must be allowed to DELETE from disputes.');
-                return;
-            }
-            alert('Dispute solved and removed.');
+        if (!confirm('Mark as resolved?')) return;
+        var res = await supabaseClient.from('disputes').update({ status: 'Resolved' }).eq('id', disputeId);
+        if (res.error) alert('Error: ' + res.error.message);
+        else {
+            alert('Resolved.');
+            loadDisputes();
+            loadStats();
         }
-
-        loadDisputes();
-        loadStats();
     }
 
     async function loadAllWorkers() {
@@ -894,9 +775,9 @@
                 var safeName = (p.full_name || 'worker').replace(/'/g, "\\'");
                 var isDeleted = p.is_deleted === true || w.availability === 'Deleted';
                 return '<div class="dispute-row ' + (isDeleted ? 'deleted-user' : '') + '">' +
-                    '<div class="dispute-info"><h4>' + escapeHtml(p.full_name || 'Unknown') +
+                    '<div class="dispute-info"><h4>' + (p.full_name || 'Unknown') +
                     (isDeleted ? ' <span style="color:#ef4444;">(Deleted)</span>' : '') +
-                    '</h4><p>' + escapeHtml(w.category || '') + ' • ' + (p.phone || 'No phone') + ' • ' + escapeHtml(p.location || 'Cameroon') +
+                    '</h4><p>' + (w.category || '') + ' • ' + (p.phone || 'No phone') + ' • ' + (p.location || 'Cameroon') +
                     '</p></div>' +
                     '<div class="user-actions">' +
                     '<button type="button" class="btn-small" onclick="viewUserDetail(\'' + w.id + '\')">View</button> ' +
@@ -916,25 +797,142 @@
             return;
         }
         try {
-            var res = await supabaseClient
+            var filterEl = document.getElementById('jobFilter');
+            var searchEl = document.getElementById('jobSearch');
+            var filter = filterEl ? filterEl.value : 'all';
+            var search = searchEl ? searchEl.value.toLowerCase().trim() : '';
+
+            var query = supabaseClient
                 .from('job_posts')
                 .select('*, profiles(full_name)')
-                .order('created_at', { ascending: false });
-            if (res.error || !res.data || res.data.length === 0) {
+                .order('created_at', { ascending: false })
+                .limit(300);
+
+            if (filter === 'Open') query = query.eq('status', 'Open');
+            if (filter === 'Taken') query = query.in('status', ['Taken', 'Closed']);
+            if (filter === 'Deactivated') query = query.eq('status', 'Deactivated');
+
+            var res = await query;
+            if (res.error) {
+                setHtml('allJobsList', '<p class="empty-dashboard">Error: ' + res.error.message + '</p>');
+                return;
+            }
+            if (!res.data || res.data.length === 0) {
                 setHtml('allJobsList', '<p class="empty-dashboard">No jobs yet.</p>');
                 return;
             }
-            setHtml('allJobsList', res.data.map(function (job) {
+
+            var list = res.data;
+            if (search) {
+                list = list.filter(function (job) {
+                    var t = (job.title || '').toLowerCase();
+                    var c = (job.category || '').toLowerCase();
+                    var l = (job.location || '').toLowerCase();
+                    var p = (job.profiles && job.profiles.full_name) ? job.profiles.full_name.toLowerCase() : '';
+                    return t.indexOf(search) !== -1 || c.indexOf(search) !== -1 || l.indexOf(search) !== -1 || p.indexOf(search) !== -1;
+                });
+            }
+
+            if (list.length === 0) {
+                setHtml('allJobsList', '<p class="empty-dashboard">No jobs match this filter/search.</p>');
+                return;
+            }
+
+            setHtml('allJobsList', list.map(function (job) {
                 var date = new Date(job.created_at).toLocaleDateString('en-GB');
                 var poster = (job.profiles && job.profiles.full_name) || 'Unknown';
-                return '<div class="dispute-row"><div class="dispute-info"><h4>' + escapeHtml(job.title || '') +
-                    '</h4><p>' + escapeHtml(job.category || '') + ' • ' + escapeHtml(job.location || '') + ' • ' + escapeHtml(poster) + ' • ' + date +
-                    ' • ' + escapeHtml(job.status || '') + '</p></div>' +
-                    '<a href="job.html?id=' + job.id + '" class="btn-small">View</a></div>';
+                var safeTitle = (job.title || 'Job').replace(/'/g, "\\'");
+                var isDeactivated = (job.status === 'Deactivated');
+                var rowClass = isDeactivated ? 'deleted-job' : '';
+
+                var actions = '';
+                if (isDeactivated) {
+                    actions =
+                        '<button type="button" class="btn-primary" onclick="restoreJob(\'' + job.id + '\',\'' + safeTitle + '\')">Restore</button>' +
+                        '<button type="button" class="btn-close-job" onclick="deleteJobPermanent(\'' + job.id + '\',\'' + safeTitle + '\')">Delete</button>';
+                } else {
+                    actions =
+                        '<button type="button" class="btn-secondary" style="padding:6px 12px;font-size:0.85rem;" onclick="deactivateJob(\'' + job.id + '\',\'' + safeTitle + '\')">Deactivate</button>' +
+                        '<button type="button" class="btn-close-job" onclick="deleteJobPermanent(\'' + job.id + '\',\'' + safeTitle + '\')">Delete</button>';
+                }
+
+                return '<div class="dispute-row ' + rowClass + '">' +
+                    '<div class="dispute-info">' +
+                    '<h4>' + escapeHtml(job.title || '') +
+                    (isDeactivated ? ' <span style="color:#ef4444;">(Deactivated)</span>' : '') +
+                    '</h4>' +
+                    '<p>' + escapeHtml(job.category || '') + ' • ' + escapeHtml(job.location || '') +
+                    ' • ' + escapeHtml(poster) + ' • ' + date +
+                    ' • <strong>' + escapeHtml(job.status || '') + '</strong></p>' +
+                    '</div>' +
+                    '<div class="user-actions">' +
+                    '<a href="job.html?id=' + job.id + '" class="btn-small" target="_blank">View</a> ' +
+                    actions +
+                    '</div></div>';
             }).join(''));
         } catch (err) {
             setHtml('allJobsList', '<p class="empty-dashboard">Error loading jobs.</p>');
         }
+    }
+
+    async function deactivateJob(jobId, title) {
+        if (!confirm('Deactivate job "' + title + '"?\n\nIt will be hidden from the public Find Jobs page.\nYou can restore it later.')) return;
+        var res = await supabaseClient
+            .from('job_posts')
+            .update({ status: 'Deactivated' })
+            .eq('id', jobId)
+            .select('id, status');
+        if (res.error) {
+            alert('Error: ' + res.error.message);
+            return;
+        }
+        if (!res.data || res.data.length === 0) {
+            alert('Update did not apply. Check admin RLS policies on job_posts.');
+            return;
+        }
+        alert('Job deactivated.');
+        loadAllJobs();
+        loadStats();
+    }
+
+    async function restoreJob(jobId, title) {
+        if (!confirm('Restore job "' + title + '"?\n\nIt will be set back to Open and appear on the public site.')) return;
+        var res = await supabaseClient
+            .from('job_posts')
+            .update({ status: 'Open' })
+            .eq('id', jobId)
+            .select('id, status');
+        if (res.error) {
+            alert('Error: ' + res.error.message);
+            return;
+        }
+        if (!res.data || res.data.length === 0) {
+            alert('Restore did not apply. Check admin RLS policies on job_posts.');
+            return;
+        }
+        alert('Job restored to Open.');
+        loadAllJobs();
+        loadStats();
+    }
+
+    async function deleteJobPermanent(jobId, title) {
+        if (!confirm('PERMANENTLY delete job "' + title + '"?\n\nThis cannot be undone.')) return;
+        var res = await supabaseClient
+            .from('job_posts')
+            .delete()
+            .eq('id', jobId)
+            .select('id');
+        if (res.error) {
+            alert('Error: ' + res.error.message);
+            return;
+        }
+        if (!res.data || res.data.length === 0) {
+            alert('Delete did not apply. Check admin RLS policies on job_posts (DELETE allowed for admin).');
+            return;
+        }
+        alert('Job permanently deleted.');
+        loadAllJobs();
+        loadStats();
     }
 
     async function loadContactMails() {
@@ -962,10 +960,10 @@
                 var date = m.created_at ? new Date(m.created_at).toLocaleString('en-GB') : '';
                 var unreadClass = m.read ? '' : 'unread';
                 return '<div class="mail-row ' + unreadClass + '">' +
-                    '<p><strong>From:</strong> ' + escapeHtml(m.name || 'Anonymous') + ' &lt;' + escapeHtml(m.email || '') + '&gt;</p>' +
-                    '<p><strong>Phone:</strong> ' + escapeHtml(m.phone || '—') + '</p>' +
+                    '<p><strong>From:</strong> ' + (m.name || 'Anonymous') + ' &lt;' + (m.email || '') + '&gt;</p>' +
+                    '<p><strong>Phone:</strong> ' + (m.phone || '—') + '</p>' +
                     '<p><strong>Date:</strong> ' + date + '</p>' +
-                    '<p style="white-space:pre-wrap;background:#f8fafc;padding:10px;border-radius:8px;">' + escapeHtml(m.message || '') + '</p>' +
+                    '<p style="white-space:pre-wrap;background:#f8fafc;padding:10px;border-radius:8px;">' + (m.message || '') + '</p>' +
                     (m.read ? '' : '<button type="button" class="btn-small" onclick="markMailRead(\'' + m.id + '\')">Mark as Read</button>') +
                     '</div>';
             }).join(''));
