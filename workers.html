@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
     <title>Find Workers in Cameroon | Plumbers, Electricians, Cleaners - Handy Man</title>
     <meta name="description" content="Search and contact trusted local workers across Cameroon: plumbers, electricians, cleaners, carpenters, painters, masons, nannies, house help and more in Buea, Douala, Yaoundé, Bamenda, Limbe and all towns. Free to use.">
@@ -27,6 +27,12 @@
     <meta name="geo.placename" content="Cameroon">
 
     <link rel="stylesheet" href="style.css">
+    <!-- Critical layout: center immediately even before full CSS finishes -->
+    <style>
+        html, body { width: 100%; max-width: 100%; overflow-x: hidden; margin: 0; }
+        .container { width: 100%; max-width: 1200px; margin-left: auto; margin-right: auto; padding-left: 20px; padding-right: 20px; box-sizing: border-box; }
+        .worker-grid { width: 100%; min-height: 120px; }
+    </style>
 </head>
 <body>
     <header class="header">
@@ -40,7 +46,7 @@
                 <a href="post-job.html" class="btn-secondary" data-i18n="nav_post">Post a Job</a>
                 <a href="login.html" class="btn-secondary" id="authBtn" data-i18n="nav_login">Login</a>
             </nav>
-            <button type="button" class="menu-toggle" id="menuToggle" aria-label="Open menu">☰</button>
+            <button class="menu-toggle" id="menuToggle" type="button" aria-label="Open menu">☰</button>
         </div>
     </header>
 
@@ -120,6 +126,8 @@
             'Family Doctors', 'Stay at Home Nurse', 'Security Guard', 'Gardener'
         ];
 
+        var searchInProgress = false;
+
         function isStandardCategory(cat) {
             if (!cat) return false;
             var c = String(cat).trim().toLowerCase();
@@ -139,10 +147,10 @@
 
         document.addEventListener('DOMContentLoaded', async function () {
             try {
-                if (typeof checkAuth === 'function') await checkAuth();
-                if (typeof applyLanguage === 'function') applyLanguage();
+                // Menu is handled once by app.js initMobileMenu — do not bind again here
 
-                /* Mobile menu is handled once in app.js (avoids double-toggle bug) */
+                // Wait briefly for app.js auth if needed, then run search once
+                if (typeof applyLanguage === 'function') applyLanguage();
 
                 var params = new URLSearchParams(window.location.search);
                 var q = params.get('q');
@@ -168,7 +176,7 @@
                         }
                     }
                 }
-                performSearch();
+                await performSearch();
             } catch (err) {
                 console.error(err);
                 var container = document.getElementById('searchResults');
@@ -179,13 +187,19 @@
         });
 
         async function performSearch() {
+            if (searchInProgress) return;
+            searchInProgress = true;
+
             var queryEl = document.getElementById('searchQuery');
             var catEl = document.getElementById('categoryFilter');
             var townEl = document.getElementById('townFilter');
             var container = document.getElementById('searchResults');
             var hint = document.getElementById('othersHint');
 
-            if (!container) return;
+            if (!container) {
+                searchInProgress = false;
+                return;
+            }
 
             var query = (queryEl && queryEl.value ? queryEl.value : '').toLowerCase().trim();
             var category = catEl ? catEl.value : '';
@@ -196,6 +210,7 @@
 
             if (typeof supabaseClient === 'undefined' || !supabaseClient) {
                 container.innerHTML = '<p class="empty">Cannot load workers. Please refresh.</p>';
+                searchInProgress = false;
                 return;
             }
 
@@ -216,6 +231,7 @@
                 if (error) {
                     console.error(error);
                     container.innerHTML = '<p class="error">' + (typeof t === 'function' ? t('error') : 'Error loading workers.') + '</p>';
+                    searchInProgress = false;
                     return;
                 }
 
@@ -250,10 +266,10 @@
                     for (var c = 0; c < filtered.length; c++) {
                         var w2 = filtered[c];
                         var name = ((w2.profiles && w2.profiles.full_name) || '').toLowerCase();
-                        var cat = (w2.category || '').toLowerCase();
+                        var cat2 = (w2.category || '').toLowerCase();
                         var desc = (w2.description || '').toLowerCase();
                         var loc2 = ((w2.profiles && w2.profiles.location) || '').toLowerCase();
-                        if (name.indexOf(query) !== -1 || cat.indexOf(query) !== -1 ||
+                        if (name.indexOf(query) !== -1 || cat2.indexOf(query) !== -1 ||
                             desc.indexOf(query) !== -1 || loc2.indexOf(query) !== -1) {
                             byQuery.push(w2);
                         }
@@ -263,6 +279,7 @@
 
                 if (filtered.length === 0) {
                     container.innerHTML = '<p class="empty">' + (typeof t === 'function' ? t('no_workers') : 'No workers found. Try a different search.') + '</p>';
+                    searchInProgress = false;
                     return;
                 }
 
@@ -275,7 +292,10 @@
                 console.error(err);
                 container.innerHTML = '<p class="error">' + (typeof t === 'function' ? t('error') : 'Error loading workers.') + '</p>';
             }
+            searchInProgress = false;
         }
+
+        window.performSearch = performSearch;
     </script>
 </body>
 </html>
