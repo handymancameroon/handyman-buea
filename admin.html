@@ -43,7 +43,6 @@
         .mail-row { border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 10px; background: #fff; }
         .mail-row.unread { border-left: 4px solid #2563eb; }
 
-        /* Profile view modal – keeps the list intact */
         .user-modal-overlay {
             display: none;
             position: fixed;
@@ -81,7 +80,6 @@
         .user-modal-box h3 { margin-bottom: 12px; padding-right: 30px; }
         .user-modal-box p { margin-bottom: 8px; }
 
-        /* ADDED: Permanent Delete button style */
         .btn-permanent-delete {
             background: #7f1d1d;
             color: #fff;
@@ -91,9 +89,7 @@
             font-size: 0.85rem;
             cursor: pointer;
         }
-        .btn-permanent-delete:hover {
-            background: #991b1b;
-        }
+        .btn-permanent-delete:hover { background: #991b1b; }
     </style>
 </head>
 <body>
@@ -116,7 +112,6 @@
             <h1 id="adminTop">⚙️ Admin Control Panel</h1>
             <p style="color: var(--text-light); margin-bottom: 20px;">Welcome back, Administrator.</p>
 
-            <!-- Section navigation (sticky) -->
             <nav class="admin-section-nav" id="adminSectionNav" aria-label="Admin sections">
                 <a href="#section-stats">Stats</a>
                 <a href="#section-broadcast">Broadcast</a>
@@ -168,10 +163,9 @@
             <div class="admin-section" id="section-users">
                 <h2>👥 All Users (Clients & Workers)</h2>
                 <p style="color:var(--text-light);margin-bottom:12px;">
-                    Users sorted alphabetically. Use filter <strong>Deleted Accounts</strong> to restore.
-                    <strong>Delete</strong> = soft delete (can restore later).
-                    <strong>Permanent Delete</strong> = removes the account and related data from the database (cannot be undone).
-                    Click <strong>View</strong> to open details (list stays open).
+                    <strong>Delete</strong> = soft delete (can restore).
+                    <strong>Permanent Delete</strong> = removes the account and related data completely (cannot be undone).
+                    Use filter <strong>Deleted Accounts</strong> to see soft-deleted users.
                 </p>
                 <div class="admin-filter-bar">
                     <select id="userFilter" onchange="loadAllUsers()">
@@ -212,7 +206,7 @@
             <div class="admin-section" id="section-jobs">
                 <h2>📋 All Job Posts</h2>
                 <p style="color:var(--text-light);margin-bottom:12px;">
-                    Deactivate hides a job from the public site (status = Deactivated). Restore brings it back to Open. Delete removes it permanently.
+                    Deactivate hides a job from the public site. Restore brings it back to Open. Delete removes it permanently.
                 </p>
                 <div class="admin-filter-bar">
                     <select id="jobFilter" onchange="loadAllJobs()">
@@ -229,7 +223,6 @@
         </div>
     </main>
 
-    <!-- Profile detail modal (does NOT replace the list) -->
     <div class="user-modal-overlay" id="userModal">
         <div class="user-modal-box" id="userModalContent">
             <button type="button" class="close-modal" onclick="closeUserModal()">✕</button>
@@ -401,7 +394,6 @@
                       '<a class="btn-whatsapp" href="' + whatsappLink(phone) + '" target="_blank">WhatsApp</a>'
                     : '';
 
-                // ADDED: Permanent Delete button always available
                 var actionBtn = isDeleted
                     ? '<button type="button" class="btn-primary" onclick="restoreUser(\'' + u.id + '\',\'' + safeName + '\')">Restore</button>' +
                       '<button type="button" class="btn-permanent-delete" onclick="permanentDeleteUser(\'' + u.id + '\',\'' + safeName + '\')">Permanent Delete</button>'
@@ -498,7 +490,6 @@
                   '<a class="btn-whatsapp" href="' + whatsappLink(phone) + '" target="_blank">WhatsApp</a> '
                 : '';
 
-            // ADDED: Permanent Delete button in modal
             var actionBtn = profile.is_deleted
                 ? '<button type="button" class="btn-primary" onclick="restoreUser(\'' + profile.id + '\',\'' + safeName + '\'); closeUserModal();">Restore Account</button> ' +
                   '<button type="button" class="btn-permanent-delete" onclick="permanentDeleteUser(\'' + profile.id + '\',\'' + safeName + '\'); closeUserModal();">Permanent Delete</button>'
@@ -595,36 +586,37 @@
     }
 
     /**
-     * ADDED: Permanent Delete
-     * Removes the user and related data from public tables.
-     * Note: Does NOT delete the auth.users row (requires service role key).
-     * This clears profiles, worker_details, related jobs, notifications, reviews, etc.
+     * Permanent Delete – removes data from public tables.
+     * Shows clear step-by-step feedback so we know exactly what fails.
      */
     async function permanentDeleteUser(userId, name) {
-        if (!confirm('⚠️ PERMANENTLY DELETE ' + name + '?\n\nThis will permanently remove their profile, worker data, related jobs, notifications and reviews from the database.\n\nThis CANNOT be undone.\n\nContinue?')) return;
-        if (!confirm('Final confirmation: permanently delete ' + name + ' and free up space?')) return;
+        if (!confirm('⚠️ PERMANENTLY DELETE ' + name + '?\n\nThis removes their profile and related data from the database.\nThis CANNOT be undone.\n\nContinue?')) return;
+        if (!confirm('Final confirmation: permanently delete ' + name + '?')) return;
+
+        var steps = [];
 
         try {
-            // Related data first
-            await supabaseClient.from('notifications').delete().eq('user_id', userId);
-            await supabaseClient.from('reviews').delete().eq('worker_id', userId);
+            // 1. notifications
+            var n1 = await supabaseClient.from('notifications').delete().eq('user_id', userId);
+            steps.push('notifications: ' + (n1.error ? 'FAIL – ' + n1.error.message : 'OK'));
 
-            try {
-                await supabaseClient.from('client_ratings').delete().eq('client_id', userId);
-            } catch (e) {}
+            // 2. reviews
+            var n2 = await supabaseClient.from('reviews').delete().eq('worker_id', userId);
+            steps.push('reviews: ' + (n2.error ? 'FAIL – ' + n2.error.message : 'OK'));
 
-            // Jobs posted by this user
-            await supabaseClient.from('job_posts').delete().eq('client_id', userId);
+            // 3. jobs posted by user
+            var n3 = await supabaseClient.from('job_posts').delete().eq('client_id', userId);
+            steps.push('job_posts: ' + (n3.error ? 'FAIL – ' + n3.error.message : 'OK'));
 
-            // Worker details
-            await supabaseClient.from('worker_details').delete().eq('id', userId);
+            // 4. worker_details
+            var n4 = await supabaseClient.from('worker_details').delete().eq('id', userId);
+            steps.push('worker_details: ' + (n4.error ? 'FAIL – ' + n4.error.message : 'OK'));
 
-            // Disputes where they are reporter
-            try {
-                await supabaseClient.from('disputes').delete().eq('reporter_id', userId);
-            } catch (e) {}
+            // 5. disputes as reporter
+            var n5 = await supabaseClient.from('disputes').delete().eq('reporter_id', userId);
+            steps.push('disputes: ' + (n5.error ? 'FAIL – ' + n5.error.message : 'OK'));
 
-            // Finally the profile
+            // 6. profile (the important one)
             var res = await supabaseClient
                 .from('profiles')
                 .delete()
@@ -632,22 +624,27 @@
                 .select('id');
 
             if (res.error) {
-                alert('Error permanently deleting: ' + res.error.message + '\n\nCheck that your Supabase RLS policies allow DELETE for admin on profiles and related tables.');
-                return;
-            }
-            if (!res.data || res.data.length === 0) {
-                alert('Permanent delete did not apply. Check admin RLS policies (DELETE allowed for admin on profiles).');
+                alert('FAILED to delete profile:\n\n' + res.error.message +
+                      '\n\nSteps so far:\n' + steps.join('\n') +
+                      '\n\n→ Run the latest SQL policies in Supabase, then try again.');
                 return;
             }
 
-            alert(name + ' has been permanently deleted from the system.');
+            if (!res.data || res.data.length === 0) {
+                alert('Profile delete returned 0 rows.\n\nThis almost always means RLS is blocking the delete.\n\nSteps so far:\n' + steps.join('\n') +
+                      '\n\n→ Make sure you ran the latest SQL and that your account has is_admin = true.');
+                return;
+            }
+
+            steps.push('profiles: OK – permanently deleted');
+            alert('SUCCESS!\n\n' + name + ' has been permanently removed.\n\n' + steps.join('\n'));
             closeUserModal();
             loadAllUsers();
             loadAllWorkers();
             loadAllJobs();
             loadStats();
         } catch (err) {
-            alert('Unexpected error during permanent delete: ' + (err.message || err));
+            alert('Unexpected error:\n' + (err.message || err) + '\n\nSteps:\n' + steps.join('\n'));
         }
     }
 
