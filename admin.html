@@ -80,6 +80,18 @@
         }
         .user-modal-box h3 { margin-bottom: 12px; padding-right: 30px; }
         .user-modal-box p { margin-bottom: 8px; }
+
+        /* Permanent delete button style (added) */
+        .btn-permanent-delete {
+            background: #7f1d1d;
+            color: #fff;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+        .btn-permanent-delete:hover { background: #991b1b; }
     </style>
 </head>
 <body>
@@ -102,16 +114,16 @@
             <h1 id="adminTop">⚙️ Admin Control Panel</h1>
             <p style="color: var(--text-light); margin-bottom: 20px;">Welcome back, Administrator.</p>
 
-            <!-- Section navigation (sticky) — buttons, not links -->
+            <!-- Section navigation (sticky) -->
             <nav class="admin-section-nav" id="adminSectionNav" aria-label="Admin sections">
-                <button type="button" class="admin-nav-btn" data-target="section-stats">Stats</button>
-                <button type="button" class="admin-nav-btn" data-target="section-broadcast">Broadcast</button>
-                <button type="button" class="admin-nav-btn" data-target="section-mails">Messages</button>
-                <button type="button" class="admin-nav-btn" data-target="section-users">Users</button>
-                <button type="button" class="admin-nav-btn" data-target="section-disputes">Disputes</button>
-                <button type="button" class="admin-nav-btn" data-target="section-bugs">Bug Report</button>
-                <button type="button" class="admin-nav-btn" data-target="section-workers">Workers</button>
-                <button type="button" class="admin-nav-btn" data-target="section-jobs">Job Posts</button>
+                <a href="#section-stats">Stats</a>
+                <a href="#section-broadcast">Broadcast</a>
+                <a href="#section-mails">Messages</a>
+                <a href="#section-users">Users</a>
+                <a href="#section-disputes">Disputes</a>
+                <a href="#section-bugs">Bug Report</a>
+                <a href="#section-workers">Workers</a>
+                <a href="#section-jobs">Job Posts</a>
             </nav>
 
             <div class="admin-section" id="section-stats">
@@ -153,7 +165,11 @@
 
             <div class="admin-section" id="section-users">
                 <h2>👥 All Users (Clients & Workers)</h2>
-                <p style="color:var(--text-light);margin-bottom:12px;">Users sorted alphabetically. Use filter <strong>Deleted Accounts</strong> to restore. Click <strong>View</strong> to open details (list stays open).</p>
+                <p style="color:var(--text-light);margin-bottom:12px;">
+                    Users sorted alphabetically. Use filter <strong>Deleted Accounts</strong> to restore or permanently delete.
+                    <strong>Delete</strong> = soft delete (can restore). <strong>Permanent Delete</strong> = removes all data from the database (cannot be undone).
+                    Click <strong>View</strong> to open details (list stays open).
+                </p>
                 <div class="admin-filter-bar">
                     <select id="userFilter" onchange="loadAllUsers()">
                         <option value="all">All Active Users</option>
@@ -185,7 +201,7 @@
             </div>
 
             <div class="admin-section" id="section-workers">
-                <h2>👷 All Workers (Quick Delete / Restore)</h2>
+                <h2>👷 All Workers (Quick Delete / Restore / Permanent Delete)</h2>
                 <div id="allWorkersList"><p class="loading">Loading workers...</p></div>
                 <div class="admin-back-top"><a href="#adminTop">↑ Back to top</a></div>
             </div>
@@ -252,24 +268,6 @@
                 if (e.target === modal) closeUserModal();
             });
         }
-
-        /* Admin section nav buttons → smooth scroll */
-        var nav = document.getElementById('adminSectionNav');
-        if (nav) {
-            nav.addEventListener('click', function (e) {
-                var btn = e.target.closest('.admin-nav-btn');
-                if (!btn) return;
-                var id = btn.getAttribute('data-target');
-                var el = document.getElementById(id);
-                if (el) {
-                    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    document.querySelectorAll('.admin-nav-btn').forEach(function (b) {
-                        b.classList.remove('active');
-                    });
-                    btn.classList.add('active');
-                }
-            });
-        }
     });
 
     function formatPhone(phone) {
@@ -288,12 +286,13 @@
 
     function callLink(phone) {
         var p = formatPhone(phone);
-        return p ? 'tel:+' + p : '#';
+        if (!p) return '#';
+        return 'tel:+' + p;
     }
 
-    function setText(id, value) {
+    function setText(id, val) {
         var el = document.getElementById(id);
-        if (el) el.textContent = value;
+        if (el) el.textContent = val;
     }
 
     function setHtml(id, html) {
@@ -302,27 +301,18 @@
     }
 
     async function loadStats() {
-        if (!supabaseClient) return;
         try {
-            var statsRes = await supabaseClient.from('site_stats').select('total_visitors, visitors_today').eq('id', 1).maybeSingle();
-            setText('statVisitors', (statsRes.data && statsRes.data.total_visitors) || 0);
-            setText('statTodayVisitors', (statsRes.data && statsRes.data.visitors_today) || 0);
-
-            var weekStart = new Date();
-            weekStart.setDate(weekStart.getDate() - 7);
-            var monthStart = new Date();
-            monthStart.setDate(1);
-            monthStart.setHours(0, 0, 0, 0);
-
+            // Visitor stats (if site_stats table exists)
             try {
-                var weekRes = await supabaseClient.from('visitor_logs').select('*', { count: 'exact', head: true }).gte('visited_at', weekStart.toISOString());
-                setText('statWeekVisitors', weekRes.count || 0);
-            } catch (e) { setText('statWeekVisitors', '—'); }
+                var statsRes = await supabaseClient.from('site_stats').select('*').eq('id', 1).maybeSingle();
+                if (statsRes.data) {
+                    setText('statVisitors', statsRes.data.total_visitors || 0);
+                    setText('statTodayVisitors', statsRes.data.visitors_today || 0);
+                }
+            } catch (e) {}
 
-            try {
-                var monthRes = await supabaseClient.from('visitor_logs').select('*', { count: 'exact', head: true }).gte('visited_at', monthStart.toISOString());
-                setText('statMonthVisitors', monthRes.count || 0);
-            } catch (e) { setText('statMonthVisitors', '—'); }
+            setText('statWeekVisitors', '—');
+            setText('statMonthVisitors', '—');
 
             var todayStart = new Date();
             todayStart.setHours(0, 0, 0, 0);
@@ -342,15 +332,11 @@
             var disputeRes = await supabaseClient.from('disputes').select('*', { count: 'exact', head: true }).eq('status', 'Open');
             setText('statDisputes', disputeRes.count || 0);
         } catch (err) {
-            console.error('Stats error:', err);
+            console.error('Stats error', err);
         }
     }
 
     async function loadAllUsers() {
-        if (!supabaseClient) {
-            setHtml('allUsersList', '<p class="empty-dashboard">Cannot connect.</p>');
-            return;
-        }
         var filterEl = document.getElementById('userFilter');
         var searchEl = document.getElementById('userSearch');
         var filter = filterEl ? filterEl.value : 'all';
@@ -377,15 +363,13 @@
             var list = res.data || [];
             if (search) {
                 list = list.filter(function (u) {
-                    var name = (u.full_name || '').toLowerCase();
-                    var phone = (u.phone || '').toLowerCase();
-                    var loc = (u.location || '').toLowerCase();
-                    return name.indexOf(search) !== -1 || phone.indexOf(search) !== -1 || loc.indexOf(search) !== -1;
+                    var hay = ((u.full_name || '') + ' ' + (u.phone || '') + ' ' + (u.location || '')).toLowerCase();
+                    return hay.indexOf(search) !== -1;
                 });
             }
 
             if (list.length === 0) {
-                setHtml('allUsersList', '<p class="empty-dashboard">No users found for this filter.</p>');
+                setHtml('allUsersList', '<p class="empty-dashboard">No users found.</p>');
                 return;
             }
 
@@ -401,8 +385,10 @@
                     : '';
 
                 var actionBtn = isDeleted
-                    ? '<button type="button" class="btn-primary" onclick="restoreUser(\'' + u.id + '\',\'' + safeName + '\')">Restore</button>'
-                    : '<button type="button" class="btn-close-job" onclick="deleteUser(\'' + u.id + '\',\'' + safeName + '\')">Delete</button>';
+                    ? '<button type="button" class="btn-primary" onclick="restoreUser(\'' + u.id + '\',\'' + safeName + '\')">Restore</button>' +
+                      '<button type="button" class="btn-permanent-delete" onclick="permanentDeleteUser(\'' + u.id + '\',\'' + safeName + '\')">Permanent Delete</button>'
+                    : '<button type="button" class="btn-close-job" onclick="deleteUser(\'' + u.id + '\',\'' + safeName + '\')">Delete</button>' +
+                      '<button type="button" class="btn-permanent-delete" onclick="permanentDeleteUser(\'' + u.id + '\',\'' + safeName + '\')">Permanent Delete</button>';
 
                 return '<div class="user-row ' + (isDeleted ? 'deleted-user' : '') + '">' +
                     '<div style="min-width:0;flex:1;">' +
@@ -414,7 +400,6 @@
                     '<div class="user-actions">' +
                     '<button type="button" class="btn-small" onclick="viewUserDetail(\'' + u.id + '\')">View</button>' +
                     contact +
-                    '<button type="button" class="btn-small" onclick="sendSingleNotification(\'' + u.id + '\',\'' + safeName + '\')">Notify</button>' +
                     actionBtn +
                     '</div></div>';
             }).join(''));
@@ -426,28 +411,28 @@
     function closeUserModal() {
         var modal = document.getElementById('userModal');
         if (modal) modal.classList.remove('active');
-        document.body.style.overflow = '';
     }
 
     async function viewUserDetail(userId) {
-        if (!supabaseClient || !userId) return;
-
-        var modal = document.getElementById('userModal');
         var body = document.getElementById('userModalBody');
-        if (!modal || !body) return;
-
-        body.innerHTML = '<p class="loading">Loading account details...</p>';
+        var modal = document.getElementById('userModal');
+        if (!body || !modal) return;
+        body.innerHTML = '<p class="loading">Loading...</p>';
         modal.classList.add('active');
-        document.body.style.overflow = 'hidden';
 
         try {
-            var profileRes = await supabaseClient.from('profiles').select('*').eq('id', userId).single();
-            var profile = profileRes.data;
-            if (profileRes.error || !profile) {
-                body.innerHTML = '<p class="empty-dashboard">Could not load user.</p>';
+            var res = await supabaseClient
+                .from('profiles')
+                .select('*')
+                .eq('id', userId)
+                .maybeSingle();
+
+            if (res.error || !res.data) {
+                body.innerHTML = '<p>Could not load user.</p>';
                 return;
             }
 
+            var profile = res.data;
             var type = profile.is_admin ? 'Admin' : (profile.is_worker ? 'Worker' : 'Client');
             var phone = profile.phone || '';
             var created = profile.created_at ? new Date(profile.created_at).toLocaleString('en-GB') : '—';
@@ -457,36 +442,25 @@
             var workerHtml = '';
             if (profile.is_worker) {
                 var wRes = await supabaseClient.from('worker_details').select('*').eq('id', userId).maybeSingle();
-                var w = wRes.data;
-                if (w) {
-                    workerHtml = '<hr style="margin:16px 0;"><h4>Worker Details</h4>' +
+                if (wRes.data) {
+                    var w = wRes.data;
+                    workerHtml =
+                        '<hr style="margin:16px 0;">' +
+                        '<h4>Worker Details</h4>' +
                         '<p><strong>Category:</strong> ' + escapeHtml(w.category || '—') + '</p>' +
-                        '<p><strong>Rating:</strong> ' + (w.rating || 0) + '/5 (' + (w.review_count || 0) + ' reviews)</p>' +
                         '<p><strong>Experience:</strong> ' + (w.experience_years || 0) + ' years</p>' +
                         '<p><strong>Availability:</strong> ' + escapeHtml(w.availability || '—') + '</p>' +
                         '<p><strong>Description:</strong> ' + escapeHtml(w.description || '—') + '</p>';
                 }
             }
 
-            var jobsRes = await supabaseClient
-                .from('job_posts')
-                .select('id, title, category, status, created_at, location')
-                .eq('client_id', userId)
-                .order('created_at', { ascending: false })
-                .limit(20);
-
-            var jobs = jobsRes.data || [];
             var jobsHtml = '';
-            if (jobs.length) {
-                jobsHtml = '<hr style="margin:16px 0;"><h4>Posted Jobs (' + jobs.length + ')</h4><ul style="padding-left:18px;margin:0;">';
-                jobs.forEach(function (j) {
-                    var d = j.created_at ? new Date(j.created_at).toLocaleString('en-GB') : '';
-                    jobsHtml += '<li style="margin-bottom:6px;"><a href="job.html?id=' + j.id + '" target="_blank">' + escapeHtml(j.title || 'Job') + '</a> — ' +
-                        escapeHtml(j.category || '') + ' • ' + escapeHtml(j.status || '') + ' • ' + d + '</li>';
-                });
-                jobsHtml += '</ul>';
-            } else {
-                jobsHtml = '<hr style="margin:16px 0;"><p>No job posts by this user.</p>';
+            var jRes = await supabaseClient.from('job_posts').select('id, title, status, created_at').eq('client_id', userId).order('created_at', { ascending: false }).limit(10);
+            if (jRes.data && jRes.data.length) {
+                jobsHtml = '<hr style="margin:16px 0;"><h4>Posted Jobs</h4><ul>' +
+                    jRes.data.map(function (j) {
+                        return '<li>' + escapeHtml(j.title || 'Job') + ' (' + (j.status || '') + ')</li>';
+                    }).join('') + '</ul>';
             }
 
             var contactBtns = phone
@@ -495,8 +469,10 @@
                 : '';
 
             var actionBtn = profile.is_deleted
-                ? '<button type="button" class="btn-primary" onclick="restoreUser(\'' + profile.id + '\',\'' + safeName + '\'); closeUserModal();">Restore Account</button>'
-                : '<button type="button" class="btn-close-job" onclick="deleteUser(\'' + profile.id + '\',\'' + safeName + '\'); closeUserModal();">Delete Account</button>';
+                ? '<button type="button" class="btn-primary" onclick="restoreUser(\'' + profile.id + '\',\'' + safeName + '\'); closeUserModal();">Restore Account</button> ' +
+                  '<button type="button" class="btn-permanent-delete" onclick="permanentDeleteUser(\'' + profile.id + '\',\'' + safeName + '\'); closeUserModal();">Permanent Delete</button>'
+                : '<button type="button" class="btn-close-job" onclick="deleteUser(\'' + profile.id + '\',\'' + safeName + '\'); closeUserModal();">Delete Account</button> ' +
+                  '<button type="button" class="btn-permanent-delete" onclick="permanentDeleteUser(\'' + profile.id + '\',\'' + safeName + '\'); closeUserModal();">Permanent Delete</button>';
 
             body.innerHTML =
                 '<h3>👤 Account Details</h3>' +
@@ -512,23 +488,20 @@
                 jobsHtml +
                 '<div class="detail-actions" style="margin-top:16px;">' +
                 contactBtns +
-                '<button type="button" class="btn-small" onclick="sendSingleNotification(\'' + profile.id + '\',\'' + safeName + '\')">Send Notification</button> ' +
                 actionBtn +
-                '<button type="button" class="btn-secondary" onclick="closeUserModal()">Close</button>' +
                 '</div>';
         } catch (err) {
-            console.error(err);
-            body.innerHTML = '<p class="empty-dashboard">Error loading details.</p>';
+            body.innerHTML = '<p>Error loading user details.</p>';
         }
     }
 
-    async function sendSingleNotification(userId, userName) {
-        var message = prompt('Write a message for ' + userName + ':');
-        if (!message || !message.trim()) return;
+    async function sendNotificationToUser(userId, userName) {
+        var msg = prompt('Message to send to ' + userName + ':');
+        if (!msg) return;
         var res = await supabaseClient.from('notifications').insert([{
             user_id: userId,
             title: 'Message from Admin',
-            message: message.trim(),
+            message: msg,
             read: false
         }]);
         if (res.error) alert('Error: ' + res.error.message);
@@ -587,12 +560,71 @@
         loadStats();
     }
 
+    /**
+     * PERMANENT DELETE — removes user data from public tables.
+     * Note: Does NOT remove the auth.users row (requires service role key).
+     * This clears profiles, worker_details, related jobs, notifications, reviews, etc.
+     */
+    async function permanentDeleteUser(userId, name) {
+        if (!confirm('⚠️ PERMANENTLY DELETE ' + name + '?\n\nThis will permanently remove their profile, worker data, related jobs, notifications and reviews from the database.\n\nThis CANNOT be undone.\n\nContinue?')) return;
+        if (!confirm('Final confirmation: permanently delete ' + name + ' and free up space?')) return;
+
+        try {
+            // 1. Related data first (order matters for foreign keys)
+            await supabaseClient.from('notifications').delete().eq('user_id', userId);
+            await supabaseClient.from('reviews').delete().eq('worker_id', userId);
+            // Client ratings if you have a separate table – skip if not present
+            try {
+                await supabaseClient.from('client_ratings').delete().eq('client_id', userId);
+            } catch (e) {}
+
+            // Jobs posted by this user
+            await supabaseClient.from('job_posts').delete().eq('client_id', userId);
+
+            // Worker details
+            await supabaseClient.from('worker_details').delete().eq('id', userId);
+
+            // Disputes where they are reporter (optional cleanup)
+            try {
+                await supabaseClient.from('disputes').delete().eq('reporter_id', userId);
+            } catch (e) {}
+
+            // Finally the profile
+            var res = await supabaseClient
+                .from('profiles')
+                .delete()
+                .eq('id', userId)
+                .select('id');
+
+            if (res.error) {
+                alert('Error permanently deleting: ' + res.error.message + '\n\nCheck that your Supabase RLS policies allow DELETE for admin on profiles and related tables.');
+                return;
+            }
+            if (!res.data || res.data.length === 0) {
+                alert('Permanent delete did not apply. Check admin RLS policies (DELETE allowed for admin on profiles).');
+                return;
+            }
+
+            alert(name + ' has been permanently deleted from the system.');
+            closeUserModal();
+            loadAllUsers();
+            loadAllWorkers();
+            loadAllJobs();
+            loadStats();
+        } catch (err) {
+            alert('Unexpected error during permanent delete: ' + (err.message || err));
+        }
+    }
+
     async function sendBroadcast() {
-        var audience = document.getElementById('broadcastAudience').value;
-        var message = document.getElementById('broadcastMessage').value.trim();
+        var audienceEl = document.getElementById('broadcastAudience');
+        var msgEl = document.getElementById('broadcastMessage');
         var status = document.getElementById('broadcastStatus');
+        var audience = audienceEl ? audienceEl.value : 'all';
+        var message = msgEl ? msgEl.value.trim() : '';
+
         if (!message) {
-            status.textContent = 'Please type a message first.';
+            status.textContent = 'Please type a message.';
             status.className = 'message error';
             return;
         }
@@ -605,180 +637,123 @@
 
         var res = await query;
         if (res.error || !res.data || res.data.length === 0) {
-            status.textContent = 'No users found for this group.';
+            status.textContent = 'No users found or error.';
             status.className = 'message error';
             return;
         }
 
         var rows = res.data.map(function (u) {
-            return { user_id: u.id, title: 'Message from Admin', message: message, read: false };
+            return {
+                user_id: u.id,
+                title: 'Message from Handy Man Admin',
+                message: message,
+                read: false
+            };
         });
+
         var insertRes = await supabaseClient.from('notifications').insert(rows);
         if (insertRes.error) {
             status.textContent = 'Error: ' + insertRes.error.message;
             status.className = 'message error';
         } else {
-            status.textContent = 'Message sent to ' + res.data.length + ' user(s)!';
+            status.textContent = 'Sent to ' + rows.length + ' users.';
             status.className = 'message success';
-            document.getElementById('broadcastMessage').value = '';
+            if (msgEl) msgEl.value = '';
         }
     }
 
     async function submitBugReport() {
-        var title = document.getElementById('bugTitle').value.trim();
-        var details = document.getElementById('bugDetails').value.trim();
+        var titleEl = document.getElementById('bugTitle');
+        var detailsEl = document.getElementById('bugDetails');
         var status = document.getElementById('bugStatus');
-        if (!title) {
-            status.textContent = 'Please enter a title.';
+        var title = titleEl ? titleEl.value.trim() : '';
+        var details = detailsEl ? detailsEl.value.trim() : '';
+
+        if (!title || !details) {
+            status.textContent = 'Please fill title and details.';
             status.className = 'message error';
             return;
         }
+
         var res = await supabaseClient.from('disputes').insert([{
-            reason: 'Bug/Case: ' + title,
-            details: details || 'No details',
-            target_name: 'Internal',
+            reporter_name: 'Admin',
             target_type: 'Bug',
-            reporter_name: (currentProfile && currentProfile.full_name) || (currentUser && currentUser.email) || 'Admin',
+            target_id: 'admin-bug',
+            target_name: title,
+            reason: 'Bug / Case',
+            details: details,
             status: 'Open'
         }]);
+
         if (res.error) {
             status.textContent = 'Error: ' + res.error.message;
             status.className = 'message error';
         } else {
-            status.textContent = 'Bug/Case saved!';
+            status.textContent = 'Bug / case saved.';
             status.className = 'message success';
-            document.getElementById('bugTitle').value = '';
-            document.getElementById('bugDetails').value = '';
+            if (titleEl) titleEl.value = '';
+            if (detailsEl) detailsEl.value = '';
             loadDisputes();
-            loadStats();
         }
     }
 
     async function loadDisputes() {
-        if (!supabaseClient) {
-            setHtml('disputesList', '<p class="empty-dashboard">Cannot connect.</p>');
-            return;
-        }
         try {
-            var res = await supabaseClient.from('disputes').select('*').order('created_at', { ascending: false });
+            var res = await supabaseClient
+                .from('disputes')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(100);
+
             if (res.error || !res.data || res.data.length === 0) {
                 setHtml('disputesList', '<p class="empty-dashboard">No disputes yet.</p>');
                 return;
             }
+
             setHtml('disputesList', res.data.map(function (d) {
-                var date = new Date(d.created_at).toLocaleDateString('en-GB');
-                var statusClass = d.status === 'Open' ? 'status-available' : 'status-closed';
-                var preview = escapeHtml((d.details || '').substring(0, 100));
-                if ((d.details || '').length > 100) preview += '...';
-                return '<div class="dispute-row" style="cursor:pointer;" onclick="openDisputeDetail(\'' + d.id + '\')">' +
+                var date = d.created_at ? new Date(d.created_at).toLocaleString('en-GB') : '';
+                return '<div class="dispute-row">' +
                     '<div class="dispute-info">' +
-                    '<h4>' + escapeHtml(d.reason || 'Report') + '</h4>' +
-                    '<p><strong>Target:</strong> ' + escapeHtml(d.target_name || '') + ' (' + escapeHtml(d.target_type || '') + ')</p>' +
-                    '<p><strong>Reporter:</strong> ' + escapeHtml(d.reporter_name || 'Anonymous') + '</p>' +
-                    '<p style="font-size:0.85rem;">' + preview + '</p>' +
-                    '<p style="font-size:0.8rem;">' + date + ' • <span class="status-badge ' + statusClass + '">' + (d.status || '') + '</span></p>' +
+                    '<h4>' + escapeHtml(d.target_name || d.reason || 'Report') +
+                    (d.status === 'Resolved' ? ' <span style="color:green;">(Resolved)</span>' : '') +
+                    '</h4>' +
+                    '<p>' + escapeHtml(d.reason || '') + ' • ' + escapeHtml(d.target_type || '') + ' • ' + date + '</p>' +
+                    '<p style="font-size:0.9rem;">' + escapeHtml(d.details || '') + '</p>' +
                     '</div>' +
-                    '<div><button type="button" class="btn-small" onclick="event.stopPropagation(); openDisputeDetail(\'' + d.id + '\')">Open</button></div>' +
-                    '</div>';
+                    '<div class="user-actions">' +
+                    (d.status !== 'Resolved'
+                        ? '<button type="button" class="btn-primary" onclick="resolveDispute(\'' + d.id + '\')">Resolve</button>'
+                        : '') +
+                    '<button type="button" class="btn-close-job" onclick="deleteDispute(\'' + d.id + '\')">Delete</button>' +
+                    '</div></div>';
             }).join(''));
         } catch (err) {
             setHtml('disputesList', '<p class="empty-dashboard">Error loading disputes.</p>');
         }
     }
 
-    async function openDisputeDetail(disputeId) {
-        var { data: d, error } = await supabaseClient.from('disputes').select('*').eq('id', disputeId).single();
-        if (error || !d) {
-            alert('Could not load dispute.');
-            return;
-        }
-
-        var date = new Date(d.created_at).toLocaleString('en-GB');
-        var reporterId = d.reporter_id || '';
-        var targetId = d.target_id || '';
-        var safeReporter = (d.reporter_name || 'Reporter').replace(/'/g, "\\'");
-        var safeTarget = (d.target_name || 'User').replace(/'/g, "\\'");
-
-        var msgReporterBtn = reporterId
-            ? '<button type="button" class="btn-primary" onclick="messageUser(\'' + reporterId + '\',\'' + safeReporter + '\')">Message Reporter</button>'
-            : '';
-        var msgTargetBtn = (targetId && d.target_type !== 'Bug' && d.target_type !== 'job')
-            ? '<button type="button" class="btn-primary" onclick="messageUser(\'' + targetId + '\',\'' + safeTarget + '\')">Message Reported Person</button>'
-            : '';
-        var resolveBtn = d.status === 'Open'
-            ? '<button type="button" class="btn-small" onclick="resolveDispute(\'' + d.id + '\')">Mark Resolved</button>'
-            : '';
-
-        var phonesHtml = '';
-        try {
-            var ids = [];
-            if (reporterId) ids.push(reporterId);
-            if (targetId && targetId.length > 10) ids.push(targetId);
-            if (ids.length) {
-                var pr = await supabaseClient.from('profiles').select('id, full_name, phone').in('id', ids);
-                if (pr.data) {
-                    phonesHtml = pr.data.map(function (p) {
-                        var ph = p.phone || '';
-                        if (!ph) return '';
-                        return '<p><strong>' + (p.full_name || 'User') + ':</strong> ' +
-                            '<a class="btn-call" href="' + callLink(ph) + '">Call</a> ' +
-                            '<a class="btn-whatsapp" href="' + whatsappLink(ph) + '" target="_blank">WhatsApp</a></p>';
-                    }).join('');
-                }
-            }
-        } catch (e) {}
-
-        var html = '<div class="dispute-detail-box">' +
-            '<h3>🚩 Dispute Detail</h3>' +
-            '<p><strong>Reason:</strong> ' + escapeHtml(d.reason || '') + '</p>' +
-            '<p><strong>Target:</strong> ' + escapeHtml(d.target_name || '') + ' (' + escapeHtml(d.target_type || '') + ') — ID: ' + (targetId || 'n/a') + '</p>' +
-            '<p><strong>Reporter:</strong> ' + escapeHtml(d.reporter_name || 'Anonymous') + ' — ID: ' + (reporterId || 'n/a') + '</p>' +
-            '<p><strong>Status:</strong> ' + (d.status || '') + '</p>' +
-            '<p><strong>Date:</strong> ' + date + '</p>' +
-            phonesHtml +
-            '<p style="margin-top:12px;"><strong>Full details:</strong></p>' +
-            '<p style="background:#f8fafc;padding:12px;border-radius:8px;white-space:pre-wrap;">' + escapeHtml(d.details || 'No details') + '</p>' +
-            '<div class="detail-actions">' +
-            msgReporterBtn + msgTargetBtn + resolveBtn +
-            '<button type="button" class="btn-secondary" onclick="loadDisputes()">← Back to list</button>' +
-            '</div></div>';
-
-        setHtml('disputesList', html);
-    }
-
-    async function messageUser(userId, userName) {
-        if (!userId || userId === 'null' || userId === 'undefined') {
-            alert('No user ID available for this person.');
-            return;
-        }
-        var message = prompt('Write a message for ' + userName + ':');
-        if (!message || !message.trim()) return;
-        var res = await supabaseClient.from('notifications').insert([{
-            user_id: userId,
-            title: 'Message from Admin (Dispute)',
-            message: message.trim(),
-            read: false
-        }]);
-        if (res.error) alert('Error: ' + res.error.message);
-        else alert('Notification sent to ' + userName);
-    }
-
-    async function resolveDispute(disputeId) {
-        if (!confirm('Mark as resolved?')) return;
-        var res = await supabaseClient.from('disputes').update({ status: 'Resolved' }).eq('id', disputeId);
+    async function resolveDispute(id) {
+        var res = await supabaseClient.from('disputes').update({ status: 'Resolved' }).eq('id', id);
         if (res.error) alert('Error: ' + res.error.message);
         else {
-            alert('Resolved.');
+            alert('Dispute marked resolved.');
+            loadDisputes();
+            loadStats();
+        }
+    }
+
+    async function deleteDispute(id) {
+        if (!confirm('Delete this dispute permanently?')) return;
+        var res = await supabaseClient.from('disputes').delete().eq('id', id);
+        if (res.error) alert('Error: ' + res.error.message);
+        else {
+            alert('Dispute deleted.');
             loadDisputes();
             loadStats();
         }
     }
 
     async function loadAllWorkers() {
-        if (!supabaseClient) {
-            setHtml('allWorkersList', '<p class="empty-dashboard">Cannot connect.</p>');
-            return;
-        }
         try {
             var res = await supabaseClient
                 .from('worker_details')
@@ -793,15 +768,17 @@
                 var safeName = (p.full_name || 'worker').replace(/'/g, "\\'");
                 var isDeleted = p.is_deleted === true || w.availability === 'Deleted';
                 return '<div class="dispute-row ' + (isDeleted ? 'deleted-user' : '') + '">' +
-                    '<div class="dispute-info"><h4>' + (p.full_name || 'Unknown') +
+                    '<div class="dispute-info"><h4>' + escapeHtml(p.full_name || 'Unknown') +
                     (isDeleted ? ' <span style="color:#ef4444;">(Deleted)</span>' : '') +
-                    '</h4><p>' + (w.category || '') + ' • ' + (p.phone || 'No phone') + ' • ' + (p.location || 'Cameroon') +
+                    '</h4><p>' + escapeHtml(w.category || '') + ' • ' + (p.phone || 'No phone') + ' • ' + escapeHtml(p.location || 'Cameroon') +
                     '</p></div>' +
                     '<div class="user-actions">' +
                     '<button type="button" class="btn-small" onclick="viewUserDetail(\'' + w.id + '\')">View</button> ' +
                     (isDeleted
-                        ? '<button type="button" class="btn-primary" onclick="restoreUser(\'' + w.id + '\',\'' + safeName + '\')">Restore</button>'
-                        : '<button type="button" class="btn-close-job" onclick="deleteUser(\'' + w.id + '\',\'' + safeName + '\')">Delete</button>') +
+                        ? '<button type="button" class="btn-primary" onclick="restoreUser(\'' + w.id + '\',\'' + safeName + '\')">Restore</button>' +
+                          '<button type="button" class="btn-permanent-delete" onclick="permanentDeleteUser(\'' + w.id + '\',\'' + safeName + '\')">Permanent Delete</button>'
+                        : '<button type="button" class="btn-close-job" onclick="deleteUser(\'' + w.id + '\',\'' + safeName + '\')">Delete</button>' +
+                          '<button type="button" class="btn-permanent-delete" onclick="permanentDeleteUser(\'' + w.id + '\',\'' + safeName + '\')">Permanent Delete</button>') +
                     '</div></div>';
             }).join(''));
         } catch (err) {
@@ -810,19 +787,15 @@
     }
 
     async function loadAllJobs() {
-        if (!supabaseClient) {
-            setHtml('allJobsList', '<p class="empty-dashboard">Cannot connect.</p>');
-            return;
-        }
-        try {
-            var filterEl = document.getElementById('jobFilter');
-            var searchEl = document.getElementById('jobSearch');
-            var filter = filterEl ? filterEl.value : 'all';
-            var search = searchEl ? searchEl.value.toLowerCase().trim() : '';
+        var filterEl = document.getElementById('jobFilter');
+        var searchEl = document.getElementById('jobSearch');
+        var filter = filterEl ? filterEl.value : 'all';
+        var search = searchEl ? searchEl.value.toLowerCase().trim() : '';
 
+        try {
             var query = supabaseClient
                 .from('job_posts')
-                .select('*, profiles(full_name)')
+                .select('id, title, category, location, status, created_at, budget, profiles(full_name)')
                 .order('created_at', { ascending: false })
                 .limit(300);
 
@@ -835,24 +808,17 @@
                 setHtml('allJobsList', '<p class="empty-dashboard">Error: ' + res.error.message + '</p>');
                 return;
             }
-            if (!res.data || res.data.length === 0) {
-                setHtml('allJobsList', '<p class="empty-dashboard">No jobs yet.</p>');
-                return;
-            }
 
-            var list = res.data;
+            var list = res.data || [];
             if (search) {
-                list = list.filter(function (job) {
-                    var t = (job.title || '').toLowerCase();
-                    var c = (job.category || '').toLowerCase();
-                    var l = (job.location || '').toLowerCase();
-                    var p = (job.profiles && job.profiles.full_name) ? job.profiles.full_name.toLowerCase() : '';
-                    return t.indexOf(search) !== -1 || c.indexOf(search) !== -1 || l.indexOf(search) !== -1 || p.indexOf(search) !== -1;
+                list = list.filter(function (j) {
+                    var hay = ((j.title || '') + ' ' + (j.location || '') + ' ' + (j.category || '')).toLowerCase();
+                    return hay.indexOf(search) !== -1;
                 });
             }
 
             if (list.length === 0) {
-                setHtml('allJobsList', '<p class="empty-dashboard">No jobs match this filter/search.</p>');
+                setHtml('allJobsList', '<p class="empty-dashboard">No jobs found.</p>');
                 return;
             }
 
@@ -879,14 +845,10 @@
                     '<h4>' + escapeHtml(job.title || '') +
                     (isDeactivated ? ' <span style="color:#ef4444;">(Deactivated)</span>' : '') +
                     '</h4>' +
-                    '<p>' + escapeHtml(job.category || '') + ' • ' + escapeHtml(job.location || '') +
-                    ' • ' + escapeHtml(poster) + ' • ' + date +
-                    ' • <strong>' + escapeHtml(job.status || '') + '</strong></p>' +
+                    '<p>' + escapeHtml(job.category || '') + ' • ' + escapeHtml(job.location || '') + ' • ' + date +
+                    ' • by ' + escapeHtml(poster) + ' • ' + escapeHtml(job.status || '') + '</p>' +
                     '</div>' +
-                    '<div class="user-actions">' +
-                    '<a href="job.html?id=' + job.id + '" class="btn-small" target="_blank">View</a> ' +
-                    actions +
-                    '</div></div>';
+                    '<div class="user-actions">' + actions + '</div></div>';
             }).join(''));
         } catch (err) {
             setHtml('allJobsList', '<p class="empty-dashboard">Error loading jobs.</p>');
@@ -905,7 +867,7 @@
             return;
         }
         if (!res.data || res.data.length === 0) {
-            alert('Update did not apply. Check admin RLS policies on job_posts.');
+            alert('Deactivate did not apply. Check admin RLS policies on job_posts.');
             return;
         }
         alert('Job deactivated.');
@@ -954,45 +916,30 @@
     }
 
     async function loadContactMails() {
-        if (!supabaseClient) {
-            setHtml('contactMailsList', '<p class="empty-dashboard">Cannot connect.</p>');
-            return;
-        }
         try {
             var res = await supabaseClient
                 .from('contact_messages')
                 .select('*')
                 .order('created_at', { ascending: false })
-                .limit(100);
+                .limit(50);
 
-            if (res.error) {
-                setHtml('contactMailsList', '<p class="empty-dashboard">Table contact_messages not found. Run the SQL migration.</p>');
-                return;
-            }
-            if (!res.data || res.data.length === 0) {
-                setHtml('contactMailsList', '<p class="empty-dashboard">No contact messages yet.</p>');
+            if (res.error || !res.data || res.data.length === 0) {
+                // Table may not exist yet – graceful fallback
+                setHtml('contactMailsList', '<p class="empty-dashboard">No contact messages (or table not set up yet).</p>');
                 return;
             }
 
             setHtml('contactMailsList', res.data.map(function (m) {
                 var date = m.created_at ? new Date(m.created_at).toLocaleString('en-GB') : '';
-                var unreadClass = m.read ? '' : 'unread';
-                return '<div class="mail-row ' + unreadClass + '">' +
-                    '<p><strong>From:</strong> ' + (m.name || 'Anonymous') + ' &lt;' + (m.email || '') + '&gt;</p>' +
-                    '<p><strong>Phone:</strong> ' + (m.phone || '—') + '</p>' +
-                    '<p><strong>Date:</strong> ' + date + '</p>' +
-                    '<p style="white-space:pre-wrap;background:#f8fafc;padding:10px;border-radius:8px;">' + (m.message || '') + '</p>' +
-                    (m.read ? '' : '<button type="button" class="btn-small" onclick="markMailRead(\'' + m.id + '\')">Mark as Read</button>') +
+                return '<div class="mail-row ' + (m.read ? '' : 'unread') + '">' +
+                    '<h4>' + escapeHtml(m.name || 'Anonymous') + ' &lt;' + escapeHtml(m.email || '') + '&gt;</h4>' +
+                    '<p style="font-size:0.9rem;color:var(--text-light);">' + date + '</p>' +
+                    '<p>' + escapeHtml(m.message || '') + '</p>' +
                     '</div>';
             }).join(''));
         } catch (err) {
-            setHtml('contactMailsList', '<p class="empty-dashboard">Error loading messages.</p>');
+            setHtml('contactMailsList', '<p class="empty-dashboard">No contact messages available.</p>');
         }
-    }
-
-    async function markMailRead(id) {
-        await supabaseClient.from('contact_messages').update({ read: true }).eq('id', id);
-        loadContactMails();
     }
     </script>
 </body>
