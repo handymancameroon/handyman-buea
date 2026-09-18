@@ -1121,3 +1121,65 @@ section h2 {
         grid-template-columns: 1fr;
     }
 }
+
+/* ========== ADMIN SECTION NAV (buttons, sticky) — ADDED ========== */
+.admin-section-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    position: sticky;
+    top: 64px;
+    z-index: 90;
+    background: var(--card);
+    padding: 12px 0;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+}
+
+.admin-nav-btn {
+    display: inline-block;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    font-family: inherit;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: #f8fafc;
+    color: var(--text);
+    transition: all 0.2s;
+}
+
+.admin-nav-btn:hover {
+    background: #eff6ff;
+    color: var(--primary);
+    border-color: var(--primary);
+}
+
+.admin-nav-btn.active {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+}
+
+.admin-back-top {
+    margin-top: 16px;
+    text-align: right;
+}
+
+.admin-back-top a {
+    color: var(--primary);
+    font-size: 0.9rem;
+    text-decoration: none;
+}
+
+@media (max-width: 768px) {
+    .admin-section-nav {
+        top: 64px;
+        gap: 6px;
+    }
+    .admin-nav-btn {
+        padding: 8px 12px;
+        font-size: 0.8rem;
+    }
+}
