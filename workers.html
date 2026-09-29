@@ -27,7 +27,6 @@
     <meta name="geo.placename" content="Cameroon">
 
     <link rel="stylesheet" href="style.css">
-    <!-- Critical layout: center immediately even before full CSS finishes -->
     <style>
         html, body { width: 100%; max-width: 100%; overflow-x: hidden; margin: 0; }
         .container { width: 100%; max-width: 1200px; margin-left: auto; margin-right: auto; padding-left: 20px; padding-right: 20px; box-sizing: border-box; }
@@ -42,7 +41,8 @@
                 <a href="index.html" data-i18n="nav_home">Home</a>
                 <a href="workers.html" data-i18n="nav_workers">Find Workers</a>
                 <a href="jobs.html" data-i18n="nav_jobs">Find Jobs</a>
-                <a href="login.html" class="btn-secondary" data-i18n="nav_join">Join as Worker</a>
+                <a href="contact.html">Contact Us</a>
+                <a href="join.html" class="btn-secondary" data-i18n="nav_join">Join as Worker</a>
                 <a href="post-job.html" class="btn-secondary" data-i18n="nav_post">Post a Job</a>
                 <a href="login.html" class="btn-secondary" id="authBtn" data-i18n="nav_login">Login</a>
             </nav>
@@ -147,9 +147,6 @@
 
         document.addEventListener('DOMContentLoaded', async function () {
             try {
-                // Menu is handled once by app.js initMobileMenu — do not bind again here
-
-                // Wait briefly for app.js auth if needed, then run search once
                 if (typeof applyLanguage === 'function') applyLanguage();
 
                 var params = new URLSearchParams(window.location.search);
