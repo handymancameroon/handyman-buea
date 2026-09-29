@@ -17,7 +17,8 @@
                 <a href="index.html" data-i18n="nav_home">Home</a>
                 <a href="workers.html" data-i18n="nav_workers">Find Workers</a>
                 <a href="jobs.html" data-i18n="nav_jobs">Find Jobs</a>
-                <a href="login.html" class="btn-secondary" data-i18n="nav_join">Join as Worker</a>
+                <a href="contact.html">Contact Us</a>
+                <a href="join.html" class="btn-secondary" data-i18n="nav_join">Join as Worker</a>
                 <a href="post-job.html" class="btn-secondary" data-i18n="nav_post">Post a Job</a>
                 <a href="login.html" class="btn-secondary" id="authBtn" data-i18n="nav_login">Login</a>
             </nav>
@@ -101,8 +102,6 @@
             try {
                 if (typeof checkAuth === 'function') await checkAuth();
                 if (typeof applyLanguage === 'function') applyLanguage();
-
-                /* Mobile menu is handled once in app.js (avoids double-toggle bug) */
 
                 var params = new URLSearchParams(window.location.search);
                 var cat = params.get('category');
