@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Us - Handy Man Cameroon</title>
+    <meta name="description" content="Contact the Handy Man Cameroon team. Send a message and we will reply.">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://handyman-buea.vercel.app/contact.html">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .contact-box {
+            max-width: 560px;
+            margin: 0 auto;
+            background: var(--card, #fff);
+            border: 1px solid var(--border, #e5e7eb);
+            border-radius: 12px;
+            padding: 24px;
+        }
+        .contact-box .form-group { margin-bottom: 14px; }
+        .contact-box label { display: block; font-weight: 600; margin-bottom: 4px; }
+        .contact-box input,
+        .contact-box textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border, #e5e7eb);
+            border-radius: 8px;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+        .contact-box textarea { min-height: 120px; resize: vertical; }
+        .contact-note { color: var(--text-light, #64748b); font-size: 0.95rem; margin-bottom: 16px; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <a href="index.html" class="logo">🔧 Handy Man</a>
+            <nav class="nav" id="nav">
+                <a href="index.html">Home</a>
+                <a href="workers.html">Find Workers</a>
+                <a href="jobs.html">Find Jobs</a>
+                <a href="join.html" class="btn-secondary">Join as Worker</a>
+                <a href="post-job.html" class="btn-secondary">Post a Job</a>
+                <a href="login.html" class="btn-secondary" id="authBtn">Login</a>
+            </nav>
+            <button class="menu-toggle" id="menuToggle" type="button" aria-label="Open menu">☰</button>
+        </div>
+    </header>
+
+    <main style="padding: 40px 0;">
+        <div class="container">
+            <h1 style="text-align:center; margin-bottom: 8px;">Contact Handy Man Team</h1>
+            <p class="contact-note" style="text-align:center;">
+                Send us a message. If you are logged in, we can also reply inside your account.
+            </p>
+
+            <div class="contact-box">
+                <form id="contactForm" onsubmit="sendContactMessage(event)">
+                    <div class="form-group">
+                        <label for="contactName">Your Name *</label>
+                        <input type="text" id="contactName" required maxlength="100" placeholder="Full name">
+                    </div>
+                    <div class="form-group">
+                        <label for="contactEmail">Email *</label>
+                        <input type="email" id="contactEmail" required maxlength="150" placeholder="you@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="contactPhone">Phone (optional)</label>
+                        <input type="text" id="contactPhone" maxlength="30" placeholder="e.g. 6XX XXX XXX">
+                    </div>
+                    <div class="form-group">
+                        <label for="contactMessage">Message *</label>
+                        <textarea id="contactMessage" required maxlength="2000" placeholder="Write your message here..."></textarea>
+                    </div>
+                    <button type="submit" class="btn-primary" id="contactSubmitBtn" style="width:100%;">Send Message</button>
+                    <p id="contactStatus" class="message" style="margin-top:12px;"></p>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>Handy Man Cameroon — Find trusted local help across Cameroon.</p>
+            <p style="margin-top:8px;">
+                <a href="workers.html">Find Workers</a> ·
+                <a href="jobs.html">Find Jobs</a> ·
+                <a href="contact.html">Contact Us</a>
+            </p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function () {
+            if (typeof checkAuth === 'function') await checkAuth();
+            if (typeof applyLanguage === 'function') applyLanguage();
+
+            // Prefill for logged-in users
+            if (currentUser && currentProfile) {
+                var nameEl = document.getElementById('contactName');
+                var emailEl = document.getElementById('contactEmail');
+                var phoneEl = document.getElementById('contactPhone');
+                if (nameEl && currentProfile.full_name) nameEl.value = currentProfile.full_name;
+                if (emailEl && currentUser.email) emailEl.value = currentUser.email;
+                if (phoneEl && currentProfile.phone) phoneEl.value = currentProfile.phone;
+            }
+        });
+
+        async function sendContactMessage(e) {
+            e.preventDefault();
+            var status = document.getElementById('contactStatus');
+            var btn = document.getElementById('contactSubmitBtn');
+            var name = (document.getElementById('contactName').value || '').trim();
+            var email = (document.getElementById('contactEmail').value || '').trim();
+            var phone = (document.getElementById('contactPhone').value || '').trim();
+            var message = (document.getElementById('contactMessage').value || '').trim();
+
+            if (!name || !email || !message) {
+                status.textContent = 'Please fill in name, email and message.';
+                status.className = 'message error';
+                return;
+            }
+            if (!supabaseClient) {
+                status.textContent = 'Cannot connect. Please refresh and try again.';
+                status.className = 'message error';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+            status.textContent = '';
+            status.className = 'message';
+
+            try {
+                var row = {
+                    name: name,
+                    email: email,
+                    phone: phone || null,
+                    message: message,
+                    read: false,
+                    status: 'open'
+                };
+                if (currentUser && currentUser.id) {
+                    row.user_id = currentUser.id;
+                }
+
+                var res = await supabaseClient.from('contact_messages').insert([row]);
+                if (res.error) {
+                    status.textContent = 'Could not send: ' + res.error.message;
+                    status.className = 'message error';
+                    btn.disabled = false;
+                    btn.textContent = 'Send Message';
+                    return;
+                }
+
+                status.textContent = 'Message sent successfully! We will reply as soon as possible.';
+                status.className = 'message success';
+                document.getElementById('contactMessage').value = '';
+                btn.disabled = false;
+                btn.textContent = 'Send Message';
+            } catch (err) {
+                status.textContent = 'Something went wrong. Please try again.';
+                status.className = 'message error';
+                btn.disabled = false;
+                btn.textContent = 'Send Message';
+            }
+        }
+    </script>
+</body>
+</html>
