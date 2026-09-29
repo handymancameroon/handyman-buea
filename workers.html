@@ -145,6 +145,18 @@
             return !isStandardCategory(cat);
         }
 
+        function sortWorkersByOrder(list) {
+            list.sort(function (a, b) {
+                var oa = (a.sort_order != null) ? Number(a.sort_order) : 1000;
+                var ob = (b.sort_order != null) ? Number(b.sort_order) : 1000;
+                if (oa !== ob) return oa - ob;
+                var da = a.created_at ? new Date(a.created_at).getTime() : 0;
+                var db = b.created_at ? new Date(b.created_at).getTime() : 0;
+                return db - da;
+            });
+            return list;
+        }
+
         document.addEventListener('DOMContentLoaded', async function () {
             try {
                 if (typeof applyLanguage === 'function') applyLanguage();
@@ -215,7 +227,9 @@
                 var dbQuery = supabaseClient
                     .from('worker_details')
                     .select('*, profiles(full_name, avatar_url, location, phone, is_deleted)')
-                    .eq('availability', 'Available');
+                    .eq('availability', 'Available')
+                    .order('sort_order', { ascending: true })
+                    .order('created_at', { ascending: false });
 
                 if (category && category !== 'Others') {
                     dbQuery = dbQuery.eq('category', category);
@@ -273,6 +287,8 @@
                     }
                     filtered = byQuery;
                 }
+
+                filtered = sortWorkersByOrder(filtered);
 
                 if (filtered.length === 0) {
                     container.innerHTML = '<p class="empty">' + (typeof t === 'function' ? t('no_workers') : 'No workers found. Try a different search.') + '</p>';
