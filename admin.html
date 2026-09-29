@@ -156,6 +156,9 @@
 
             <div class="admin-section" id="section-mails">
                 <h2>📬 Contact Us Messages</h2>
+                <p style="color:var(--text-light);margin-bottom:12px;">
+                    Registered users: reply in-app. Guests: copy their email and reply manually. You can delete messages when done.
+                </p>
                 <div id="contactMailsList"><p class="loading">Loading messages...</p></div>
                 <div class="admin-back-top"><a href="#adminTop">↑ Back to top</a></div>
             </div>
@@ -585,10 +588,6 @@
         loadStats();
     }
 
-    /**
-     * Permanent Delete – removes data from public tables.
-     * Shows clear step-by-step feedback so we know exactly what fails.
-     */
     async function permanentDeleteUser(userId, name) {
         if (!confirm('⚠️ PERMANENTLY DELETE ' + name + '?\n\nThis removes their profile and related data from the database.\nThis CANNOT be undone.\n\nContinue?')) return;
         if (!confirm('Final confirmation: permanently delete ' + name + '?')) return;
@@ -596,27 +595,21 @@
         var steps = [];
 
         try {
-            // 1. notifications
             var n1 = await supabaseClient.from('notifications').delete().eq('user_id', userId);
             steps.push('notifications: ' + (n1.error ? 'FAIL – ' + n1.error.message : 'OK'));
 
-            // 2. reviews
             var n2 = await supabaseClient.from('reviews').delete().eq('worker_id', userId);
             steps.push('reviews: ' + (n2.error ? 'FAIL – ' + n2.error.message : 'OK'));
 
-            // 3. jobs posted by user
             var n3 = await supabaseClient.from('job_posts').delete().eq('client_id', userId);
             steps.push('job_posts: ' + (n3.error ? 'FAIL – ' + n3.error.message : 'OK'));
 
-            // 4. worker_details
             var n4 = await supabaseClient.from('worker_details').delete().eq('id', userId);
             steps.push('worker_details: ' + (n4.error ? 'FAIL – ' + n4.error.message : 'OK'));
 
-            // 5. disputes as reporter
             var n5 = await supabaseClient.from('disputes').delete().eq('reporter_id', userId);
             steps.push('disputes: ' + (n5.error ? 'FAIL – ' + n5.error.message : 'OK'));
 
-            // 6. profile (the important one)
             var res = await supabaseClient
                 .from('profiles')
                 .delete()
@@ -1029,7 +1022,7 @@
                 .limit(100);
 
             if (res.error) {
-                setHtml('contactMailsList', '<p class="empty-dashboard">Table contact_messages not found. Run the SQL migration.</p>');
+                setHtml('contactMailsList', '<p class="empty-dashboard">Error: ' + res.error.message + '</p>');
                 return;
             }
             if (!res.data || res.data.length === 0) {
@@ -1040,12 +1033,63 @@
             setHtml('contactMailsList', res.data.map(function (m) {
                 var date = m.created_at ? new Date(m.created_at).toLocaleString('en-GB') : '';
                 var unreadClass = m.read ? '' : 'unread';
+                var isRegistered = !!m.user_id;
+                var statusLabel = (m.status || 'open');
+                var safeId = String(m.id).replace(/'/g, "\\'");
+                var safeEmail = String(m.email || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+
+                var replyBlock = '';
+                if (m.admin_reply) {
+                    replyBlock =
+                        '<div style="margin-top:10px;padding:10px;background:#ecfdf5;border-radius:8px;border:1px solid #a7f3d0;">' +
+                        '<strong>Your reply:</strong><br>' +
+                        '<span style="white-space:pre-wrap;">' + escapeHtml(m.admin_reply) + '</span>' +
+                        (m.replied_at ? '<br><small>' + new Date(m.replied_at).toLocaleString('en-GB') + '</small>' : '') +
+                        '</div>';
+                }
+
+                var actions = '';
+                if (!m.read) {
+                    actions += '<button type="button" class="btn-small" onclick="markMailRead(\'' + safeId + '\')">Mark as Read</button> ';
+                }
+
+                if (isRegistered) {
+                    actions +=
+                        '<button type="button" class="btn-primary" style="padding:6px 12px;font-size:0.85rem;" onclick="showReplyBox(\'' + safeId + '\')">Reply in-app</button> ';
+                } else {
+                    actions +=
+                        '<button type="button" class="btn-small" onclick="copyEmail(\'' + safeEmail + '\')">Copy Email</button> ';
+                }
+
+                actions +=
+                    '<button type="button" class="btn-close-job" onclick="deleteMail(\'' + safeId + '\')">Delete</button>';
+
+                var replyForm =
+                    '<div id="replyBox_' + safeId + '" style="display:none;margin-top:12px;">' +
+                    '<textarea id="replyText_' + safeId + '" placeholder="Type your reply to the user..." ' +
+                    'style="width:100%;min-height:80px;padding:10px;border-radius:8px;border:1px solid var(--border);box-sizing:border-box;"></textarea>' +
+                    '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">' +
+                    '<button type="button" class="btn-primary" onclick="sendMailReply(\'' + safeId + '\',\'' + (m.user_id || '') + '\')">Send Reply</button>' +
+                    '<button type="button" class="btn-secondary" onclick="hideReplyBox(\'' + safeId + '\')">Cancel</button>' +
+                    '</div>' +
+                    '<p id="replyStatus_' + safeId + '" class="message" style="margin-top:8px;"></p>' +
+                    '</div>';
+
                 return '<div class="mail-row ' + unreadClass + '">' +
-                    '<p><strong>From:</strong> ' + (m.name || 'Anonymous') + ' &lt;' + (m.email || '') + '&gt;</p>' +
-                    '<p><strong>Phone:</strong> ' + (m.phone || '—') + '</p>' +
-                    '<p><strong>Date:</strong> ' + date + '</p>' +
-                    '<p style="white-space:pre-wrap;background:#f8fafc;padding:10px;border-radius:8px;">' + (m.message || '') + '</p>' +
-                    (m.read ? '' : '<button type="button" class="btn-small" onclick="markMailRead(\'' + m.id + '\')">Mark as Read</button>') +
+                    '<p><strong>From:</strong> ' + escapeHtml(m.name || 'Anonymous') +
+                    ' &lt;' + escapeHtml(m.email || '') + '&gt;' +
+                    (isRegistered
+                        ? ' <span style="color:#16a34a;font-weight:600;">(Registered user – can reply in-app)</span>'
+                        : ' <span style="color:#64748b;">(Guest – reply by email manually)</span>') +
+                    '</p>' +
+                    '<p><strong>Phone:</strong> ' + escapeHtml(m.phone || '—') +
+                    ' · <strong>Status:</strong> ' + escapeHtml(statusLabel) +
+                    ' · <strong>Date:</strong> ' + date + '</p>' +
+                    '<p style="white-space:pre-wrap;background:#f8fafc;padding:10px;border-radius:8px;">' +
+                    escapeHtml(m.message || '') + '</p>' +
+                    replyBlock +
+                    '<div class="user-actions" style="margin-top:10px;">' + actions + '</div>' +
+                    (isRegistered ? replyForm : '') +
                     '</div>';
             }).join(''));
         } catch (err) {
@@ -1055,6 +1099,109 @@
 
     async function markMailRead(id) {
         await supabaseClient.from('contact_messages').update({ read: true }).eq('id', id);
+        loadContactMails();
+    }
+
+    function showReplyBox(id) {
+        var box = document.getElementById('replyBox_' + id);
+        if (box) box.style.display = 'block';
+    }
+
+    function hideReplyBox(id) {
+        var box = document.getElementById('replyBox_' + id);
+        if (box) box.style.display = 'none';
+    }
+
+    function copyEmail(email) {
+        if (!email) {
+            alert('No email address on this message.');
+            return;
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(email).then(function () {
+                alert('Email copied: ' + email + '\n\nPaste it in your email app to reply manually.');
+            }).catch(function () {
+                prompt('Copy this email:', email);
+            });
+        } else {
+            prompt('Copy this email:', email);
+        }
+    }
+
+    async function sendMailReply(messageId, userId) {
+        var textEl = document.getElementById('replyText_' + messageId);
+        var statusEl = document.getElementById('replyStatus_' + messageId);
+        var reply = textEl ? (textEl.value || '').trim() : '';
+
+        if (!reply) {
+            if (statusEl) {
+                statusEl.textContent = 'Please type a reply first.';
+                statusEl.className = 'message error';
+            }
+            return;
+        }
+
+        if (statusEl) {
+            statusEl.textContent = 'Sending...';
+            statusEl.className = 'message';
+        }
+
+        try {
+            var updateRes = await supabaseClient
+                .from('contact_messages')
+                .update({
+                    admin_reply: reply,
+                    status: 'replied',
+                    read: true,
+                    replied_at: new Date().toISOString()
+                })
+                .eq('id', messageId)
+                .select('id');
+
+            if (updateRes.error) {
+                if (statusEl) {
+                    statusEl.textContent = 'Error: ' + updateRes.error.message;
+                    statusEl.className = 'message error';
+                }
+                return;
+            }
+
+            if (userId) {
+                await supabaseClient.from('notifications').insert([{
+                    user_id: userId,
+                    title: 'Reply from Handy Man Team',
+                    message: reply,
+                    read: false
+                }]);
+            }
+
+            alert('Reply sent. The user will see it in their notifications.');
+            loadContactMails();
+        } catch (err) {
+            if (statusEl) {
+                statusEl.textContent = 'Something went wrong. Please try again.';
+                statusEl.className = 'message error';
+            }
+        }
+    }
+
+    async function deleteMail(id) {
+        if (!confirm('Delete this message permanently?\n\nThis cannot be undone.')) return;
+
+        var res = await supabaseClient
+            .from('contact_messages')
+            .delete()
+            .eq('id', id)
+            .select('id');
+
+        if (res.error) {
+            alert('Could not delete: ' + res.error.message);
+            return;
+        }
+        if (!res.data || res.data.length === 0) {
+            alert('Delete did not apply. Your admin account may need DELETE permission on contact_messages.');
+            return;
+        }
         loadContactMails();
     }
     </script>
