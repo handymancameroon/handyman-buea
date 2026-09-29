@@ -42,52 +42,28 @@
         .detail-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
         .mail-row { border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 10px; background: #fff; }
         .mail-row.unread { border-left: 4px solid #2563eb; }
-
+        .sort-box { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .sort-box input[type="number"] {
+            width: 72px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem;
+        }
         .user-modal-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 2000;
-            align-items: center;
-            justify-content: center;
-            padding: 16px;
-            overflow-y: auto;
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 2000;
+            align-items: center; justify-content: center; padding: 16px; overflow-y: auto;
         }
         .user-modal-overlay.active { display: flex; }
         .user-modal-box {
-            background: #fff;
-            border-radius: 14px;
-            padding: 24px;
-            max-width: 640px;
-            width: 100%;
-            max-height: 90vh;
-            overflow-y: auto;
-            position: relative;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            background: #fff; border-radius: 14px; padding: 24px; max-width: 640px; width: 100%;
+            max-height: 90vh; overflow-y: auto; position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.2);
         }
         .user-modal-box .close-modal {
-            position: absolute;
-            top: 12px;
-            right: 14px;
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: var(--text-light);
-            line-height: 1;
+            position: absolute; top: 12px; right: 14px; background: none; border: none;
+            font-size: 1.5rem; cursor: pointer; color: var(--text-light); line-height: 1;
         }
         .user-modal-box h3 { margin-bottom: 12px; padding-right: 30px; }
         .user-modal-box p { margin-bottom: 8px; }
-
         .btn-permanent-delete {
-            background: #7f1d1d;
-            color: #fff;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            cursor: pointer;
+            background: #7f1d1d; color: #fff; border: none; padding: 6px 12px;
+            border-radius: 6px; font-size: 0.85rem; cursor: pointer;
         }
         .btn-permanent-delete:hover { background: #991b1b; }
     </style>
@@ -100,6 +76,7 @@
                 <a href="index.html">Home</a>
                 <a href="workers.html">Find Workers</a>
                 <a href="jobs.html">Find Jobs</a>
+                <a href="contact.html">Contact Us</a>
                 <a href="dashboard.html" class="btn-secondary">My Profile</a>
                 <a href="login.html" class="btn-secondary" id="authBtn">Login</a>
             </nav>
@@ -167,8 +144,7 @@
                 <h2>👥 All Users (Clients & Workers)</h2>
                 <p style="color:var(--text-light);margin-bottom:12px;">
                     <strong>Delete</strong> = soft delete (can restore).
-                    <strong>Permanent Delete</strong> = removes the account and related data completely (cannot be undone).
-                    Use filter <strong>Deleted Accounts</strong> to see soft-deleted users.
+                    <strong>Permanent Delete</strong> = removes the account completely.
                 </p>
                 <div class="admin-filter-bar">
                     <select id="userFilter" onchange="loadAllUsers()">
@@ -201,15 +177,19 @@
             </div>
 
             <div class="admin-section" id="section-workers">
-                <h2>👷 All Workers (Quick Delete / Restore / Permanent Delete)</h2>
+                <h2>👷 All Workers (Order / Delete / Restore)</h2>
+                <p style="color:var(--text-light);margin-bottom:12px;">
+                    <strong>Order:</strong> lower number appears first on the public site (1 = top). Default is 1000.
+                </p>
                 <div id="allWorkersList"><p class="loading">Loading workers...</p></div>
                 <div class="admin-back-top"><a href="#adminTop">↑ Back to top</a></div>
             </div>
 
             <div class="admin-section" id="section-jobs">
-                <h2>📋 All Job Posts</h2>
+                <h2>📋 All Job Posts (Order / Deactivate / Delete)</h2>
                 <p style="color:var(--text-light);margin-bottom:12px;">
-                    Deactivate hides a job from the public site. Restore brings it back to Open. Delete removes it permanently.
+                    <strong>Order:</strong> lower number appears first on Find Jobs. Default is 1000.
+                    Deactivate hides a job. Restore brings it back to Open.
                 </p>
                 <div class="admin-filter-bar">
                     <select id="jobFilter" onchange="loadAllJobs()">
@@ -430,7 +410,6 @@
 
     async function viewUserDetail(userId) {
         if (!supabaseClient || !userId) return;
-
         var modal = document.getElementById('userModal');
         var body = document.getElementById('userModalBody');
         if (!modal || !body) return;
@@ -460,6 +439,7 @@
                 if (w) {
                     workerHtml = '<hr style="margin:16px 0;"><h4>Worker Details</h4>' +
                         '<p><strong>Category:</strong> ' + escapeHtml(w.category || '—') + '</p>' +
+                        '<p><strong>Order:</strong> ' + (w.sort_order != null ? w.sort_order : 1000) + '</p>' +
                         '<p><strong>Rating:</strong> ' + (w.rating || 0) + '/5 (' + (w.review_count || 0) + ' reviews)</p>' +
                         '<p><strong>Experience:</strong> ' + (w.experience_years || 0) + ' years</p>' +
                         '<p><strong>Availability:</strong> ' + escapeHtml(w.availability || '—') + '</p>' +
@@ -509,8 +489,7 @@
                 '<p><strong>Registered:</strong> ' + created + '</p>' +
                 '<p><strong>Deleted:</strong> ' + deleted + '</p>' +
                 (profile.avatar_url ? '<p><img src="' + profile.avatar_url + '" style="width:80px;height:80px;border-radius:50%;object-fit:cover;margin-top:8px;" alt=""></p>' : '') +
-                workerHtml +
-                jobsHtml +
+                workerHtml + jobsHtml +
                 '<div class="detail-actions" style="margin-top:16px;">' +
                 contactBtns +
                 '<button type="button" class="btn-small" onclick="sendSingleNotification(\'' + profile.id + '\',\'' + safeName + '\')">Send Notification</button> ' +
@@ -527,117 +506,61 @@
         var message = prompt('Write a message for ' + userName + ':');
         if (!message || !message.trim()) return;
         var res = await supabaseClient.from('notifications').insert([{
-            user_id: userId,
-            title: 'Message from Admin',
-            message: message.trim(),
-            read: false
+            user_id: userId, title: 'Message from Admin', message: message.trim(), read: false
         }]);
         if (res.error) alert('Error: ' + res.error.message);
         else alert('Notification sent to ' + userName);
     }
 
     async function deleteUser(userId, name) {
-        if (!confirm('Delete (deactivate) ' + name + '?\n\nThey will NOT be able to log in or appear on the site.\nYou can restore them later from "Deleted Accounts".')) return;
-
-        var res = await supabaseClient
-            .from('profiles')
+        if (!confirm('Delete (deactivate) ' + name + '?\n\nThey will NOT be able to log in or appear on the site.')) return;
+        var res = await supabaseClient.from('profiles')
             .update({ is_deleted: true, deleted_at: new Date().toISOString() })
-            .eq('id', userId)
-            .select('id, is_deleted');
-
-        if (res.error) {
-            alert('Error deleting: ' + res.error.message);
-            return;
-        }
-        if (!res.data || res.data.length === 0) {
-            alert('Delete did not apply. Check is_admin and SQL policies.');
-            return;
-        }
-
+            .eq('id', userId).select('id, is_deleted');
+        if (res.error) { alert('Error deleting: ' + res.error.message); return; }
+        if (!res.data || res.data.length === 0) { alert('Delete did not apply. Check admin policies.'); return; }
         await supabaseClient.from('worker_details').update({ availability: 'Deleted' }).eq('id', userId);
         alert(name + ' has been deleted (deactivated).');
-        closeUserModal();
-        loadAllUsers();
-        loadAllWorkers();
-        loadStats();
+        closeUserModal(); loadAllUsers(); loadAllWorkers(); loadStats();
     }
 
     async function restoreUser(userId, name) {
-        if (!confirm('Restore ' + name + '? They will be able to log in again.')) return;
-
-        var res = await supabaseClient
-            .from('profiles')
+        if (!confirm('Restore ' + name + '?')) return;
+        var res = await supabaseClient.from('profiles')
             .update({ is_deleted: false, deleted_at: null })
-            .eq('id', userId)
-            .select('id, is_deleted');
-
-        if (res.error) {
-            alert('Error restoring: ' + res.error.message);
-            return;
-        }
-        if (!res.data || res.data.length === 0) {
-            alert('Restore did not apply. Check admin policies.');
-            return;
-        }
-
+            .eq('id', userId).select('id, is_deleted');
+        if (res.error) { alert('Error restoring: ' + res.error.message); return; }
+        if (!res.data || res.data.length === 0) { alert('Restore did not apply.'); return; }
         await supabaseClient.from('worker_details').update({ availability: 'Available' }).eq('id', userId);
         alert(name + ' restored successfully!');
-        closeUserModal();
-        loadAllUsers();
-        loadAllWorkers();
-        loadStats();
+        closeUserModal(); loadAllUsers(); loadAllWorkers(); loadStats();
     }
 
     async function permanentDeleteUser(userId, name) {
-        if (!confirm('⚠️ PERMANENTLY DELETE ' + name + '?\n\nThis removes their profile and related data from the database.\nThis CANNOT be undone.\n\nContinue?')) return;
+        if (!confirm('⚠️ PERMANENTLY DELETE ' + name + '?\n\nThis CANNOT be undone.')) return;
         if (!confirm('Final confirmation: permanently delete ' + name + '?')) return;
-
         var steps = [];
-
         try {
             var n1 = await supabaseClient.from('notifications').delete().eq('user_id', userId);
-            steps.push('notifications: ' + (n1.error ? 'FAIL – ' + n1.error.message : 'OK'));
-
+            steps.push('notifications: ' + (n1.error ? 'FAIL' : 'OK'));
             var n2 = await supabaseClient.from('reviews').delete().eq('worker_id', userId);
-            steps.push('reviews: ' + (n2.error ? 'FAIL – ' + n2.error.message : 'OK'));
-
+            steps.push('reviews: ' + (n2.error ? 'FAIL' : 'OK'));
             var n3 = await supabaseClient.from('job_posts').delete().eq('client_id', userId);
-            steps.push('job_posts: ' + (n3.error ? 'FAIL – ' + n3.error.message : 'OK'));
-
+            steps.push('job_posts: ' + (n3.error ? 'FAIL' : 'OK'));
             var n4 = await supabaseClient.from('worker_details').delete().eq('id', userId);
-            steps.push('worker_details: ' + (n4.error ? 'FAIL – ' + n4.error.message : 'OK'));
-
+            steps.push('worker_details: ' + (n4.error ? 'FAIL' : 'OK'));
             var n5 = await supabaseClient.from('disputes').delete().eq('reporter_id', userId);
-            steps.push('disputes: ' + (n5.error ? 'FAIL – ' + n5.error.message : 'OK'));
-
-            var res = await supabaseClient
-                .from('profiles')
-                .delete()
-                .eq('id', userId)
-                .select('id');
-
-            if (res.error) {
-                alert('FAILED to delete profile:\n\n' + res.error.message +
-                      '\n\nSteps so far:\n' + steps.join('\n') +
-                      '\n\n→ Run the latest SQL policies in Supabase, then try again.');
+            steps.push('disputes: ' + (n5.error ? 'FAIL' : 'OK'));
+            var res = await supabaseClient.from('profiles').delete().eq('id', userId).select('id');
+            if (res.error || !res.data || res.data.length === 0) {
+                alert('FAILED to delete profile.\n\n' + (res.error ? res.error.message : '0 rows') + '\n\n' + steps.join('\n'));
                 return;
             }
-
-            if (!res.data || res.data.length === 0) {
-                alert('Profile delete returned 0 rows.\n\nThis almost always means RLS is blocking the delete.\n\nSteps so far:\n' + steps.join('\n') +
-                      '\n\n→ Make sure you ran the latest SQL and that your account has is_admin = true.');
-                return;
-            }
-
-            steps.push('profiles: OK – permanently deleted');
-            alert('SUCCESS!\n\n' + name + ' has been permanently removed.\n\n' + steps.join('\n'));
-            closeUserModal();
-            loadAllUsers();
-            loadAllWorkers();
-            loadAllJobs();
-            loadStats();
+            steps.push('profiles: OK');
+            alert('SUCCESS!\n\n' + name + ' removed.\n\n' + steps.join('\n'));
+            closeUserModal(); loadAllUsers(); loadAllWorkers(); loadAllJobs(); loadStats();
         } catch (err) {
-            alert('Unexpected error:\n' + (err.message || err) + '\n\nSteps:\n' + steps.join('\n'));
+            alert('Unexpected error: ' + (err.message || err));
         }
     }
 
@@ -645,35 +568,23 @@
         var audience = document.getElementById('broadcastAudience').value;
         var message = document.getElementById('broadcastMessage').value.trim();
         var status = document.getElementById('broadcastStatus');
-        if (!message) {
-            status.textContent = 'Please type a message first.';
-            status.className = 'message error';
-            return;
-        }
-        status.textContent = 'Sending...';
-        status.className = 'message';
-
+        if (!message) { status.textContent = 'Please type a message first.'; status.className = 'message error'; return; }
+        status.textContent = 'Sending...'; status.className = 'message';
         var query = supabaseClient.from('profiles').select('id').eq('is_deleted', false);
         if (audience === 'workers') query = query.eq('is_worker', true);
         if (audience === 'clients') query = query.eq('is_worker', false);
-
         var res = await query;
         if (res.error || !res.data || res.data.length === 0) {
-            status.textContent = 'No users found for this group.';
-            status.className = 'message error';
-            return;
+            status.textContent = 'No users found for this group.'; status.className = 'message error'; return;
         }
-
         var rows = res.data.map(function (u) {
             return { user_id: u.id, title: 'Message from Admin', message: message, read: false };
         });
         var insertRes = await supabaseClient.from('notifications').insert(rows);
         if (insertRes.error) {
-            status.textContent = 'Error: ' + insertRes.error.message;
-            status.className = 'message error';
+            status.textContent = 'Error: ' + insertRes.error.message; status.className = 'message error';
         } else {
-            status.textContent = 'Message sent to ' + res.data.length + ' user(s)!';
-            status.className = 'message success';
+            status.textContent = 'Message sent to ' + res.data.length + ' user(s)!'; status.className = 'message success';
             document.getElementById('broadcastMessage').value = '';
         }
     }
@@ -682,42 +593,27 @@
         var title = document.getElementById('bugTitle').value.trim();
         var details = document.getElementById('bugDetails').value.trim();
         var status = document.getElementById('bugStatus');
-        if (!title) {
-            status.textContent = 'Please enter a title.';
-            status.className = 'message error';
-            return;
-        }
+        if (!title) { status.textContent = 'Please enter a title.'; status.className = 'message error'; return; }
         var res = await supabaseClient.from('disputes').insert([{
-            reason: 'Bug/Case: ' + title,
-            details: details || 'No details',
-            target_name: 'Internal',
-            target_type: 'Bug',
+            reason: 'Bug/Case: ' + title, details: details || 'No details',
+            target_name: 'Internal', target_type: 'Bug',
             reporter_name: (currentProfile && currentProfile.full_name) || (currentUser && currentUser.email) || 'Admin',
             status: 'Open'
         }]);
-        if (res.error) {
-            status.textContent = 'Error: ' + res.error.message;
-            status.className = 'message error';
-        } else {
-            status.textContent = 'Bug/Case saved!';
-            status.className = 'message success';
-            document.getElementById('bugTitle').value = '';
-            document.getElementById('bugDetails').value = '';
-            loadDisputes();
-            loadStats();
+        if (res.error) { status.textContent = 'Error: ' + res.error.message; status.className = 'message error'; }
+        else {
+            status.textContent = 'Bug/Case saved!'; status.className = 'message success';
+            document.getElementById('bugTitle').value = ''; document.getElementById('bugDetails').value = '';
+            loadDisputes(); loadStats();
         }
     }
 
     async function loadDisputes() {
-        if (!supabaseClient) {
-            setHtml('disputesList', '<p class="empty-dashboard">Cannot connect.</p>');
-            return;
-        }
+        if (!supabaseClient) { setHtml('disputesList', '<p class="empty-dashboard">Cannot connect.</p>'); return; }
         try {
             var res = await supabaseClient.from('disputes').select('*').order('created_at', { ascending: false });
             if (res.error || !res.data || res.data.length === 0) {
-                setHtml('disputesList', '<p class="empty-dashboard">No disputes yet.</p>');
-                return;
+                setHtml('disputesList', '<p class="empty-dashboard">No disputes yet.</p>'); return;
             }
             setHtml('disputesList', res.data.map(function (d) {
                 var date = new Date(d.created_at).toLocaleDateString('en-GB');
@@ -725,15 +621,12 @@
                 var preview = escapeHtml((d.details || '').substring(0, 100));
                 if ((d.details || '').length > 100) preview += '...';
                 return '<div class="dispute-row" style="cursor:pointer;" onclick="openDisputeDetail(\'' + d.id + '\')">' +
-                    '<div class="dispute-info">' +
-                    '<h4>' + escapeHtml(d.reason || 'Report') + '</h4>' +
+                    '<div class="dispute-info"><h4>' + escapeHtml(d.reason || 'Report') + '</h4>' +
                     '<p><strong>Target:</strong> ' + escapeHtml(d.target_name || '') + ' (' + escapeHtml(d.target_type || '') + ')</p>' +
                     '<p><strong>Reporter:</strong> ' + escapeHtml(d.reporter_name || 'Anonymous') + '</p>' +
                     '<p style="font-size:0.85rem;">' + preview + '</p>' +
-                    '<p style="font-size:0.8rem;">' + date + ' • <span class="status-badge ' + statusClass + '">' + (d.status || '') + '</span></p>' +
-                    '</div>' +
-                    '<div><button type="button" class="btn-small" onclick="event.stopPropagation(); openDisputeDetail(\'' + d.id + '\')">Open</button></div>' +
-                    '</div>';
+                    '<p style="font-size:0.8rem;">' + date + ' • <span class="status-badge ' + statusClass + '">' + (d.status || '') + '</span></p></div>' +
+                    '<div><button type="button" class="btn-small" onclick="event.stopPropagation(); openDisputeDetail(\'' + d.id + '\')">Open</button></div></div>';
             }).join(''));
         } catch (err) {
             setHtml('disputesList', '<p class="empty-dashboard">Error loading disputes.</p>');
@@ -742,76 +635,33 @@
 
     async function openDisputeDetail(disputeId) {
         var { data: d, error } = await supabaseClient.from('disputes').select('*').eq('id', disputeId).single();
-        if (error || !d) {
-            alert('Could not load dispute.');
-            return;
-        }
-
+        if (error || !d) { alert('Could not load dispute.'); return; }
         var date = new Date(d.created_at).toLocaleString('en-GB');
         var reporterId = d.reporter_id || '';
         var targetId = d.target_id || '';
         var safeReporter = (d.reporter_name || 'Reporter').replace(/'/g, "\\'");
         var safeTarget = (d.target_name || 'User').replace(/'/g, "\\'");
-
-        var msgReporterBtn = reporterId
-            ? '<button type="button" class="btn-primary" onclick="messageUser(\'' + reporterId + '\',\'' + safeReporter + '\')">Message Reporter</button>'
-            : '';
-        var msgTargetBtn = (targetId && d.target_type !== 'Bug' && d.target_type !== 'job')
-            ? '<button type="button" class="btn-primary" onclick="messageUser(\'' + targetId + '\',\'' + safeTarget + '\')">Message Reported Person</button>'
-            : '';
-        var resolveBtn = d.status === 'Open'
-            ? '<button type="button" class="btn-small" onclick="resolveDispute(\'' + d.id + '\')">Mark Resolved</button>'
-            : '';
-
-        var phonesHtml = '';
-        try {
-            var ids = [];
-            if (reporterId) ids.push(reporterId);
-            if (targetId && targetId.length > 10) ids.push(targetId);
-            if (ids.length) {
-                var pr = await supabaseClient.from('profiles').select('id, full_name, phone').in('id', ids);
-                if (pr.data) {
-                    phonesHtml = pr.data.map(function (p) {
-                        var ph = p.phone || '';
-                        if (!ph) return '';
-                        return '<p><strong>' + (p.full_name || 'User') + ':</strong> ' +
-                            '<a class="btn-call" href="' + callLink(ph) + '">Call</a> ' +
-                            '<a class="btn-whatsapp" href="' + whatsappLink(ph) + '" target="_blank">WhatsApp</a></p>';
-                    }).join('');
-                }
-            }
-        } catch (e) {}
-
-        var html = '<div class="dispute-detail-box">' +
-            '<h3>🚩 Dispute Detail</h3>' +
+        var msgReporterBtn = reporterId ? '<button type="button" class="btn-primary" onclick="messageUser(\'' + reporterId + '\',\'' + safeReporter + '\')">Message Reporter</button>' : '';
+        var msgTargetBtn = (targetId && d.target_type !== 'Bug' && d.target_type !== 'job') ? '<button type="button" class="btn-primary" onclick="messageUser(\'' + targetId + '\',\'' + safeTarget + '\')">Message Reported Person</button>' : '';
+        var resolveBtn = d.status === 'Open' ? '<button type="button" class="btn-small" onclick="resolveDispute(\'' + d.id + '\')">Mark Resolved</button>' : '';
+        var html = '<div class="dispute-detail-box"><h3>🚩 Dispute Detail</h3>' +
             '<p><strong>Reason:</strong> ' + escapeHtml(d.reason || '') + '</p>' +
-            '<p><strong>Target:</strong> ' + escapeHtml(d.target_name || '') + ' (' + escapeHtml(d.target_type || '') + ') — ID: ' + (targetId || 'n/a') + '</p>' +
-            '<p><strong>Reporter:</strong> ' + escapeHtml(d.reporter_name || 'Anonymous') + ' — ID: ' + (reporterId || 'n/a') + '</p>' +
-            '<p><strong>Status:</strong> ' + (d.status || '') + '</p>' +
-            '<p><strong>Date:</strong> ' + date + '</p>' +
-            phonesHtml +
+            '<p><strong>Target:</strong> ' + escapeHtml(d.target_name || '') + ' (' + escapeHtml(d.target_type || '') + ')</p>' +
+            '<p><strong>Reporter:</strong> ' + escapeHtml(d.reporter_name || 'Anonymous') + '</p>' +
+            '<p><strong>Status:</strong> ' + (d.status || '') + '</p><p><strong>Date:</strong> ' + date + '</p>' +
             '<p style="margin-top:12px;"><strong>Full details:</strong></p>' +
             '<p style="background:#f8fafc;padding:12px;border-radius:8px;white-space:pre-wrap;">' + escapeHtml(d.details || 'No details') + '</p>' +
-            '<div class="detail-actions">' +
-            msgReporterBtn + msgTargetBtn + resolveBtn +
-            '<button type="button" class="btn-secondary" onclick="loadDisputes()">← Back to list</button>' +
-            '</div></div>';
-
+            '<div class="detail-actions">' + msgReporterBtn + msgTargetBtn + resolveBtn +
+            '<button type="button" class="btn-secondary" onclick="loadDisputes()">← Back to list</button></div></div>';
         setHtml('disputesList', html);
     }
 
     async function messageUser(userId, userName) {
-        if (!userId || userId === 'null' || userId === 'undefined') {
-            alert('No user ID available for this person.');
-            return;
-        }
+        if (!userId || userId === 'null') { alert('No user ID available.'); return; }
         var message = prompt('Write a message for ' + userName + ':');
         if (!message || !message.trim()) return;
         var res = await supabaseClient.from('notifications').insert([{
-            user_id: userId,
-            title: 'Message from Admin (Dispute)',
-            message: message.trim(),
-            read: false
+            user_id: userId, title: 'Message from Admin (Dispute)', message: message.trim(), read: false
         }]);
         if (res.error) alert('Error: ' + res.error.message);
         else alert('Notification sent to ' + userName);
@@ -821,37 +671,34 @@
         if (!confirm('Mark as resolved?')) return;
         var res = await supabaseClient.from('disputes').update({ status: 'Resolved' }).eq('id', disputeId);
         if (res.error) alert('Error: ' + res.error.message);
-        else {
-            alert('Resolved.');
-            loadDisputes();
-            loadStats();
-        }
+        else { alert('Resolved.'); loadDisputes(); loadStats(); }
     }
 
     async function loadAllWorkers() {
-        if (!supabaseClient) {
-            setHtml('allWorkersList', '<p class="empty-dashboard">Cannot connect.</p>');
-            return;
-        }
+        if (!supabaseClient) { setHtml('allWorkersList', '<p class="empty-dashboard">Cannot connect.</p>'); return; }
         try {
             var res = await supabaseClient
                 .from('worker_details')
                 .select('*, profiles(full_name, phone, location, is_deleted)')
+                .order('sort_order', { ascending: true })
                 .order('created_at', { ascending: false });
             if (res.error || !res.data || res.data.length === 0) {
-                setHtml('allWorkersList', '<p class="empty-dashboard">No workers yet.</p>');
-                return;
+                setHtml('allWorkersList', '<p class="empty-dashboard">No workers yet.</p>'); return;
             }
             setHtml('allWorkersList', res.data.map(function (w) {
                 var p = w.profiles || {};
                 var safeName = (p.full_name || 'worker').replace(/'/g, "\\'");
                 var isDeleted = p.is_deleted === true || w.availability === 'Deleted';
+                var orderVal = (w.sort_order != null) ? w.sort_order : 1000;
                 return '<div class="dispute-row ' + (isDeleted ? 'deleted-user' : '') + '">' +
-                    '<div class="dispute-info"><h4>' + (p.full_name || 'Unknown') +
+                    '<div class="dispute-info"><h4>' + escapeHtml(p.full_name || 'Unknown') +
                     (isDeleted ? ' <span style="color:#ef4444;">(Deleted)</span>' : '') +
-                    '</h4><p>' + (w.category || '') + ' • ' + (p.phone || 'No phone') + ' • ' + (p.location || 'Cameroon') +
+                    '</h4><p>' + escapeHtml(w.category || '') + ' • ' + (p.phone || 'No phone') + ' • ' + escapeHtml(p.location || 'Cameroon') +
                     '</p></div>' +
                     '<div class="user-actions">' +
+                    '<div class="sort-box"><label>Order</label>' +
+                    '<input type="number" id="wOrder_' + w.id + '" value="' + orderVal + '" min="1" step="1">' +
+                    '<button type="button" class="btn-small" onclick="saveWorkerOrder(\'' + w.id + '\')">Save order</button></div> ' +
                     '<button type="button" class="btn-small" onclick="viewUserDetail(\'' + w.id + '\')">View</button> ' +
                     (isDeleted
                         ? '<button type="button" class="btn-primary" onclick="restoreUser(\'' + w.id + '\',\'' + safeName + '\')">Restore</button>' +
@@ -865,11 +712,20 @@
         }
     }
 
+    async function saveWorkerOrder(workerId) {
+        var input = document.getElementById('wOrder_' + workerId);
+        if (!input) return;
+        var val = parseInt(input.value, 10);
+        if (isNaN(val) || val < 1) { alert('Enter a whole number 1 or higher.'); return; }
+        var res = await supabaseClient.from('worker_details').update({ sort_order: val }).eq('id', workerId).select('id, sort_order');
+        if (res.error) { alert('Error: ' + res.error.message); return; }
+        if (!res.data || res.data.length === 0) { alert('Order did not save. Check admin UPDATE permission on worker_details.'); return; }
+        alert('Worker order saved: ' + val);
+        loadAllWorkers();
+    }
+
     async function loadAllJobs() {
-        if (!supabaseClient) {
-            setHtml('allJobsList', '<p class="empty-dashboard">Cannot connect.</p>');
-            return;
-        }
+        if (!supabaseClient) { setHtml('allJobsList', '<p class="empty-dashboard">Cannot connect.</p>'); return; }
         try {
             var filterEl = document.getElementById('jobFilter');
             var searchEl = document.getElementById('jobSearch');
@@ -879,6 +735,7 @@
             var query = supabaseClient
                 .from('job_posts')
                 .select('*, profiles(full_name)')
+                .order('sort_order', { ascending: true })
                 .order('created_at', { ascending: false })
                 .limit(300);
 
@@ -887,14 +744,8 @@
             if (filter === 'Deactivated') query = query.eq('status', 'Deactivated');
 
             var res = await query;
-            if (res.error) {
-                setHtml('allJobsList', '<p class="empty-dashboard">Error: ' + res.error.message + '</p>');
-                return;
-            }
-            if (!res.data || res.data.length === 0) {
-                setHtml('allJobsList', '<p class="empty-dashboard">No jobs yet.</p>');
-                return;
-            }
+            if (res.error) { setHtml('allJobsList', '<p class="empty-dashboard">Error: ' + res.error.message + '</p>'); return; }
+            if (!res.data || res.data.length === 0) { setHtml('allJobsList', '<p class="empty-dashboard">No jobs yet.</p>'); return; }
 
             var list = res.data;
             if (search) {
@@ -906,42 +757,30 @@
                     return t.indexOf(search) !== -1 || c.indexOf(search) !== -1 || l.indexOf(search) !== -1 || p.indexOf(search) !== -1;
                 });
             }
-
-            if (list.length === 0) {
-                setHtml('allJobsList', '<p class="empty-dashboard">No jobs match this filter/search.</p>');
-                return;
-            }
+            if (list.length === 0) { setHtml('allJobsList', '<p class="empty-dashboard">No jobs match this filter/search.</p>'); return; }
 
             setHtml('allJobsList', list.map(function (job) {
                 var date = new Date(job.created_at).toLocaleDateString('en-GB');
                 var poster = (job.profiles && job.profiles.full_name) || 'Unknown';
                 var safeTitle = (job.title || 'Job').replace(/'/g, "\\'");
                 var isDeactivated = (job.status === 'Deactivated');
-                var rowClass = isDeactivated ? 'deleted-job' : '';
+                var orderVal = (job.sort_order != null) ? job.sort_order : 1000;
+                var actions = isDeactivated
+                    ? '<button type="button" class="btn-primary" onclick="restoreJob(\'' + job.id + '\',\'' + safeTitle + '\')">Restore</button>' +
+                      '<button type="button" class="btn-close-job" onclick="deleteJobPermanent(\'' + job.id + '\',\'' + safeTitle + '\')">Delete</button>'
+                    : '<button type="button" class="btn-secondary" style="padding:6px 12px;font-size:0.85rem;" onclick="deactivateJob(\'' + job.id + '\',\'' + safeTitle + '\')">Deactivate</button>' +
+                      '<button type="button" class="btn-close-job" onclick="deleteJobPermanent(\'' + job.id + '\',\'' + safeTitle + '\')">Delete</button>';
 
-                var actions = '';
-                if (isDeactivated) {
-                    actions =
-                        '<button type="button" class="btn-primary" onclick="restoreJob(\'' + job.id + '\',\'' + safeTitle + '\')">Restore</button>' +
-                        '<button type="button" class="btn-close-job" onclick="deleteJobPermanent(\'' + job.id + '\',\'' + safeTitle + '\')">Delete</button>';
-                } else {
-                    actions =
-                        '<button type="button" class="btn-secondary" style="padding:6px 12px;font-size:0.85rem;" onclick="deactivateJob(\'' + job.id + '\',\'' + safeTitle + '\')">Deactivate</button>' +
-                        '<button type="button" class="btn-close-job" onclick="deleteJobPermanent(\'' + job.id + '\',\'' + safeTitle + '\')">Delete</button>';
-                }
-
-                return '<div class="dispute-row ' + rowClass + '">' +
-                    '<div class="dispute-info">' +
-                    '<h4>' + escapeHtml(job.title || '') +
+                return '<div class="dispute-row ' + (isDeactivated ? 'deleted-user' : '') + '">' +
+                    '<div class="dispute-info"><h4>' + escapeHtml(job.title || '') +
                     (isDeactivated ? ' <span style="color:#ef4444;">(Deactivated)</span>' : '') +
-                    '</h4>' +
-                    '<p>' + escapeHtml(job.category || '') + ' • ' + escapeHtml(job.location || '') +
-                    ' • ' + escapeHtml(poster) + ' • ' + date +
-                    ' • <strong>' + escapeHtml(job.status || '') + '</strong></p>' +
-                    '</div>' +
+                    '</h4><p>' + escapeHtml(job.category || '') + ' • ' + escapeHtml(job.location || '') +
+                    ' • ' + escapeHtml(poster) + ' • ' + date + ' • <strong>' + escapeHtml(job.status || '') + '</strong></p></div>' +
                     '<div class="user-actions">' +
-                    '<a href="job.html?id=' + job.id + '" class="btn-small" target="_blank">View</a> ' +
-                    actions +
+                    '<div class="sort-box"><label>Order</label>' +
+                    '<input type="number" id="jOrder_' + job.id + '" value="' + orderVal + '" min="1" step="1">' +
+                    '<button type="button" class="btn-small" onclick="saveJobOrder(\'' + job.id + '\')">Save order</button></div> ' +
+                    '<a href="job.html?id=' + job.id + '" class="btn-small" target="_blank">View</a> ' + actions +
                     '</div></div>';
             }).join(''));
         } catch (err) {
@@ -949,86 +788,48 @@
         }
     }
 
-    async function deactivateJob(jobId, title) {
-        if (!confirm('Deactivate job "' + title + '"?\n\nIt will be hidden from the public Find Jobs page.\nYou can restore it later.')) return;
-        var res = await supabaseClient
-            .from('job_posts')
-            .update({ status: 'Deactivated' })
-            .eq('id', jobId)
-            .select('id, status');
-        if (res.error) {
-            alert('Error: ' + res.error.message);
-            return;
-        }
-        if (!res.data || res.data.length === 0) {
-            alert('Update did not apply. Check admin RLS policies on job_posts.');
-            return;
-        }
-        alert('Job deactivated.');
+    async function saveJobOrder(jobId) {
+        var input = document.getElementById('jOrder_' + jobId);
+        if (!input) return;
+        var val = parseInt(input.value, 10);
+        if (isNaN(val) || val < 1) { alert('Enter a whole number 1 or higher.'); return; }
+        var res = await supabaseClient.from('job_posts').update({ sort_order: val }).eq('id', jobId).select('id, sort_order');
+        if (res.error) { alert('Error: ' + res.error.message); return; }
+        if (!res.data || res.data.length === 0) { alert('Order did not save. Check admin UPDATE permission on job_posts.'); return; }
+        alert('Job order saved: ' + val);
         loadAllJobs();
-        loadStats();
+    }
+
+    async function deactivateJob(jobId, title) {
+        if (!confirm('Deactivate job "' + title + '"?')) return;
+        var res = await supabaseClient.from('job_posts').update({ status: 'Deactivated' }).eq('id', jobId).select('id, status');
+        if (res.error) { alert('Error: ' + res.error.message); return; }
+        if (!res.data || res.data.length === 0) { alert('Update did not apply.'); return; }
+        alert('Job deactivated.'); loadAllJobs(); loadStats();
     }
 
     async function restoreJob(jobId, title) {
-        if (!confirm('Restore job "' + title + '"?\n\nIt will be set back to Open and appear on the public site.')) return;
-        var res = await supabaseClient
-            .from('job_posts')
-            .update({ status: 'Open' })
-            .eq('id', jobId)
-            .select('id, status');
-        if (res.error) {
-            alert('Error: ' + res.error.message);
-            return;
-        }
-        if (!res.data || res.data.length === 0) {
-            alert('Restore did not apply. Check admin RLS policies on job_posts.');
-            return;
-        }
-        alert('Job restored to Open.');
-        loadAllJobs();
-        loadStats();
+        if (!confirm('Restore job "' + title + '"?')) return;
+        var res = await supabaseClient.from('job_posts').update({ status: 'Open' }).eq('id', jobId).select('id, status');
+        if (res.error) { alert('Error: ' + res.error.message); return; }
+        if (!res.data || res.data.length === 0) { alert('Restore did not apply.'); return; }
+        alert('Job restored to Open.'); loadAllJobs(); loadStats();
     }
 
     async function deleteJobPermanent(jobId, title) {
-        if (!confirm('PERMANENTLY delete job "' + title + '"?\n\nThis cannot be undone.')) return;
-        var res = await supabaseClient
-            .from('job_posts')
-            .delete()
-            .eq('id', jobId)
-            .select('id');
-        if (res.error) {
-            alert('Error: ' + res.error.message);
-            return;
-        }
-        if (!res.data || res.data.length === 0) {
-            alert('Delete did not apply. Check admin RLS policies on job_posts (DELETE allowed for admin).');
-            return;
-        }
-        alert('Job permanently deleted.');
-        loadAllJobs();
-        loadStats();
+        if (!confirm('PERMANENTLY delete job "' + title + '"?')) return;
+        var res = await supabaseClient.from('job_posts').delete().eq('id', jobId).select('id');
+        if (res.error) { alert('Error: ' + res.error.message); return; }
+        if (!res.data || res.data.length === 0) { alert('Delete did not apply.'); return; }
+        alert('Job permanently deleted.'); loadAllJobs(); loadStats();
     }
 
     async function loadContactMails() {
-        if (!supabaseClient) {
-            setHtml('contactMailsList', '<p class="empty-dashboard">Cannot connect.</p>');
-            return;
-        }
+        if (!supabaseClient) { setHtml('contactMailsList', '<p class="empty-dashboard">Cannot connect.</p>'); return; }
         try {
-            var res = await supabaseClient
-                .from('contact_messages')
-                .select('*')
-                .order('created_at', { ascending: false })
-                .limit(100);
-
-            if (res.error) {
-                setHtml('contactMailsList', '<p class="empty-dashboard">Error: ' + res.error.message + '</p>');
-                return;
-            }
-            if (!res.data || res.data.length === 0) {
-                setHtml('contactMailsList', '<p class="empty-dashboard">No contact messages yet.</p>');
-                return;
-            }
+            var res = await supabaseClient.from('contact_messages').select('*').order('created_at', { ascending: false }).limit(100);
+            if (res.error) { setHtml('contactMailsList', '<p class="empty-dashboard">Error: ' + res.error.message + '</p>'); return; }
+            if (!res.data || res.data.length === 0) { setHtml('contactMailsList', '<p class="empty-dashboard">No contact messages yet.</p>'); return; }
 
             setHtml('contactMailsList', res.data.map(function (m) {
                 var date = m.created_at ? new Date(m.created_at).toLocaleString('en-GB') : '';
@@ -1040,57 +841,34 @@
 
                 var replyBlock = '';
                 if (m.admin_reply) {
-                    replyBlock =
-                        '<div style="margin-top:10px;padding:10px;background:#ecfdf5;border-radius:8px;border:1px solid #a7f3d0;">' +
-                        '<strong>Your reply:</strong><br>' +
-                        '<span style="white-space:pre-wrap;">' + escapeHtml(m.admin_reply) + '</span>' +
-                        (m.replied_at ? '<br><small>' + new Date(m.replied_at).toLocaleString('en-GB') + '</small>' : '') +
-                        '</div>';
+                    replyBlock = '<div style="margin-top:10px;padding:10px;background:#ecfdf5;border-radius:8px;border:1px solid #a7f3d0;">' +
+                        '<strong>Your reply:</strong><br><span style="white-space:pre-wrap;">' + escapeHtml(m.admin_reply) + '</span>' +
+                        (m.replied_at ? '<br><small>' + new Date(m.replied_at).toLocaleString('en-GB') + '</small>' : '') + '</div>';
                 }
 
                 var actions = '';
-                if (!m.read) {
-                    actions += '<button type="button" class="btn-small" onclick="markMailRead(\'' + safeId + '\')">Mark as Read</button> ';
-                }
-
+                if (!m.read) actions += '<button type="button" class="btn-small" onclick="markMailRead(\'' + safeId + '\')">Mark as Read</button> ';
                 if (isRegistered) {
-                    actions +=
-                        '<button type="button" class="btn-primary" style="padding:6px 12px;font-size:0.85rem;" onclick="showReplyBox(\'' + safeId + '\')">Reply in-app</button> ';
+                    actions += '<button type="button" class="btn-primary" style="padding:6px 12px;font-size:0.85rem;" onclick="showReplyBox(\'' + safeId + '\')">Reply in-app</button> ';
                 } else {
-                    actions +=
-                        '<button type="button" class="btn-small" onclick="copyEmail(\'' + safeEmail + '\')">Copy Email</button> ';
+                    actions += '<button type="button" class="btn-small" onclick="copyEmail(\'' + safeEmail + '\')">Copy Email</button> ';
                 }
+                actions += '<button type="button" class="btn-close-job" onclick="deleteMail(\'' + safeId + '\')">Delete</button>';
 
-                actions +=
-                    '<button type="button" class="btn-close-job" onclick="deleteMail(\'' + safeId + '\')">Delete</button>';
-
-                var replyForm =
-                    '<div id="replyBox_' + safeId + '" style="display:none;margin-top:12px;">' +
-                    '<textarea id="replyText_' + safeId + '" placeholder="Type your reply to the user..." ' +
-                    'style="width:100%;min-height:80px;padding:10px;border-radius:8px;border:1px solid var(--border);box-sizing:border-box;"></textarea>' +
+                var replyForm = '<div id="replyBox_' + safeId + '" style="display:none;margin-top:12px;">' +
+                    '<textarea id="replyText_' + safeId + '" placeholder="Type your reply..." style="width:100%;min-height:80px;padding:10px;border-radius:8px;border:1px solid var(--border);box-sizing:border-box;"></textarea>' +
                     '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">' +
                     '<button type="button" class="btn-primary" onclick="sendMailReply(\'' + safeId + '\',\'' + (m.user_id || '') + '\')">Send Reply</button>' +
-                    '<button type="button" class="btn-secondary" onclick="hideReplyBox(\'' + safeId + '\')">Cancel</button>' +
-                    '</div>' +
-                    '<p id="replyStatus_' + safeId + '" class="message" style="margin-top:8px;"></p>' +
-                    '</div>';
+                    '<button type="button" class="btn-secondary" onclick="hideReplyBox(\'' + safeId + '\')">Cancel</button></div>' +
+                    '<p id="replyStatus_' + safeId + '" class="message" style="margin-top:8px;"></p></div>';
 
                 return '<div class="mail-row ' + unreadClass + '">' +
-                    '<p><strong>From:</strong> ' + escapeHtml(m.name || 'Anonymous') +
-                    ' &lt;' + escapeHtml(m.email || '') + '&gt;' +
-                    (isRegistered
-                        ? ' <span style="color:#16a34a;font-weight:600;">(Registered user – can reply in-app)</span>'
-                        : ' <span style="color:#64748b;">(Guest – reply by email manually)</span>') +
-                    '</p>' +
-                    '<p><strong>Phone:</strong> ' + escapeHtml(m.phone || '—') +
-                    ' · <strong>Status:</strong> ' + escapeHtml(statusLabel) +
-                    ' · <strong>Date:</strong> ' + date + '</p>' +
-                    '<p style="white-space:pre-wrap;background:#f8fafc;padding:10px;border-radius:8px;">' +
-                    escapeHtml(m.message || '') + '</p>' +
-                    replyBlock +
-                    '<div class="user-actions" style="margin-top:10px;">' + actions + '</div>' +
-                    (isRegistered ? replyForm : '') +
-                    '</div>';
+                    '<p><strong>From:</strong> ' + escapeHtml(m.name || 'Anonymous') + ' &lt;' + escapeHtml(m.email || '') + '&gt;' +
+                    (isRegistered ? ' <span style="color:#16a34a;font-weight:600;">(Registered – reply in-app)</span>' : ' <span style="color:#64748b;">(Guest – email manually)</span>') + '</p>' +
+                    '<p><strong>Phone:</strong> ' + escapeHtml(m.phone || '—') + ' · <strong>Status:</strong> ' + escapeHtml(statusLabel) + ' · <strong>Date:</strong> ' + date + '</p>' +
+                    '<p style="white-space:pre-wrap;background:#f8fafc;padding:10px;border-radius:8px;">' + escapeHtml(m.message || '') + '</p>' +
+                    replyBlock + '<div class="user-actions" style="margin-top:10px;">' + actions + '</div>' +
+                    (isRegistered ? replyForm : '') + '</div>';
             }).join(''));
         } catch (err) {
             setHtml('contactMailsList', '<p class="empty-dashboard">Error loading messages.</p>');
@@ -1113,16 +891,11 @@
     }
 
     function copyEmail(email) {
-        if (!email) {
-            alert('No email address on this message.');
-            return;
-        }
+        if (!email) { alert('No email address.'); return; }
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(email).then(function () {
-                alert('Email copied: ' + email + '\n\nPaste it in your email app to reply manually.');
-            }).catch(function () {
-                prompt('Copy this email:', email);
-            });
+                alert('Email copied: ' + email);
+            }).catch(function () { prompt('Copy this email:', email); });
         } else {
             prompt('Copy this email:', email);
         }
@@ -1132,76 +905,36 @@
         var textEl = document.getElementById('replyText_' + messageId);
         var statusEl = document.getElementById('replyStatus_' + messageId);
         var reply = textEl ? (textEl.value || '').trim() : '';
-
         if (!reply) {
-            if (statusEl) {
-                statusEl.textContent = 'Please type a reply first.';
-                statusEl.className = 'message error';
-            }
+            if (statusEl) { statusEl.textContent = 'Please type a reply first.'; statusEl.className = 'message error'; }
             return;
         }
-
-        if (statusEl) {
-            statusEl.textContent = 'Sending...';
-            statusEl.className = 'message';
-        }
-
+        if (statusEl) { statusEl.textContent = 'Sending...'; statusEl.className = 'message'; }
         try {
-            var updateRes = await supabaseClient
-                .from('contact_messages')
-                .update({
-                    admin_reply: reply,
-                    status: 'replied',
-                    read: true,
-                    replied_at: new Date().toISOString()
-                })
-                .eq('id', messageId)
-                .select('id');
-
+            var updateRes = await supabaseClient.from('contact_messages').update({
+                admin_reply: reply, status: 'replied', read: true, replied_at: new Date().toISOString()
+            }).eq('id', messageId).select('id');
             if (updateRes.error) {
-                if (statusEl) {
-                    statusEl.textContent = 'Error: ' + updateRes.error.message;
-                    statusEl.className = 'message error';
-                }
+                if (statusEl) { statusEl.textContent = 'Error: ' + updateRes.error.message; statusEl.className = 'message error'; }
                 return;
             }
-
             if (userId) {
                 await supabaseClient.from('notifications').insert([{
-                    user_id: userId,
-                    title: 'Reply from Handy Man Team',
-                    message: reply,
-                    read: false
+                    user_id: userId, title: 'Reply from Handy Man Team', message: reply, read: false
                 }]);
             }
-
-            alert('Reply sent. The user will see it in their notifications.');
+            alert('Reply sent.');
             loadContactMails();
         } catch (err) {
-            if (statusEl) {
-                statusEl.textContent = 'Something went wrong. Please try again.';
-                statusEl.className = 'message error';
-            }
+            if (statusEl) { statusEl.textContent = 'Something went wrong.'; statusEl.className = 'message error'; }
         }
     }
 
     async function deleteMail(id) {
-        if (!confirm('Delete this message permanently?\n\nThis cannot be undone.')) return;
-
-        var res = await supabaseClient
-            .from('contact_messages')
-            .delete()
-            .eq('id', id)
-            .select('id');
-
-        if (res.error) {
-            alert('Could not delete: ' + res.error.message);
-            return;
-        }
-        if (!res.data || res.data.length === 0) {
-            alert('Delete did not apply. Your admin account may need DELETE permission on contact_messages.');
-            return;
-        }
+        if (!confirm('Delete this message permanently?')) return;
+        var res = await supabaseClient.from('contact_messages').delete().eq('id', id).select('id');
+        if (res.error) { alert('Could not delete: ' + res.error.message); return; }
+        if (!res.data || res.data.length === 0) { alert('Delete did not apply.'); return; }
         loadContactMails();
     }
     </script>
