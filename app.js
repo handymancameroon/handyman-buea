@@ -1,7 +1,7 @@
 /**
  * Handy Man Buea — Core Application Logic
- * Version: 1.7.0 (Layout stability + quieter notifications + single carousel timer)
- * Date: 17 September 2026
+ * Version: 1.7.1 (Featured workers follow admin sort_order)
+ * Date: 09 October 2026
  *
  * SECURITY NOTES:
  * - Supabase credentials are loaded from config.js
@@ -1138,10 +1138,13 @@ async function loadFeaturedWorkers() {
         return;
     }
     try {
+        // Order follows the "Order" number set in Admin Control Panel (Workers section).
+        // Lower number appears first. Rating is used only as a secondary sort.
         var { data: workers, error } = await supabaseClient
             .from('worker_details')
             .select('*, profiles(full_name, avatar_url, location)')
             .eq('availability', 'Available')
+            .order('sort_order', { ascending: true })
             .order('rating', { ascending: false })
             .limit(6);
         if (error || !workers || workers.length === 0) {
